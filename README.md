@@ -21,8 +21,10 @@ npm ci
 npm run dev
 ```
 
-## 자동 배포 (main 브랜치 push → Cloudflare Pages)
-`.github/workflows/deploy.yml` 이 `main` push 때마다 빌드 후 배포합니다.
-GitHub 저장소 Settings > Secrets and variables > Actions 에 등록:
-`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
-Cloudflare에 Pages 프로젝트 `church-manage` 를 Direct Upload 방식으로 먼저 만들어 두세요.
+## 배포 (Cloudflare Pages)
+Cloudflare Pages에 이 GitHub 저장소를 직접 연결해 둡니다. `main` 브랜치가 바뀔 때마다 자동으로 빌드·배포됩니다.
+
+- Production branch: `main`
+- Build command: `npm run build`
+- Build output directory: `.svelte-kit/cloudflare`
+- Environment variable: `NODE_VERSION` = `22`
