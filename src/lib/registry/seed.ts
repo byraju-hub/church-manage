@@ -1,0 +1,113 @@
+// 모든 인물·전화·주소는 가상입니다.
+import type * as T from './types.ts';
+
+const P = (o: Partial<T.Person> & { id: string; name: string }): T.Person => ({
+	name_note: null, phone: null, gender: null, birth_date: null, email: null, has_account: false,
+	birth_lunar: false, reg_no: null, address_zip: null, address1: null, address2: null,
+	occupation: null, workplace: null, marital_status: null, wedding_date: null, previous_church: null,
+	guide_person_id: null, guide_name: null, sms_opt_out: false, faith_checked_on: null, note: null,
+	purged_on: null, ...o
+});
+
+export const people: T.Person[] = [
+	P({ id: 'p1', name: '홍길동', gender: 'M', birth_date: '1962-04-05', phone: '010-0000-0001', has_account: true, reg_no: '0001', occupation: '자영업', marital_status: '기혼', wedding_date: '1988-05-14', email: 'gildong@example.com' }),
+	P({ id: 'p2', name: '성춘향', gender: 'F', birth_date: '1965-09-12', birth_lunar: true, phone: '010-0000-0002', has_account: true, reg_no: '0002', occupation: '교사', workplace: '가상초등학교', marital_status: '기혼', wedding_date: '1988-05-14' }),
+	P({ id: 'p3', name: '홍도령', gender: 'M', birth_date: '1992-07-20', phone: '010-0000-0003', has_account: true, reg_no: '0003', occupation: '개발자', workplace: '가상소프트', marital_status: '기혼', wedding_date: '2021-10-10' }),
+	P({ id: 'p4', name: '김영수', name_note: '1948년생, 원로', gender: 'M', birth_date: '1948-02-01', phone: '010-0000-0004', reg_no: '0004', marital_status: '사별' }),
+	P({ id: 'p5', name: '이순희', gender: 'F', birth_date: '1950-11-23', phone: '010-0000-0005', reg_no: '0005', marital_status: '기혼', wedding_date: '1975-03-01' }),
+	P({ id: 'p6', name: '박지민', gender: 'F', birth_date: '1993-11-30', phone: '010-0000-0006', has_account: true, reg_no: '0006', occupation: '간호사', workplace: '가상병원', marital_status: '기혼', wedding_date: '2021-10-10', previous_church: '가상교회' }),
+	P({ id: 'p7', name: '최민호', gender: 'M', birth_date: '2007-03-02', phone: '010-0000-0007', has_account: true, marital_status: '미혼' }),
+	P({ id: 'p8', name: '정하늘', gender: 'F', birth_date: '2023-05-08' }),
+	P({ id: 'p9', name: '오새롬', gender: 'F', birth_date: '1995-06-15', phone: '010-0000-0009', occupation: '디자이너', marital_status: '미혼', faith_checked_on: '2026-09-27', guide_person_id: 'p2', previous_church: '가상교회', note: '직장 동료 소개로 방문' }),
+	P({ id: 'p10', name: '윤재석', gender: 'M', birth_date: '1958-02-09', phone: '010-0000-0010', reg_no: '0010', marital_status: '기혼', note: '건강 문제로 장기 결석' }),
+	P({ id: 'p11', name: '강수진', gender: 'F', birth_date: '1980-06-30', phone: '010-0000-0011', reg_no: '0011', marital_status: '기혼', previous_church: '가상교회' }),
+	P({ id: 'p12', name: '한나리', gender: 'F', birth_date: '1985-08-17', phone: '010-0000-0012', has_account: true, marital_status: '미혼', note: '디모데에서 가져온 자료, 등록일 미상' }),
+	P({ id: 'p13', name: '김영수', name_note: '1975년생, 2소그룹', gender: 'M', birth_date: '1975-12-24', phone: '010-0000-0013', reg_no: '0013', occupation: '회사원', marital_status: '기혼' })
+];
+
+export const households: T.Household[] = [
+	{ id: 'h1', no: 'H-001', zip: '00000', address: '가상시 가상구 가상로 1', home_phone: '02-000-0001', note: null },
+	{ id: 'h2', no: 'H-002', zip: '00000', address: '가상시 가상구 가상로 2', home_phone: null, note: null },
+	{ id: 'h3', no: 'H-003', zip: '00000', address: '가상시 가상구 가상로 3', home_phone: null, note: null },
+	{ id: 'h4', no: 'H-004', zip: '00000', address: '가상시 가상구 가상로 4', home_phone: null, note: null }
+];
+
+const HM = (id: string, household_id: string, person_id: string | null, relation: string, sort_order: number, extra: Partial<T.HouseholdMember> = {}): T.HouseholdMember => ({
+	id, household_id, person_id, name: '', birth_year: null, relation, sort_order, note: null, ...extra
+});
+export const householdMembers: T.HouseholdMember[] = [
+	HM('hm1', 'h1', 'p1', '본인', 1), HM('hm2', 'h1', 'p2', '배우자', 2), HM('hm3', 'h1', 'p3', '자녀', 3),
+	HM('hm4', 'h1', 'p6', '며느리', 4), HM('hm5', 'h1', null, '부모', 5, { name: '홍만수', birth_year: 1935, note: '교인 아님' }),
+	HM('hm6', 'h2', 'p4', '본인', 1), HM('hm7', 'h2', 'p5', '배우자', 2),
+	HM('hm8', 'h3', 'p7', '본인', 1), HM('hm9', 'h3', 'p8', '형제자매', 2),
+	HM('hm10', 'h4', 'p10', '본인', 1)
+];
+
+let n = 0;
+const id = (p: string) => `${p}${++n}`;
+const S = (person_id: string, kind: T.StatusKind, event_date: string | null, reason: string | null = null, church: string | null = null): T.StatusEvent => ({ id: id('s'), person_id, kind, event_date, reason, church });
+const F = (person_id: string, kind: T.FaithKind, event_date: string | null, church: string | null = null, officiant: string | null = null): T.FaithEvent => ({ id: id('f'), person_id, kind, event_date, church, officiant, note: null });
+const O = (person_id: string, office: T.OfficeName, rank_status: T.OfficeStatus, start_date: string | null, end_date: string | null = null): T.OfficeTerm => ({ id: id('o'), person_id, office, rank_status, start_date, end_date, note: null });
+
+export const statusEvents: T.StatusEvent[] = [
+	S('p1', '등록', '1995-03-05'), S('p2', '등록', '1995-03-05'), S('p3', '등록', '1995-03-05', '부모와 함께 등록'),
+	S('p4', '등록', '1985-01-06'), S('p5', '등록', '1985-01-06'),
+	S('p6', '전입', '2020-04-12', '결혼 후 이사', '가상교회'), S('p7', '등록', '2010-05-02'), S('p8', '등록', '2023-06-04'),
+	S('p9', '등록', '2026-09-27', '새가족'),
+	S('p10', '등록', '2002-03-10'), S('p10', '보류', '2024-09-01', '장기 결석'),
+	S('p11', '전입', '2010-01-17', null, '가상교회'), S('p11', '전출', '2026-03-29', '이사', '부산 가상교회'),
+	S('p12', '등록', null, '디모데에서 가져옴'),
+	S('p13', '등록', '2008-09-07')
+];
+export const faithEvents: T.FaithEvent[] = [
+	F('p1', '세례', '1990-12-25', '가상교회', '가상목사'), F('p2', '세례', '1992-04-19'), F('p3', '유아세례', '1992-11-01'), F('p3', '입교', '2007-04-08'),
+	F('p4', '세례', '1975-04-13'), F('p5', '세례', '1976-04-11'), F('p6', '세례', '2013-05-05', '가상교회'),
+	F('p7', '학습', '2022-04-10'), F('p8', '유아세례', '2023-12-03'),
+	F('p10', '세례', '2003-04-20'), F('p11', '세례', '2009-12-25', '가상교회'), F('p13', '세례', '2009-04-12')
+];
+export const officeTerms: T.OfficeTerm[] = [
+	O('p1', '시무집사', '시무', '2000-01-02', '2008-12-31'), O('p1', '장로', '시무', '2009-01-04'),
+	O('p2', '권사', '시무', '2012-01-01'), O('p3', '서리집사', '시무', '2022-01-02'),
+	O('p4', '장로', '시무', '1995-01-01', '2013-12-31'), O('p4', '장로', '원로', '2014-01-05'),
+	O('p5', '권사', '시무', '1998-01-01', '2020-12-31'), O('p5', '권사', '은퇴', '2021-01-03'),
+	O('p6', '서리집사', '시무', '2022-01-02'), O('p10', '서리집사', '시무', '2005-01-02', '2024-08-31'), O('p10', '서리집사', '사임', '2024-09-01'),
+	O('p13', '서리집사', '시무', null)
+];
+export const personGroups: T.PersonGroup[] = [
+	{ person_id: 'p1', community: '장년공동체', small_group: '1소그룹' }, { person_id: 'p2', community: '장년공동체', small_group: '1소그룹' },
+	{ person_id: 'p3', community: '청년공동체', small_group: '청년1' }, { person_id: 'p4', community: '장년공동체', small_group: '3소그룹' },
+	{ person_id: 'p5', community: '장년공동체', small_group: '3소그룹' }, { person_id: 'p6', community: '청년공동체', small_group: '청년1' },
+	{ person_id: 'p7', community: '청소년공동체', small_group: '중고등1' }, { person_id: 'p9', community: '청년공동체', small_group: '청년2' },
+	{ person_id: 'p10', community: '장년공동체', small_group: '2소그룹' }, { person_id: 'p12', community: '청년공동체', small_group: '청년2' },
+	{ person_id: 'p13', community: '장년공동체', small_group: '2소그룹' }
+];
+export const notes: T.Note[] = [
+	{ id: 'n1', person_id: 'p9', body: '첫 방문. 새가족 교육 안내 완료.', author: '교적 담당 간사', created_at: '2026-09-27' },
+	{ id: 'n2', person_id: 'p10', body: '전화 연결 안 됨. 소그룹 리더가 안부 확인 예정.', author: '교적 담당 간사', created_at: '2026-10-05' }
+];
+export const legacyMemos: T.LegacyMemo[] = [
+	{ id: 'lm1', person_id: 'p10', body: '(디모데) 2019년 가정 심방 시 부친 소천, 위로 기도.' }
+];
+export const consents: T.Consent[] = [
+	{ id: 'c1', person_id: 'p9', kind: '교적 등록', policy_version: '2026-01', consent_date: '2026-09-27', method: '서면', guardian_name: null, revoked_on: null },
+	{ id: 'c2', person_id: 'p9', kind: '요람 공개', policy_version: '2026-01', consent_date: '2026-09-27', method: '서면', guardian_name: null, revoked_on: null },
+	{ id: 'c3', person_id: 'p8', kind: '보호자 동의', policy_version: '2026-01', consent_date: '2026-06-04', method: '구두', guardian_name: '홍도령', revoked_on: null }
+];
+export const changeLog: T.ChangeLogEntry[] = [
+	{ id: 'cl1', person_id: 'p10', at: '2026-10-05 10:12', by: '교적 담당 간사', field: '비고', before: null, after: '건강 문제로 장기 결석' }
+];
+export const accessLog: T.AccessLogEntry[] = [];
+
+// ---- 새 자료 시험용 (안내서의 '새 자료 필요' 기능) ----
+export const visits: T.Visit[] = [
+	{ id: 'vi1', person_id: 'p10', visit_date: '2026-10-08', visitor: '담당 교역자', content: '자택 방문. 건강 상태 확인, 회복을 위해 기도.', follow_up: '2주 뒤 재방문, 병원 동행 여부 확인' }
+];
+export const affiliations: T.Affiliation[] = [
+	{ id: 'af1', person_id: 'p2', org: '찬양대', role: '소프라노 파트장', start_date: '2015-01-01', end_date: null },
+	{ id: 'af2', person_id: 'p3', org: '미디어부', role: '부원', start_date: '2022-03-01', end_date: null },
+	{ id: 'af3', person_id: 'p1', org: '선교회', role: '회장', start_date: '2020-01-01', end_date: null }
+];
+export const groupHistory: T.GroupHistory[] = [
+	{ id: 'gh1', person_id: 'p6', small_group: '청년2', start_date: '2020-04-12', end_date: '2023-12-31' },
+	{ id: 'gh2', person_id: 'p6', small_group: '청년1', start_date: '2024-01-07', end_date: null }
+];

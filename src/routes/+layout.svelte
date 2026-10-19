@@ -8,7 +8,8 @@
 
 	const nav = [
 		{ href: '/', label: '대시보드' },
-		{ href: '/members', label: '교인 관리' }
+		{ href: '/members', label: '교인 관리' },
+		{ href: '/registry', label: '교적 (안내서 기준)' }
 	];
 	const active = (href: string) =>
 		href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
