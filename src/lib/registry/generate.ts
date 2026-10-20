@@ -447,7 +447,7 @@ export function generate(reservedNames: string[] = []) {
 		absentStreak[p.id] = ri(3, 16);
 		// 아직 교인구분은 예배출석·가끔출석으로 남아 있는 경우 (알림으로 찾아내야 하는 사람)
 		// 일부는 이미 '장기결석자'로 분류, 나머지는 아직 예배출석·가끔출석으로 남아 있어 알림으로 찾아내야 하는 사람
-		p.category_id = p.category_id!.replace(/\.[asnl]$/, absentStreak[p.id] >= 12 && chance(0.4) ? '.l' : chance(0.6) ? '.s' : '.a');
+		p.category_id = p.category_id!.replace(/\.[asnl]$/, absentStreak[p.id] >= 12 && i % 2 === 0 ? '.l' : chance(0.6) ? '.s' : '.a');
 		attendRate[p.id] = 0.45;
 	}
 

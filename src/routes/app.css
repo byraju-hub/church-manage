@@ -506,3 +506,10 @@ body { overflow-x: hidden; overscroll-behavior-x: none; }
 	.form { grid-template-columns: 1fr; gap: 0.8rem; }
 	.split { gap: 0.8rem; }
 }
+
+/* 목록 오른쪽의 작은 버튼 두 줄 */
+.li .grow { min-width: 6rem; }
+.li .grow b .dday { margin-left: 0.3rem; font-size: 0.72rem; padding: 0.1rem 0.45rem; vertical-align: 1px; }
+.li-acts { flex: none; display: flex; flex-direction: column; align-items: stretch; gap: 0.3rem; }
+.li-acts .tag { margin: 0; text-align: center; }
+button.xs, .btn.xs { padding: 0.28rem 0.6rem; font-size: 0.76rem; border-radius: 8px; }

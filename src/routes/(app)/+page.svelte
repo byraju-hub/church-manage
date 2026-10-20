@@ -288,17 +288,18 @@
 
 	<section class="card">
 		<div class="card-head"><h2>장기 결석 알림</h2><span class="sub">예배출석·가끔출석 교인 중 2달 이상 결석 · {absent.length}명</span></div>
-		<div style="max-height:430px;overflow:auto">
+		<div style="max-height:430px;overflow:auto;padding-right:.45rem">
 		{#each absent as a (a.p.id)}
 			<div class="li">
 				<span class="avatar rose">{a.p.name.slice(0, 1)}</span>
 				<div class="grow">
-					<b><a href="/{a.p.id}">{a.p.name}</a></b>
+					<b><a href="/{a.p.id}">{a.p.name}</a> <span class="dday today" title={a.lastSeen ? `마지막 출석 ${a.lastSeen}` : '반년 넘게 출석 없음'}>{a.streak >= LONG.length ? '반년 이상' : `${a.streak}주째`}</span></b>
 					<small>{a.s.smallGroup || '소그룹 없음'} · {a.s.title || a.s.faith}</small>
 				</div>
-				<span class="dday today" title={a.lastSeen ? `마지막 출석 ${a.lastSeen}` : '반년 넘게 출석 없음'}>{a.streak >= LONG.length ? '반년 이상' : `${a.streak}주째`}</span>
-				{#if registry.perms.edit}<button type="button" class="ghost sm" title="교인구분 3단계를 '장기결석자'로 바꿉니다" onclick={() => markLong(a.p)}>장기결석자로</button>{/if}
-				{#if registry.perms.visit}{#if planOf(a.p.id)}<a class="tag now" href="/visits?tab=list&q={encodeURIComponent(a.p.name)}">심방 예정 {planOf(a.p.id)?.slice(5)}</a>{:else}<a class="btn ghost sm" href="/visits?person={a.p.id}&date={nextWeek}&kind=일반">심방 계획</a>{/if}{/if}
+				<div class="li-acts">
+					{#if registry.perms.edit}<button type="button" class="ghost xs" title="교인구분 3단계를 '장기결석자'로 바꿉니다" onclick={() => markLong(a.p)}>장기결석자로</button>{/if}
+					{#if registry.perms.visit}{#if planOf(a.p.id)}<a class="tag now" href="/visits?tab=list&q={encodeURIComponent(a.p.name)}">심방 예정 {planOf(a.p.id)?.slice(5)}</a>{:else}<a class="btn ghost xs" href="/visits?person={a.p.id}&date={nextWeek}&kind=일반">심방 계획</a>{/if}{/if}
+				</div>
 			</div>
 		{:else}
 			<p class="empty">2달 이상 결석한 예배출석·가끔출석 교인이 없습니다.</p>
@@ -311,7 +312,7 @@
 <div class="dash-grid even">
 	<section class="card">
 		<div class="card-head"><h2>새가족</h2><span class="sub">등록 후 60일 이내 · {newcomers.length}명</span></div>
-		<div style="max-height:430px;overflow:auto">
+		<div style="max-height:430px;overflow:auto;padding-right:.45rem">
 		{#each newcomers as { p, s } (p.id)}
 			<div class="li">
 				<span class="avatar">{p.name.slice(0, 1)}</span>
