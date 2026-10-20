@@ -213,14 +213,22 @@
 			</dl>
 			{#if selFamily.length}
 				<h3 class="mini-h">세대 {hh?.no}</h3>
-				<div class="chips">
-					{#each selFamily as m (m.id)}
-						{#if m.person_id}<button type="button" class="chip2" onclick={() => (selId = m.person_id!)}>{registry.person(m.person_id)?.name} <small>{m.relation}</small></button>
-						{:else}<span class="chip2 plain">{m.name} <small>{m.relation}</small></span>{/if}
-					{/each}
-				</div>
+				<table class="fam">
+					<thead><tr><th>관계</th><th>이름</th><th>나이</th><th>직분 · 신급</th></tr></thead>
+					<tbody>
+						{#each selFamily as m (m.id)}
+							{@const fp = m.person_id ? registry.person(m.person_id) : undefined}
+							<tr class:me={m.person_id === p.id}>
+								<td>{m.relation}</td>
+								<td>{#if fp}<button type="button" class="linkish" onclick={() => (selId = fp.id)}>{fp.name}</button>{:else}{m.name}{/if}</td>
+								<td>{fp ? (ageOf(fp.birth_date) ?? '-') : m.birth_year ? new Date().getFullYear() - m.birth_year : '-'}</td>
+								<td>{#if fp}{registry.summary(fp).title || registry.summary(fp).faith}{:else}<span class="muted">교인 아님</span>{/if}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
 			{/if}
-			{#if p.note}<h3 class="mini-h">기타 메모</h3><p style="margin:.2rem 0;white-space:pre-wrap">{p.note}</p>{/if}
+			{#if p.note}<h3 class="mini-h">기타 메모</h3><p class="memo-box">{p.note}</p>{/if}
 			{#if selNotes.length}<h3 class="mini-h">담당자 메모</h3>{#each selNotes as n}<p class="muted" style="margin:.2rem 0">{n.created_at} · {n.body}</p>{/each}{/if}
 			{#if registry.perms.visit && selVisits.length}<h3 class="mini-h">최근 심방</h3>{#each selVisits as v}<p class="muted" style="margin:.2rem 0">{v.visit_date} · {v.kind} · {v.pastor} — {v.content}</p>{/each}{/if}
 			<div class="row" style="margin-top:1rem"><a class="btn" href="/{p.id}">교적 카드 열기</a>{#if registry.perms.edit}<a class="btn ghost" href="/{p.id}">수정</a>{/if}</div>

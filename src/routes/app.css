@@ -520,3 +520,19 @@ body { overflow-x: hidden; overscroll-behavior-x: none; }
 button.xs, .btn.xs { padding: 0.28rem 0.6rem; font-size: 0.76rem; border-radius: 8px; }
 
 #absent, #edu { scroll-margin-top: 84px; }
+
+/* 교인 상세: 표처럼 줄을 그어 한눈에 */
+dl.compact { display: grid; grid-template-columns: 96px 1fr; gap: 0; border: 1px solid var(--line-strong); border-radius: 10px; overflow: hidden; font-size: 0.9rem; }
+dl.compact dt, dl.compact dd { padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); margin: 0; }
+dl.compact dt { background: #f3f6fc; color: #4b5a78; font-weight: 700; font-size: 0.84rem; border-right: 1px solid var(--line); display: flex; align-items: center; }
+dl.compact dd { display: flex; align-items: center; flex-wrap: wrap; gap: 0.2rem; }
+dl.compact dt:nth-last-of-type(1), dl.compact dd:last-of-type { border-bottom: 0; }
+table.fam { width: 100%; border: 1px solid var(--line-strong); border-radius: 10px; border-collapse: separate; border-spacing: 0; overflow: hidden; font-size: 0.88rem; }
+table.fam th { background: #f3f6fc; color: #4b5a78; font-size: 0.78rem; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--line); }
+table.fam td { padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--line); }
+table.fam tbody tr:last-child td { border-bottom: 0; }
+table.fam tr.me td { background: var(--primary-50); font-weight: 700; }
+.linkish { padding: 0; background: none; border: 0; box-shadow: none; color: var(--primary); font-weight: 600; font-size: inherit; }
+.linkish:hover { background: none; transform: none; box-shadow: none; filter: none; color: var(--primary-600); text-decoration: underline; }
+.memo-box { margin: 0.2rem 0; padding: 0.6rem 0.75rem; white-space: pre-wrap; background: #fffbea; border: 1px solid #f3e2a1; border-radius: 10px; font-size: 0.88rem; }
+.detail-pane .mini-h { margin: 1rem 0 0.4rem; }
