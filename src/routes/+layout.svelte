@@ -1,33 +1,21 @@
 <script lang="ts">
-	import { page } from '$app/state';
-	import { store } from '#lib/store.svelte.ts';
 	import './app.css';
 	import favicon from '#lib/assets/favicon.svg';
 
 	let { children } = $props();
-
-	const nav = [
-		{ href: '/', label: '대시보드' },
-		{ href: '/members', label: '교인 관리' },
-		{ href: '/registry', label: '교적 (안내서 기준)' }
-	];
-	const active = (href: string) =>
-		href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
-
-	function reset() {
-		if (confirm('샘플 데이터로 초기화합니다. 입력한 내용이 모두 사라집니다.')) store.reset();
-	}
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 <header>
-	<strong>교회 교적관리 <small>프로토타입</small></strong>
-	<nav>
-		{#each nav as n}
-			<a href={n.href} class:active={active(n.href)}>{n.label}</a>
-		{/each}
-	</nav>
-	<button class="ghost" onclick={reset}>샘플 데이터 초기화</button>
+	<div class="bar">
+		<a class="brand" href="/registry">
+			<span class="logo">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 3v18M6 9h12" /></svg>
+			</span>
+			<span><b>교회 교적관리</b><small>프로토타입</small></span>
+		</a>
+	</div>
 </header>
 <main>{@render children()}</main>
+<footer>교회 교적관리 프로토타입 · 가상 샘플 데이터로 동작하며 실제 DB에 연결되어 있지 않습니다.</footer>
