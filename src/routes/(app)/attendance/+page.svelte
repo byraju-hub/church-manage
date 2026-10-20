@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 주일 출석 등록: 소그룹별 / 소그룹 미지정자, 결석 사유
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { recentSundays } from '#lib/registry/attendance.mock.ts';

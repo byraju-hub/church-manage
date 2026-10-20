@@ -1,8 +1,8 @@
 <script lang="ts">
+	// 세대주(대가족) / 관계 입력 한 줄: [이름] [검색어] [검색] 의 [관계] [세대주정보가져오기]
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { RELATIONS } from '#lib/registry/types.ts';
 
-	// 세대주 / 관계 입력: [이름] [검색어] [검색] 의 [관계] [정보 가져오기]
 	let {
 		label = '신앙세대주 / 관계', required = false, headId = $bindable(''), relation = $bindable('본인'), withSelf = true, note = '', onfetch
 	}: { label?: string; required?: boolean; headId?: string; relation?: string; withSelf?: boolean; note?: string; onfetch?: (id: string) => void } = $props();

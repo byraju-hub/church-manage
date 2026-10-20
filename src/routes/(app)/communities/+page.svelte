@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 공동체 편성표: 공동체별 소그룹 · 인도자 · 모임 장소 · 이번 주 출석
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { recentSundays } from '#lib/registry/attendance.mock.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';

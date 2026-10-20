@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 교인 등록: 등록카드 순서대로 입력 (세대·신급·직분·소속·봉사·동의까지 한 번에)
 	import { goto } from '$app/navigation';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonFields from '#lib/components/PersonFields.svelte';

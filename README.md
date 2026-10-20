@@ -9,13 +9,13 @@ SvelteKit + Cloudflare Pages로 만든 **교적 관리 프로그램 프로토타
 ## 무엇을 볼 수 있나
 | 메뉴 | 주소 | 내용 |
 |---|---|---|
-| 대시보드 | `/` | 통합 검색창, 교적 현황(재적·출석·생일·새가족·장기 결석·심방), 6색 캘린더, 주일·소그룹 출석 추이 |
+| 대시보드 | `/` | 통합 검색창, 숫자 카드 8개(재적·주일/소그룹/교육부서 출석·새가족·심방·장기 결석·생일), 캘린더, 출석 추이 |
 | 교적 | `/members` `/new` `/<id>` `/newcomers` `/households` `/candidates` | 교인 목록(목록·상세 2단, 기본·복수·항목별 검색), 교인 등록, 교적 카드, 새가족 정착, 세대, 확인 목록 |
 | 공동체 | `/communities` `/attendance` | 편성표(공동체 3개·소그룹 27개+로뎀나무숲, 인도자·장소), 주일 출석 등록 |
 | 심방 | `/visits` | 등록, 목록 검색, 달력 검색, 녹음·문서 분석으로 내용 채우기 |
 | 조직 | `/orgs` | 당회·시무집사회·시무권사회·남전도회(1~6)·여전도회(1~10)·교회 조직표(위원회 9개) |
 | 통계 | `/stats` `/reports` `/documents` | 주일·소그룹 출석, 임직, 세례 통계 / 명단 / 문서 출력(교적부·증명서·요람·생일 명단, 인쇄·PDF) |
-| 관리자 | `/admin` `/settings` `/ideas` | 회원·권한(카카오 가입 승인, 3단계 등급, 등급 설정, 접속기록), 교인구분·소그룹·조직표 설정, 기능 아이디어 표 |
+| 관리자 | `/admin` `/settings` | 회원·권한(카카오 가입 승인, 3단계 등급, 등급 설정, 접속기록), 교인구분·소그룹·조직표 설정 |
 
 **카카오로 회원가입·로그인 → 최고관리자가 회원 목록에서 승인하고 등급(1~3) 지정 → 사용** 방식입니다. 프로토타입에서는 '카카오로 로그인'을 누르고 가상의 카카오 계정을 고릅니다. (최고관리자: 정담임)
 상단 회원 이름을 누르면 **다른 회원으로 보기**(등급마다 화면이 어떻게 다른지)와 **'교적 데이터 초기화'**가 있습니다. 입력한 내용은 각자 브라우저에만 저장됩니다.
@@ -33,21 +33,43 @@ SvelteKit + Cloudflare Pages로 만든 **교적 관리 프로그램 프로토타
 
 자세한 결정 사항과 남은 질문은 **[`docs/decisions.md`](docs/decisions.md)** 를 보세요.
 
-## 구조
-| 위치 | 설명 |
-|---|---|
-| `supabase/migrations/0002_registry.sql` | 교적 스키마 (실제 개발 시 기준안) |
-| `src/lib/registry/types.ts` | 스키마와 대응하는 타입 |
-| `src/lib/registry/derive.ts` | 이력에서 상태·신급·직분·호칭을 계산 |
-| `src/lib/registry/config.ts` | 교인구분 3단계, 공동체·소그룹 편성, 교회 조직표 |
-| `src/lib/registry/calendar.ts` | 부활주일 등 해마다 달라지는 교회 절기 계산 |
-| `src/lib/registry/seed.ts`, `generate.ts` | 가상 데이터와 규모를 맞춘 가상 교인 생성기 |
-| `src/lib/registry/store.svelte.ts` | 데이터 계층(브라우저 localStorage). **실제 개발 시 이 파일의 메서드를 Supabase 호출로 교체** |
-| `src/lib/components/` | 캘린더, 통합 검색, 교인·이름 선택, 사진 자르기, 교적 입력 칸, 심방 분석 |
-| `src/routes/(app)/` | 화면 (폴더의 `(app)` 은 주소에 나타나지 않음) |
-| `src/routes/api/visit-analyze/` | 심방 녹음·문서 분석 서버 기능 (실제 시스템에서는 로그인·심방 권한 확인 필요) |
-| `static/` | 로고·파비콘 |
-| `src/routes/app.css` | 전체 디자인 (밝은 단일 테마) |
+## 폴더 구조
+```
+├─ docs/decisions.md              정해진 것 · 연동할 곳 · 남은 질문 (개발자 인계용)
+├─ supabase/migrations/
+│   └─ 0001_registry.sql          교적 DB 구조 기준안 (회원·등급, 접근 규칙 예시 포함)
+├─ static/                        로고 · 파비콘 · robots.txt (검색 엔진 차단)
+└─ src/
+   ├─ app.html                    HTML 틀 (휴대폰 확대 막기, 고운 도담 글꼴)
+   ├─ env.ts                      서버 환경 변수 정의 (심방 분석 API 키)
+   ├─ lib/
+   │  ├─ registry/                데이터 계층
+   │  │  ├─ types.ts              데이터 타입 (DB 구조와 대응)
+   │  │  ├─ config.ts             교인구분 3단계 · 공동체/소그룹 편성 · 교회 조직표 · 회의 의장/서기
+   │  │  ├─ derive.ts             이력에서 재적 상태 · 신급 · 직분 · 호칭 계산
+   │  │  ├─ calendar.ts           부활주일 등 교회 절기 계산, 캘린더 색
+   │  │  ├─ store.svelte.ts       저장소 (브라우저 localStorage). 실제 개발 시 Supabase 호출로 교체
+   │  │  ├─ seed.ts               시험용 인물 · 회원 · 등급 (모두 가상)
+   │  │  ├─ generate.ts           가상 교인 생성기 (재적 723명 규모)
+   │  │  └─ attendance.mock.ts    가상 출석 샘플 (실제로는 홈페이지 출석부와 연동)
+   │  └─ components/              여러 화면에서 쓰는 부품
+   │     ├─ Calendar · GlobalSearch          대시보드 캘린더 · 통합 검색
+   │     ├─ PersonFields · PersonPicker      교인 입력 칸 묶음 · 교인 고르기
+   │     ├─ HeadRelation · NameChips         세대주/관계 입력 · 쉼표로 이름 여러 개
+   │     └─ PhotoCropper · VisitAnalyzer     사진 자르기 · 심방 녹음/문서 분석
+   └─ routes/
+      ├─ +layout.svelte · app.css            모든 화면 공통 (스타일)
+      ├─ api/visit-analyze/                  심방 녹음·문서 분석 서버 기능
+      └─ (app)/                              교적 화면 (폴더 이름의 (app) 은 주소에 나타나지 않음)
+         ├─ +layout.svelte                   카카오 로그인 · 상단 메뉴 · 휴대폰 아래 메뉴
+         ├─ +page.svelte                     대시보드
+         ├─ members · new · [id]             교인 목록 · 교인 등록 · 교적 카드
+         ├─ newcomers · households · candidates   새가족 정착 · 세대 · 확인 목록
+         ├─ communities · attendance          공동체 편성표(소그룹 상세) · 주일 출석 등록
+         ├─ visits · orgs                    심방 · 교회 조직
+         ├─ stats · reports · documents      통계 · 명단 · 문서 출력(PDF)
+         └─ admin · settings                 회원·권한 · 설정
+```
 
 ## 로컬 실행
 ```sh

@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 모든 화면 공통: 글꼴·스타일, 파비콘, 휴대폰 확대 막기
 	import './app.css';
 
 	import { onMount } from 'svelte';

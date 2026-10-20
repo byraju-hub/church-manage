@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 심방: 목록 검색 · 달력 · 등록 (심방 권한이 있는 회원만)
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import Calendar from '#lib/components/Calendar.svelte';

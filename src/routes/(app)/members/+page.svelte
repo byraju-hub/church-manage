@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 교인 목록: 검색(기본·복수·항목별)과 필터, 왼쪽 목록 · 오른쪽 상세, 내려받기
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { ageOf } from '#lib/registry/derive.ts';

@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 소그룹 상세: 출석 추이, 인도자 특이사항(심방 권한자만), 구성원 8주 출석
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { recentSundays } from '#lib/registry/attendance.mock.ts';

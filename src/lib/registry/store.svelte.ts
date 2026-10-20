@@ -432,10 +432,6 @@ class Registry {
 		this.d.visits.unshift({ ...v, id: uid() });
 		this.log('심방 기록', this.person(v.person_id)?.name ?? '');
 	}
-	removeVisit(id: string) {
-		this.d.visits = this.d.visits.filter((x) => x.id !== id);
-		this.save();
-	}
 	addAffiliation(a: Omit<T.Affiliation, 'id'>) {
 		this.d.affiliations.push({ ...a, id: uid() });
 		this.save();
@@ -459,10 +455,6 @@ class Registry {
 	}
 	addGroupNote(n: Omit<T.GroupNote, 'id'>) {
 		this.d.groupNotes.unshift({ ...n, id: uid() });
-		this.save();
-	}
-	addEvent(e: Omit<T.ChurchEvent, 'id'>) {
-		this.d.events.push({ ...e, id: uid() });
 		this.save();
 	}
 

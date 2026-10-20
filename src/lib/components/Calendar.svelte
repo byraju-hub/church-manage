@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 대시보드·심방 화면의 달력. 생일·기념일·일정·심방을 색으로 구분하고, 항목을 누르면 그것만 보여 줌
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { EVENT_KINDS, type EventKind } from '#lib/registry/types.ts';
 	import { KIND_COLOR, isoDate, type CalItem } from '#lib/registry/calendar.ts';
@@ -7,6 +8,8 @@
 	const now = new Date();
 	let y = $state(now.getFullYear());
 	let m = $state(now.getMonth() + 1);
+	// 처음 보여 줄 항목 (only 는 화면마다 고정이라 처음 값만 씀)
+	// svelte-ignore state_referenced_locally
 	let on = $state<EventKind[]>(only ? [...only] : [...EVENT_KINDS]);
 	const kinds = $derived(only ?? EVENT_KINDS);
 	let sel = $state<string | null>(isoDate(now));

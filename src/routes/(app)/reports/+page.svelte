@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 명단: 생일·결혼기념일, 직분자, 학습·세례 대상자, 공동체·소그룹별 명단, 교세 통계
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { ageOf } from '#lib/registry/derive.ts';
 
@@ -51,7 +52,7 @@
 	const bands = [['0–12세', 0, 12], ['13–19세', 13, 19], ['20–39세', 20, 39], ['40–59세', 40, 59], ['60세 이상', 60, 200]] as const;
 </script>
 
-<h1>명단·통계 <span class="tag now">지금 자료로 바로 가능</span></h1>
+<h1>명단</h1>
 <div class="tabs">{#each tabs as t}<button class:on={tab === t} onclick={() => (tab = t)}>{t}</button>{/each}</div>
 
 {#if tab === '생일·결혼기념일'}

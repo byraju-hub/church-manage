@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 교회 조직: 당회 · 시무집사회 · 시무권사회 · 남/여전도회 · 교회 조직표
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { MISSION_SOCIETIES } from '#lib/registry/types.ts';
 

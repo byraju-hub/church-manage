@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 관리자 › 설정: 교인구분 · 소그룹 편성 · 교회 조직표(회의 의장·서기 포함) · 코드표
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
 	import NameChips from '#lib/components/NameChips.svelte';
@@ -15,11 +16,6 @@
 	let deptName = $state('');
 
 	const roots = $derived(registry.childrenOf(null));
-	const depthOf = (id: string) => {
-		let d = 1, cur = registry.d.categories.find((c) => c.id === id);
-		while (cur?.parent_id) { d++; cur = registry.d.categories.find((c) => c.id === cur!.parent_id); }
-		return d;
-	};
 	function add(parent: string | null) {
 		if (!registry.addCategory(parent, addName)) msg = `${MAX_CATEGORY_DEPTH}단계까지만 만들 수 있습니다.`;
 		else msg = '';

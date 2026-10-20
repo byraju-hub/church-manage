@@ -1,5 +1,5 @@
 // 교적 데이터 안내서(PDF)와 '교적 프로그램 구조' 문서를 따르는 프로토타입 타입.
-// supabase/migrations/0002_registry.sql 과 대응합니다.
+// supabase/migrations/0001_registry.sql 과 대응합니다.
 
 // '보관' = 삭제할 수 없는 교적을 넣어 두는 구분 (5년 자동 삭제에서 제외)
 export type StatusKind = '등록' | '전입' | '복적' | '보류' | '보관' | '전출' | '별세' | '제적';

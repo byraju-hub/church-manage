@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 대시보드: 통합 검색, 숫자 카드 8개, 캘린더, 출석 추이, 생일, 장기 결석, 새가족, 최근 심방
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { recentSundays } from '#lib/registry/attendance.mock.ts';
 	import GlobalSearch from '#lib/components/GlobalSearch.svelte';
@@ -102,7 +103,6 @@
 		}
 		return out.sort((a, b) => a.d - b.d);
 	});
-	const weekCount = $derived(occurrences.filter((o) => o.d <= 6).length);
 	// 이번 주(일요일~토요일) 생일자 수 (결혼기념일 제외)
 	const weekBirthdays = $derived.by(() => {
 		const sun = new Date(t0); sun.setDate(t0.getDate() - t0.getDay());
@@ -135,7 +135,6 @@
 	// ---- 최근 심방 (심방 권한자만) ----
 	const recentVisits = $derived(registry.d.visits.filter((v) => new Date(v.visit_date) <= t0).sort((a, b) => b.visit_date.localeCompare(a.visit_date)).slice(0, 4));
 	const visits30 = $derived(registry.d.visits.filter((v) => (+t0 - +new Date(v.visit_date)) / 864e5 <= 30 && new Date(v.visit_date) <= t0).length);
-	const planned = $derived(registry.d.visits.filter((v) => new Date(v.visit_date) > t0).length);
 	const nameOf = (id: string) => registry.person(id)?.name ?? '';
 	// 장기 결석 알림에서 '장기결석자'로 분류 (교인구분 3단계만 바꿈)
 	function markLong(p: { id: string; category_id: string | null }) {

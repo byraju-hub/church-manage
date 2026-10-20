@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 관리자 › 회원 · 권한: 카카오 가입 승인, 3단계 등급 지정·설정, 접속기록
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
 	import type { Grade, Perms } from '#lib/registry/types.ts';

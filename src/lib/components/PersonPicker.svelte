@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 교인 한 명을 이름·전화로 찾아 고르는 칸
 	import { registry } from '#lib/registry/store.svelte.ts';
 
 	let { value = $bindable(''), placeholder = '이름·전화 검색', onpick }: { value?: string; placeholder?: string; onpick?: (id: string) => void } = $props();

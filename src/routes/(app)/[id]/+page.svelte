@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 교적 카드: 기본 정보 · 세대 · 신급/직분 · 재적 이력 · 소속 · 교육 · 심방 · 메모/동의 · 변경 이력
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonFields from '#lib/components/PersonFields.svelte';
@@ -8,7 +9,7 @@
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import {
 		STATUS_KINDS, FAITH_KINDS, POSITIONS, OFFICE_STATUS_OPTIONS, ORDAINED, CONSENT_KINDS, VISIT_KINDS, FULL_TIME_CLERGY,
-		type StatusKind, type FaithKind, type OfficeName, type OfficeStatus, type ConsentKind, type VisitMethod
+		type StatusKind, type FaithKind, type OfficeStatus, type ConsentKind, type VisitMethod
 	} from '#lib/registry/types.ts';
 
 	const p = $derived(registry.person(page.params.id!));

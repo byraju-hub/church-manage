@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 교적 화면 공통 틀: 카카오 로그인, 상단 메뉴, 휴대폰 아래 메뉴, 회원 바꿔 보기
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
@@ -92,13 +93,12 @@
 	];
 	const adminMenu: Item[] = [
 		{ href: '/admin', label: '회원 · 권한', hint: '가입 승인 · 등급 · 접속기록' },
-		{ href: '/settings', label: '설정', hint: '교인구분 · 소그룹 · 조직표' },
-		{ href: '/ideas', label: '기능 아이디어', hint: '안내서 기능 표' }
+		{ href: '/settings', label: '설정', hint: '교인구분 · 소그룹 · 조직표' }
 	];
 	const path = $derived(page.url.pathname);
 	const inMenu = (items: Item[]) => items.some((i) => path === i.href || path.startsWith(i.href + '/'));
 	// 교적 카드(/p10 같은 주소)는 '교적'에 속한 화면으로 봄
-	const known = ['/', '/members', '/new', '/newcomers', '/households', '/candidates', '/communities', '/attendance', '/visits', '/orgs', '/stats', '/reports', '/documents', '/admin', '/settings', '/ideas'];
+	const known = ['/', '/members', '/new', '/newcomers', '/households', '/candidates', '/communities', '/attendance', '/visits', '/orgs', '/stats', '/reports', '/documents', '/admin', '/settings'];
 	const isCard = $derived(path !== '/' && !known.some((p) => path === p || path.startsWith(p + '/')));
 	const showAdmin = $derived(registry.perms.admin || registry.isSuper);
 </script>

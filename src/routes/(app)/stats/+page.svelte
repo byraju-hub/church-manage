@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 통계: 주일 출석(장년·교육부서) · 소그룹 출석 · 임직 · 세례
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { recentSundays } from '#lib/registry/attendance.mock.ts';

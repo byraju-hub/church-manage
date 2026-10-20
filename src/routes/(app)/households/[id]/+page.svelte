@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 세대 상세: 세대원 추가 · 관계 바꾸기 · 분가
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { registry } from '#lib/registry/store.svelte.ts';

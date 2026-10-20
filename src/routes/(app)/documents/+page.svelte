@@ -4,7 +4,6 @@
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
 	import { ageOf, fullAddress, officeTitle } from '#lib/registry/derive.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
-	import type { Person } from '#lib/registry/types.ts';
 
 	// 문서 출력: 화면에서 미리 보고 → 인쇄 또는 PDF 내려받기. 출력할 때마다 접속기록(출력)과 발급번호를 남김
 	// [실제 시스템] 증명서 발급 대장을 따로 두고(발급번호·용도·발급자), 교회 직인 이미지를 넣습니다.

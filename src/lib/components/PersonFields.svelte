@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 교인 카드 입력 칸 묶음 (교인 등록과 교적 카드 수정에서 함께 씀)
 	import type { Snippet } from 'svelte';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
@@ -8,7 +9,7 @@
 	import { EDU_DEPTS, MARITAL_STATUSES, MISSION_SOCIETIES, NAME_NOTES } from '#lib/registry/types.ts';
 
 	// f: 교인 카드의 칸들(빈 칸은 빈 문자열). 등록 화면과 카드 수정 화면이 함께 씀
-	let { f = $bindable(), household, autoNote = false, selfId = '' }: { f: Record<string, any>; household?: Snippet; autoNote?: boolean; selfId?: string } = $props();
+	let { f = $bindable(), household, autoNote = false }: { f: Record<string, any>; household?: Snippet; autoNote?: boolean } = $props();
 	// 새로 등록할 때는 동명이인 구분을 등록 순서대로 자동으로 붙임
 	const nextNote = $derived(autoNote && f.name?.trim() ? registry.nextNameNote(f.name) : null);
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 이름을 쉼표로 이어 쓰는 입력 (심방 동행자, 교인 복수 검색, 부서 담당자)
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import type { Person } from '#lib/registry/types.ts';
 

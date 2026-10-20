@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 세대 목록: 세대 검색, 새 세대 만들기
 	import { goto } from '$app/navigation';
 	import { registry } from '#lib/registry/store.svelte.ts';
 
@@ -45,7 +46,7 @@
 {#if noHousehold.length}
 	<div class="card">
 		<h2>아직 세대가 없는 교인 ({noHousehold.length}명)</h2>
-		<p class="muted">디모데 가져오기와 담당자 입력으로 채우는 중이라 세대가 없는 사람이 많을 수 있습니다.</p>
+		<p class="muted">담당자 입력으로 채우는 중이라 세대가 없는 사람이 많을 수 있습니다.</p>
 		{#each noHousehold as p}<a href="/{p.id}" style="margin-right:.8rem">{p.name}</a>{/each}
 	</div>
 {/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	// 대시보드 통합 검색창: 교인·소그룹·세대·심방·메모·조직을 한 번에 찾음
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { ageOf } from '#lib/registry/derive.ts';
 
