@@ -50,7 +50,7 @@
 				<label style="flex-direction:row;gap:.4rem"><input type="checkbox" style="width:auto" bind:checked={ignoreDup} />다른 사람입니다. 계속 등록 (동명이인이면 아래 '동명이인 구분'을 적어 주세요)</label>
 			</div>
 		{/if}
-		<label>동명이인 구분<input bind:value={f.name_note} placeholder="1975년생, 2소그룹" /></label>
+		<label>동명이인 구분<input bind:value={f.name_note} placeholder="1975년생" /></label>
 		<label>성별<select bind:value={f.gender}><option value="">-</option><option value="M">남</option><option value="F">여</option></select></label>
 		<label>생년월일<input type="date" bind:value={f.birth_date} /></label>
 		<label>음력 여부<select bind:value={f.birth_lunar}><option value={false}>양력</option><option value={true}>음력</option></select></label>

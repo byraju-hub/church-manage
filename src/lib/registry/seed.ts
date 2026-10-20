@@ -1,5 +1,6 @@
 // 모든 인물·전화·주소는 가상입니다.
 import type * as T from './types.ts';
+import { generate } from './generate.ts';
 
 const P = (o: Partial<T.Person> & { id: string; name: string }): T.Person => ({
 	name_note: null, phone: null, gender: null, birth_date: null, email: null, has_account: false,
@@ -22,7 +23,7 @@ export const people: T.Person[] = [
 	P({ id: 'p10', name: '윤재석', gender: 'M', birth_date: '1958-02-09', phone: '010-0000-0010', reg_no: '0010', marital_status: '기혼', note: '건강 문제로 장기 결석' }),
 	P({ id: 'p11', name: '강수진', gender: 'F', birth_date: '1980-06-30', phone: '010-0000-0011', reg_no: '0011', marital_status: '기혼', previous_church: '가상교회' }),
 	P({ id: 'p12', name: '한나리', gender: 'F', birth_date: '1985-08-17', phone: '010-0000-0012', has_account: true, marital_status: '미혼', note: '디모데에서 가져온 자료, 등록일 미상' }),
-	P({ id: 'p13', name: '김영수', name_note: '1975년생, 2소그룹', gender: 'M', birth_date: '1975-12-24', phone: '010-0000-0013', reg_no: '0013', occupation: '회사원', marital_status: '기혼' })
+	P({ id: 'p13', name: '김영수', name_note: '1975년생', gender: 'M', birth_date: '1975-12-24', phone: '010-0000-0013', reg_no: '0013', occupation: '회사원', marital_status: '기혼' })
 ];
 
 export const households: T.Household[] = [
@@ -74,12 +75,11 @@ export const officeTerms: T.OfficeTerm[] = [
 	O('p13', '서리집사', '시무', null)
 ];
 export const personGroups: T.PersonGroup[] = [
-	{ person_id: 'p1', community: '장년공동체', small_group: '1소그룹' }, { person_id: 'p2', community: '장년공동체', small_group: '1소그룹' },
-	{ person_id: 'p3', community: '청년공동체', small_group: '청년1' }, { person_id: 'p4', community: '장년공동체', small_group: '3소그룹' },
-	{ person_id: 'p5', community: '장년공동체', small_group: '3소그룹' }, { person_id: 'p6', community: '청년공동체', small_group: '청년1' },
-	{ person_id: 'p7', community: '청소년공동체', small_group: '중고등1' }, { person_id: 'p9', community: '청년공동체', small_group: '청년2' },
-	{ person_id: 'p10', community: '장년공동체', small_group: '2소그룹' }, { person_id: 'p12', community: '청년공동체', small_group: '청년2' },
-	{ person_id: 'p13', community: '장년공동체', small_group: '2소그룹' }
+	{ person_id: 'p1', community: '줄기 공동체', small_group: '엎드림' }, { person_id: 'p2', community: '줄기 공동체', small_group: '엎드림' },
+	{ person_id: 'p3', community: '열매 공동체', small_group: '훈남' }, { person_id: 'p4', community: '뿌리 공동체', small_group: '만나' },
+	{ person_id: 'p5', community: '뿌리 공동체', small_group: '만나' }, { person_id: 'p6', community: '열매 공동체', small_group: '훈남' },
+	{ person_id: 'p9', community: '열매 공동체', small_group: '푸풀' }, { person_id: 'p10', community: '줄기 공동체', small_group: '미션' },
+	{ person_id: 'p12', community: '열매 공동체', small_group: '푸풀' }, { person_id: 'p13', community: '열매 공동체', small_group: '광야' }
 ];
 export const notes: T.Note[] = [
 	{ id: 'n1', person_id: 'p9', body: '첫 방문. 새가족 교육 안내 완료.', author: '교적 담당 간사', created_at: '2026-09-27' },
@@ -108,6 +108,22 @@ export const affiliations: T.Affiliation[] = [
 	{ id: 'af3', person_id: 'p1', org: '선교회', role: '회장', start_date: '2020-01-01', end_date: null }
 ];
 export const groupHistory: T.GroupHistory[] = [
-	{ id: 'gh1', person_id: 'p6', small_group: '청년2', start_date: '2020-04-12', end_date: '2023-12-31' },
-	{ id: 'gh2', person_id: 'p6', small_group: '청년1', start_date: '2024-01-07', end_date: null }
+	{ id: 'gh1', person_id: 'p6', small_group: '푸풀', start_date: '2020-04-12', end_date: '2023-12-31' },
+	{ id: 'gh2', person_id: 'p6', small_group: '훈남', start_date: '2024-01-07', end_date: null }
 ];
+
+// ---- 실제 규모(재적 약 1,100명)의 가상 교인을 위 시험용 인물 뒤에 덧붙임 ----
+const gen = generate(people.map((p) => p.name));
+people.push(...gen.people);
+households.push(...gen.households);
+householdMembers.push(...gen.householdMembers);
+statusEvents.push(...gen.statusEvents);
+faithEvents.push(...gen.faithEvents);
+officeTerms.push(...gen.officeTerms);
+personGroups.push(...gen.personGroups);
+notes.push(...gen.notes);
+legacyMemos.push(...gen.legacyMemos);
+consents.push(...gen.consents);
+visits.push(...gen.visits);
+affiliations.push(...gen.affiliations);
+export const generated = { absentStreak: gen.absentStreak, attendRate: gen.attendRate };

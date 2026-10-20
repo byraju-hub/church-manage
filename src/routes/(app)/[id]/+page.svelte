@@ -113,7 +113,7 @@
 			{:else}
 				<form class="form" onsubmit={(e) => { e.preventDefault(); saveEdit(); }}>
 					<label>이름<input bind:value={draft.name} required /></label>
-					<label>동명이인 구분<input bind:value={draft.name_note} placeholder="1975년생, 2소그룹" /></label>
+					<label>동명이인 구분<input bind:value={draft.name_note} placeholder="1975년생" /></label>
 					<label>휴대폰<input bind:value={draft.phone} /></label>
 					<label>성별<select bind:value={draft.gender}><option value={null}>-</option><option value="M">남</option><option value="F">여</option></select></label>
 					<label>생년월일<input type="date" bind:value={draft.birth_date} /></label>
@@ -221,8 +221,8 @@
 			</tbody></table>
 			{#if can}
 				<form class="form" style="margin-top:.7rem" onsubmit={(e) => { e.preventDefault(); registry.setGroup(p.id, grp.community, grp.small_group); grp.community = ''; grp.small_group = ''; }}>
-					<label>공동체<input bind:value={grp.community} required placeholder="장년공동체" /></label>
-					<label>소그룹<input bind:value={grp.small_group} required placeholder="2소그룹" /></label>
+					<label>공동체<input bind:value={grp.community} required placeholder="열매 공동체" /></label>
+					<label>소그룹<input bind:value={grp.small_group} required placeholder="훈남" /></label>
 					<div class="wide"><button type="submit">소그룹 이동(데모)</button></div>
 				</form>
 			{/if}

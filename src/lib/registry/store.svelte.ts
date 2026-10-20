@@ -3,7 +3,7 @@ import * as seed from './seed.ts';
 import type * as T from './types.ts';
 import { currentFaith, currentOffice, currentStatus, officeTitle, registeredOn } from './derive.ts';
 
-const KEY = 'church-registry-proto-v1';
+const KEY = 'church-registry-proto-v2';
 const PERM_KEY = 'church-registry-perms-v1';
 const WHO = '데모 사용자';
 const hasLS = typeof localStorage !== 'undefined';
@@ -68,13 +68,29 @@ class Registry {
 		this.save();
 	}
 
-	// ---- 조회 ----
-	person(id: string) { return this.d.people.find((p) => p.id === id); }
-	statusOf(id: string) { return this.d.statusEvents.filter((e) => e.person_id === id); }
-	faithOf(id: string) { return this.d.faithEvents.filter((e) => e.person_id === id); }
-	officesOf(id: string) { return this.d.officeTerms.filter((e) => e.person_id === id); }
-	groupOf(id: string) { return this.d.personGroups.find((g) => g.person_id === id); }
-	memberOf(personId: string) { return this.d.householdMembers.find((m) => m.person_id === personId); }
+	// ---- 조회 ---- (1,000명 규모에서도 빠르도록 사람 번호별 색인을 한 번만 만듦)
+	private idx = $derived.by(() => {
+		const by = <X>(xs: X[], key: (x: X) => string | null) => {
+			const m = new Map<string, X[]>();
+			for (const x of xs) { const k = key(x); if (k) { const l = m.get(k); if (l) l.push(x); else m.set(k, [x]); } }
+			return m;
+		};
+		return {
+			people: new Map(this.d.people.map((p) => [p.id, p])),
+			status: by(this.d.statusEvents, (e) => e.person_id),
+			faith: by(this.d.faithEvents, (e) => e.person_id),
+			offices: by(this.d.officeTerms, (e) => e.person_id),
+			groups: new Map(this.d.personGroups.map((g) => [g.person_id, g])),
+			members: new Map(this.d.householdMembers.filter((m) => m.person_id).map((m) => [m.person_id!, m]))
+		};
+	});
+	private static none: never[] = [];
+	person(id: string) { return this.idx.people.get(id); }
+	statusOf(id: string): T.StatusEvent[] { return this.idx.status.get(id) ?? Registry.none; }
+	faithOf(id: string): T.FaithEvent[] { return this.idx.faith.get(id) ?? Registry.none; }
+	officesOf(id: string): T.OfficeTerm[] { return this.idx.offices.get(id) ?? Registry.none; }
+	groupOf(id: string) { return this.idx.groups.get(id); }
+	memberOf(personId: string) { return this.idx.members.get(personId); }
 	householdOf(personId: string) {
 		const m = this.memberOf(personId);
 		return m ? this.d.households.find((h) => h.id === m.household_id) : undefined;
