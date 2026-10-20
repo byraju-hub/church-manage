@@ -1,26 +1,56 @@
-// 교적 데이터 안내서(PDF) 구조를 따르는 프로토타입 타입.
+// 교적 데이터 안내서(PDF)와 '교적 프로그램 구조' 문서를 따르는 프로토타입 타입.
 // supabase/migrations/0002_registry.sql 과 대응합니다.
 
-export type StatusKind = '등록' | '전입' | '복적' | '보류' | '전출' | '별세' | '제적';
+// '보관' = 삭제할 수 없는 교적을 넣어 두는 구분 (5년 자동 삭제에서 제외)
+export type StatusKind = '등록' | '전입' | '복적' | '보류' | '보관' | '전출' | '별세' | '제적';
 export type FaithKind = '학습' | '세례' | '유아세례' | '입교';
-export type OfficeName = '목사' | '전도사' | '장로' | '시무집사' | '권사' | '서리집사';
-export type OfficeStatus = '시무' | '은퇴' | '원로' | '명예' | '협동' | '사임';
-export type MaritalStatus = '미혼' | '기혼' | '사별' | '기타';
+export type OfficeName = '목사' | '전도사' | '사모' | '장로' | '시무집사' | '권사' | '서리집사';
+export type OfficeStatus = '시무' | '은퇴' | '원로' | '명예' | '협동' | '사임' | '전입' | '서리';
+export type ClergyTitle = '담임목사' | '부목사' | '교육목사' | '전임전도사' | '교육전도사';
+export type EduDept = '청년부' | '중고등부' | '유초등부' | '유치부' | '영아부';
+export type MaritalStatus = '미혼' | '기혼' | '이혼' | '사별' | '기타';
 export type ConsentKind = '교적 등록' | '민감정보' | '요람 공개' | '보호자 동의';
 export type ConsentMethod = '서면' | '앱' | '구두';
+export type VisitMethod = '방문' | '전화';
+export type VisitState = '계획' | '완료';
 
-export const STATUS_KINDS: StatusKind[] = ['등록', '전입', '복적', '보류', '전출', '별세', '제적'];
+export const STATUS_KINDS: StatusKind[] = ['등록', '전입', '복적', '보류', '보관', '전출', '별세', '제적'];
 export const FAITH_KINDS: FaithKind[] = ['학습', '세례', '유아세례', '입교'];
 // 직분 높은 순 (이 교회는 '안수집사' 대신 '시무집사')
-export const OFFICE_NAMES: OfficeName[] = ['목사', '전도사', '장로', '시무집사', '권사', '서리집사'];
-export const OFFICE_STATUSES: OfficeStatus[] = ['시무', '은퇴', '원로', '명예', '협동', '사임'];
+export const OFFICE_NAMES: OfficeName[] = ['목사', '전도사', '사모', '장로', '시무집사', '권사', '서리집사'];
+export const OFFICE_STATUSES: OfficeStatus[] = ['시무', '은퇴', '원로', '명예', '협동', '사임', '전입', '서리'];
+// 직분마다 고를 수 있는 신분 ('교적 프로그램 구조' 문서)
+export const OFFICE_STATUS_OPTIONS: Record<OfficeName, OfficeStatus[]> = {
+	목사: ['시무', '은퇴', '원로', '명예', '협동', '사임'],
+	전도사: ['시무', '은퇴', '사임'],
+	사모: ['시무', '은퇴'],
+	장로: ['시무', '은퇴', '원로', '협동'],
+	시무집사: ['시무', '은퇴', '협동', '전입'],
+	권사: ['시무', '은퇴', '협동', '전입', '명예'],
+	서리집사: ['서리', '명예']
+};
+// 임직일·임직교회를 기록하는 중직자
+export const ORDAINED: OfficeName[] = ['장로', '시무집사', '권사'];
+export const CLERGY_TITLES: ClergyTitle[] = ['담임목사', '부목사', '교육목사', '전임전도사', '교육전도사'];
+// 심방 기록은 전임 교역자까지만 볼 수 있음 (교육전도사 제외)
+export const FULL_TIME_CLERGY: ClergyTitle[] = ['담임목사', '부목사', '교육목사', '전임전도사'];
+export const EDU_DEPTS: EduDept[] = ['영아부', '유치부', '유초등부', '중고등부', '청년부'];
+export const MARITAL_STATUSES: MaritalStatus[] = ['미혼', '기혼', '이혼', '사별', '기타'];
+// 전도회: 남 1~6, 여 1~10
+export const MISSION_SOCIETIES: string[] = [
+	...Array.from({ length: 6 }, (_, i) => `${i + 1}남전도회`),
+	...Array.from({ length: 10 }, (_, i) => `${i + 1}여전도회`)
+];
 export const RELATIONS = ['본인', '배우자', '자녀', '부모', '며느리', '사위', '손자녀', '형제자매', '기타'];
 export const CONSENT_KINDS: ConsentKind[] = ['교적 등록', '민감정보', '요람 공개', '보호자 동의'];
+// 디모데 심방 구분 목록을 기준으로 함 (실제 코드표는 스데반정보 덤프로 확인)
+export const VISIT_KINDS = ['대심방', '새신자', '일반', '결혼', '출산', '돌', '입학', '졸업', '회갑', '장례', '추도', '개업', '이사', '병문안', '전도'];
+export const MAX_CATEGORY_DEPTH = 3;
 
 export interface Person {
 	id: string;
 	name: string;
-	name_note: string | null; // 동명이인 구분 (예: 1975년생, 2구역)
+	name_note: string | null; // 동명이인 구분 (예: 1975년생)
 	// 앱 프로필(custom_users)에 있는 칸
 	phone: string | null;
 	gender: 'M' | 'F' | null;
@@ -44,6 +74,21 @@ export interface Person {
 	faith_checked_on: string | null;
 	note: string | null;
 	purged_on: string | null;
+	photo: string | null; // 사진 (작은 이미지)
+	category_id: string | null; // 교인구분 (3단계 카테고리 중 하나)
+	clergy_title: ClergyTitle | null; // 교역자 직책 (신분과 별개)
+	edu_dept: EduDept | null; // 교육부서 (청년·교육부서인 경우)
+	mission_society: string | null; // 전도회 (예: 3남전도회, 5여전도회)
+	big_family_head_id: string | null; // 대가족 세대주
+	big_family_relation: string | null; // 대가족 세대주 기준 관계
+}
+
+// 교인구분: 3단계까지 펼쳐지는 카테고리 (관리자 화면에서 이름을 바꿀 수 있음)
+export interface Category {
+	id: string;
+	parent_id: string | null;
+	name: string;
+	sort_order: number;
 }
 
 export interface Household {
@@ -90,15 +135,37 @@ export interface OfficeTerm {
 	person_id: string;
 	office: OfficeName;
 	rank_status: OfficeStatus;
-	start_date: string | null;
+	start_date: string | null; // 임직일
 	end_date: string | null;
-	note: string | null;
+	church: string | null; // 임직교회 (비면 본 교회, 타교 임직이면 그 교회 이름)
+	note: string | null; // 휴직·무임 등은 여기에 적음
+}
+
+// 소그룹 편성: 공동체(뿌리·줄기·열매) 아래 소그룹. 출석부의 편성표 자료
+export interface SmallGroup {
+	id: string;
+	community: string;
+	name: string;
+	place: string | null; // 모임 장소
+	leader_id: string | null; // 인도자
+	care: boolean; // 자녀 돌봄 편성 (로뎀나무숲)
+	sort_order: number;
 }
 
 export interface PersonGroup {
 	person_id: string;
 	community: string; // 출석부의 공동체
 	small_group: string; // 출석부의 소그룹
+}
+
+// 출석부에서 인도자가 쓰는 개별 특이사항
+export interface GroupNote {
+	id: string;
+	person_id: string;
+	small_group: string;
+	date: string;
+	body: string;
+	author: string;
 }
 
 export interface Note {
@@ -144,29 +211,71 @@ export interface AccessLogEntry {
 	target: string;
 }
 
-// ---- 안내서의 '새 자료 필요' 기능을 시험해 보기 위한 제안 구조 ----
+// ---- 심방 ----
 export interface Visit {
 	id: string;
 	person_id: string;
 	visit_date: string;
-	visitor: string;
+	state: VisitState; // 계획 → 완료
+	kind: string; // 심방 구분 (VISIT_KINDS)
+	method: VisitMethod;
+	pastor: string; // 담당 교역자
+	companions: string | null; // 동행자
+	scripture: string | null; // 말씀
+	hymn: string | null; // 찬송
 	content: string;
 	follow_up: string | null;
+}
+
+// ---- 출석 (출석부는 별도 시스템. 여기서는 이번에 입력한 것만 보관) ----
+export interface AttendanceMark {
+	present: boolean;
+	reason: string | null; // 특이사항·사유
+}
+
+// ---- 일정 (대시보드 캘린더) ----
+export type EventKind = '생일' | '성도 기념일' | '교회 기념일' | '사역 일정' | '성례 일정' | '심방 계획';
+export const EVENT_KINDS: EventKind[] = ['생일', '성도 기념일', '교회 기념일', '사역 일정', '성례 일정', '심방 계획'];
+export interface ChurchEvent {
+	id: string;
+	kind: Exclude<EventKind, '생일' | '심방 계획'>;
+	date: string;
+	end_date: string | null;
+	title: string;
+	person_id: string | null; // 성도 기념일(수술·입원 등)
+	note: string | null;
+}
+
+// ---- 교육 (새가족 교육 등) ----
+export interface EducationCourse {
+	id: string;
+	name: string;
+}
+export interface EducationRecord {
+	id: string;
+	person_id: string;
+	course_id: string;
+	start_date: string | null;
+	end_date: string | null; // 수료일
+	completed: boolean;
+	instructor: string | null;
+	note: string | null;
+}
+
+// ---- 교회 조직표 (위원회 / 부서) ----
+export interface OrgUnit {
+	id: string;
+	parent_id: string | null;
+	name: string;
+	sort_order: number;
+	leader_id: string | null; // 위원회는 위원장(장로), 실무부서는 담당자
 }
 
 export interface Affiliation {
 	id: string;
 	person_id: string;
-	org: string; // 선교회·부서·찬양대·봉사팀
+	org: string; // 교회조직표의 부서 (복수 등록 가능)
 	role: string | null;
-	start_date: string | null;
-	end_date: string | null;
-}
-
-export interface GroupHistory {
-	id: string;
-	person_id: string;
-	small_group: string;
 	start_date: string | null;
 	end_date: string | null;
 }

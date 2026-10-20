@@ -1,6 +1,6 @@
 // 재적·신급·직분의 '지금 값'은 이력에서 계산합니다. (안내서 '재적·신급·직분')
 import type {
-	FaithEvent, FaithKind, OfficeName, OfficeStatus, OfficeTerm, Person, StatusEvent, StatusKind
+	Category, FaithEvent, FaithKind, OfficeName, OfficeStatus, OfficeTerm, Person, StatusEvent, StatusKind
 } from './types.ts';
 import { OFFICE_NAMES } from './types.ts';
 
@@ -10,10 +10,10 @@ export interface CurrentStatus {
 }
 
 const STATUS_ON: Record<StatusKind, boolean> = {
-	등록: true, 전입: true, 복적: true, 보류: true, 전출: false, 별세: false, 제적: false
+	등록: true, 전입: true, 복적: true, 보류: true, 보관: false, 전출: false, 별세: false, 제적: false
 };
 const STATUS_NOW: Record<StatusKind, string> = {
-	등록: '재적', 전입: '재적', 복적: '재적', 보류: '보류', 전출: '전출', 별세: '별세', 제적: '제적'
+	등록: '재적', 전입: '재적', 복적: '재적', 보류: '보류', 보관: '보관', 전출: '전출', 별세: '별세', 제적: '제적'
 };
 
 // 날짜를 모르는 기록은 가장 오래된 것으로 보고, 같으면 입력 순서를 따름
@@ -58,10 +58,23 @@ export function currentOffice(terms: OfficeTerm[]): OfficeTerm | null {
 	return live[0] ?? null;
 }
 
-// 호칭: 시무는 직분 그대로(서리집사는 '집사'), 나머지는 신분을 앞에 붙임
+// 호칭: 시무는 직분 그대로, 나머지는 신분을 앞에 붙임 (서리집사는 '집사', 시무집사 은퇴는 '은퇴집사')
 export function officeTitle(t: { office: OfficeName; rank_status: OfficeStatus }): string {
-	const base = t.office === '서리집사' ? '집사' : t.office;
+	if (t.office === '서리집사') return t.rank_status === '명예' ? '명예집사' : '집사';
+	const base = t.office === '시무집사' && t.rank_status !== '시무' ? '집사' : t.office;
 	return t.rank_status === '시무' ? base : `${t.rank_status}${base}`;
+}
+
+// 교인구분(카테고리)의 경로: ['교인', '장년', '예배출석']
+export function categoryPath(cats: Category[], id: string | null): Category[] {
+	const out: Category[] = [];
+	let cur = id ? cats.find((c) => c.id === id) : undefined;
+	while (cur) {
+		out.unshift(cur);
+		const pid: string | null = cur.parent_id;
+		cur = pid ? cats.find((c) => c.id === pid) : undefined;
+	}
+	return out;
 }
 
 export function ageOf(birth: string | null, today = new Date()): number | null {

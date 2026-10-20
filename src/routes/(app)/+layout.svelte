@@ -66,23 +66,32 @@
 		try { localStorage.removeItem('reg-locked'); } catch {}
 	}
 
-	// 상단 메뉴: 항목이 많아서 두 묶음으로 나눔
+	// 상단 메뉴 ('교적 프로그램 구조' 문서 순서)
 	type Item = { href: string; label: string; hint?: string };
 	const memberMenu: Item[] = [
-		{ href: '/members', label: '교인 목록', hint: '검색 · 필터 · 내려받기' },
-		{ href: '/new', label: '새가족 등록', hint: '등록카드 순서로 입력' },
+		{ href: '/members', label: '교인 목록', hint: '기본 · 복수 · 항목별 검색' },
+		{ href: '/new', label: '교인 등록', hint: '등록카드 순서로 입력' },
 		{ href: '/households', label: '세대', hint: '세대원 · 분가' },
 		{ href: '/candidates', label: '확인 목록', hint: '중복 · 미등록 확인' }
 	];
+	const commMenu: Item[] = [
+		{ href: '/communities', label: '공동체 편성표', hint: '인도자 · 소그룹 장소' },
+		{ href: '/attendance', label: '주일 출석 등록', hint: '공동체 · 소그룹별' }
+	];
+	const statMenu: Item[] = [
+		{ href: '/stats', label: '통계', hint: '출석 · 소그룹 · 임직 · 세례' },
+		{ href: '/reports', label: '명단', hint: '생일 · 직분자 · 세례 대상자' }
+	];
 	const adminMenu: Item[] = [
 		{ href: '/admin', label: '권한 · 기록', hint: '접속기록 · 권한' },
-		{ href: '/import', label: '디모데 가져오기', hint: '옛 자료 대조' },
+		{ href: '/settings', label: '설정', hint: '교인구분 · 소그룹 · 조직표' },
 		{ href: '/ideas', label: '기능 아이디어', hint: '안내서 기능 표' }
 	];
 	const path = $derived(page.url.pathname);
 	const inMenu = (items: Item[]) => items.some((i) => path === i.href || path.startsWith(i.href + '/'));
-	// 교적 카드(/p10 같은 주소)는 '교인 관리'에 속한 화면으로 봄
-	const isCard = $derived(!['/', '/members', '/new', '/households', '/reports', '/candidates', '/import', '/admin', '/ideas'].some((p) => path === p || path.startsWith(p + '/')) && path !== '/');
+	// 교적 카드(/p10 같은 주소)는 '교적'에 속한 화면으로 봄
+	const known = ['/', '/members', '/new', '/households', '/candidates', '/communities', '/attendance', '/visits', '/orgs', '/stats', '/reports', '/admin', '/settings', '/ideas'];
+	const isCard = $derived(path !== '/' && !known.some((p) => path === p || path.startsWith(p + '/')));
 	const setPerm = (key: keyof typeof registry.perms, v: boolean) => registry.setPerms({ ...registry.perms, [key]: v });
 </script>
 
@@ -104,31 +113,25 @@
 				<nav class="main-nav" class:open={menuOpen} aria-label="주 메뉴">
 					<a href="/" class:active={path === '/'}>대시보드</a>
 
-					<div class="dd" class:active={inMenu(memberMenu) || isCard}>
-						<button type="button" class="dd-btn" aria-haspopup="true">
-							교인 관리
-							<svg width="10" height="10" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-						</button>
-						<div class="dd-menu">
-							{#each memberMenu as m}
-								<a href={m.href} class:active={path === m.href}><b>{m.label}</b><small>{m.hint}</small></a>
-							{/each}
+					{#snippet dd(label: string, items: Item[], active: boolean)}
+						<div class="dd" class:active>
+							<button type="button" class="dd-btn" aria-haspopup="true">
+								{label}
+								<svg width="10" height="10" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+							</button>
+							<div class="dd-menu">
+								{#each items as m}
+									<a href={m.href} class:active={path === m.href}><b>{m.label}</b><small>{m.hint}</small></a>
+								{/each}
+							</div>
 						</div>
-					</div>
-
-					<a href="/reports" class:active={path.startsWith('/reports')}>명단 · 통계</a>
-
-					<div class="dd" class:active={inMenu(adminMenu)}>
-						<button type="button" class="dd-btn" aria-haspopup="true">
-							관리
-							<svg width="10" height="10" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-						</button>
-						<div class="dd-menu">
-							{#each adminMenu as m}
-								<a href={m.href} class:active={path === m.href}><b>{m.label}</b><small>{m.hint}</small></a>
-							{/each}
-						</div>
-					</div>
+					{/snippet}
+					{@render dd('교적', memberMenu, inMenu(memberMenu) || isCard)}
+					{@render dd('공동체', commMenu, inMenu(commMenu))}
+					<a href="/visits" class:active={path.startsWith('/visits')}>심방</a>
+					<a href="/orgs" class:active={path.startsWith('/orgs')}>조직</a>
+					{@render dd('통계', statMenu, inMenu(statMenu))}
+					{@render dd('관리자', adminMenu, inMenu(adminMenu))}
 
 					<div class="nav-tools">
 						<div class="perm">

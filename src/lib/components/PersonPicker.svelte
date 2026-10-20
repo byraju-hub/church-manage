@@ -1,0 +1,40 @@
+<script lang="ts">
+	import { registry } from '#lib/registry/store.svelte.ts';
+
+	let { value = $bindable(''), placeholder = '이름·전화 검색', onpick }: { value?: string; placeholder?: string; onpick?: (id: string) => void } = $props();
+	let q = $state('');
+	let open = $state(false);
+	const picked = $derived(value ? registry.person(value) : undefined);
+	const matches = $derived.by(() => {
+		const t = q.trim().toLowerCase();
+		if (!t) return [];
+		const d = t.replace(/\D/g, '');
+		return registry.d.people.filter((p) => p.name.toLowerCase().includes(t) || (d.length >= 3 && (p.phone ?? '').replace(/\D/g, '').includes(d))).slice(0, 8);
+	});
+	function pick(id: string) { value = id; q = ''; open = false; onpick?.(id); }
+</script>
+
+<div class="picker" role="group" onfocusin={() => (open = true)} onfocusout={(e) => { if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) open = false; }}>
+	{#if picked}
+		<div class="picked"><b>{picked.name}</b>{#if picked.name_note}<span class="muted"> ({picked.name_note})</span>{/if}<span class="muted"> · {registry.summary(picked).smallGroup || registry.summary(picked).category}</span>
+			<button type="button" class="ghost sm" onclick={() => { value = ''; }}>바꾸기</button></div>
+	{:else}
+		<input bind:value={q} {placeholder} autocomplete="off" />
+		{#if open && matches.length}
+			<div class="pop">
+				{#each matches as p (p.id)}
+					<button type="button" class="opt" onclick={() => pick(p.id)}><b>{p.name}</b>{p.name_note ? ` (${p.name_note})` : ''}<small>{p.birth_date?.slice(0, 4) ?? ''}년생 · {p.phone ?? '전화 없음'} · {registry.summary(p).smallGroup || registry.summary(p).category}</small></button>
+				{/each}
+			</div>
+		{/if}
+	{/if}
+</div>
+
+<style>
+	.picker { position: relative; }
+	.picked { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; padding: 0.35rem 0.6rem; border: 1px solid var(--line-strong); border-radius: 10px; background: #fff; font-weight: 400; color: var(--text); }
+	.pop { position: absolute; z-index: 25; left: 0; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 30px rgba(27, 36, 51, 0.16); padding: 0.3rem; }
+	.opt { display: block; width: 100%; text-align: left; font-weight: 500; color: var(--text); background: transparent; box-shadow: none; border-radius: 9px; padding: 0.45rem 0.6rem; }
+	.opt:hover { background: var(--primary-50); transform: none; box-shadow: none; filter: none; color: var(--text); }
+	.opt small { display: block; color: var(--muted); font-weight: 400; font-size: 0.76rem; }
+</style>

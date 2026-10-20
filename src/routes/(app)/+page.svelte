@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { registry } from '#lib/registry/store.svelte.ts';
-	import { recentSundays, wasPresent } from '#lib/registry/attendance.mock.ts';
+	import { recentSundays } from '#lib/registry/attendance.mock.ts';
+	import GlobalSearch from '#lib/components/GlobalSearch.svelte';
+	import Calendar from '#lib/components/Calendar.svelte';
 
 	const today = new Date();
 	const WEEKS = recentSundays(8, today);
@@ -15,7 +17,7 @@
 	const weekly = $derived(
 		WEEKS.map((date, i) => ({
 			date,
-			n: members.filter(({ p }) => wasPresent(p.id, date, WEEKS.length - 1 - i)).length
+			n: members.filter(({ p }) => registry.attended(p.id, date, WEEKS.length - 1 - i)).length
 		}))
 	);
 	const latest = $derived(weekly[weekly.length - 1]);
@@ -43,16 +45,17 @@
 	const md = (iso: string) => `${+iso.slice(5, 7)}/${+iso.slice(8, 10)}`;
 
 	// ---- 공동체별 이번 주일 출석 ----
+	let unit = $state<'community' | 'group'>('community');
 	const byCommunity = $derived.by(() => {
 		const m = new Map<string, { total: number; present: number }>();
 		for (const { p, s } of members) {
-			const k = s.community || '소속 없음';
+			const k = (unit === 'community' ? s.community : s.smallGroup) || '소그룹 미지정';
 			const cur = m.get(k) ?? { total: 0, present: 0 };
 			cur.total++;
-			if (wasPresent(p.id, latest.date, 0)) cur.present++;
+			if (registry.attended(p.id, latest.date, 0)) cur.present++;
 			m.set(k, cur);
 		}
-		return [...m.entries()].sort((a, b) => b[1].total - a[1].total);
+		return [...m.entries()].sort((a, b) => (unit === 'community' ? b[1].total - a[1].total : b[1].present / b[1].total - a[1].present / a[1].total));
 	});
 
 	// ---- 장기 결석 (연속 3주 이상) ----
@@ -61,7 +64,7 @@
 			.map(({ p, s }) => {
 				let streak = 0;
 				for (let k = 0; k < WEEKS.length; k++) {
-					if (wasPresent(p.id, WEEKS[WEEKS.length - 1 - k], k)) break;
+					if (registry.attended(p.id, WEEKS[WEEKS.length - 1 - k], k)) break;
 					streak++;
 				}
 				return { p, s, streak };
@@ -105,7 +108,9 @@
 	);
 
 	// ---- 최근 심방 (심방 권한자만) ----
-	const recentVisits = $derived([...registry.d.visits].sort((a, b) => b.visit_date.localeCompare(a.visit_date)).slice(0, 4));
+	const recentVisits = $derived(registry.d.visits.filter((v) => v.state === '완료').sort((a, b) => b.visit_date.localeCompare(a.visit_date)).slice(0, 4));
+	const visits30 = $derived(registry.d.visits.filter((v) => v.state === '완료' && (+t0 - +new Date(v.visit_date)) / 864e5 <= 30 && new Date(v.visit_date) <= t0).length);
+	const planned = $derived(registry.d.visits.filter((v) => v.state === '계획').length);
 	const nameOf = (id: string) => registry.person(id)?.name ?? '';
 </script>
 
@@ -118,6 +123,8 @@
 	</svg>
 {/snippet}
 
+<GlobalSearch />
+
 <section class="hero">
 	<div>
 		<small>{dateLabel}</small>
@@ -125,7 +132,7 @@
 		<p>재적 교인 {joined}명 · 이번 주일 출석 {latest.n}명({rate}%)</p>
 	</div>
 	<div class="actions">
-		<a class="btn light" href="/members">교인 검색</a>
+		<a class="btn light" href="/members">교인 목록</a>
 		{#if registry.perms.edit}<a class="btn glass" href="/new">+ 새가족 등록</a>{/if}
 		<a class="btn glass" href="/reports">명단 · 통계</a>
 	</div>
@@ -147,11 +154,24 @@
 		<span class="ico amber">{@render icon('gift')}</span>
 		<div><b>{weekCount}</b><span>이번 주 생일·기념일</span></div>
 	</a>
-	<div class="kpi">
+	<a class="kpi" href="/members?l2=새가족">
 		<span class="ico violet">{@render icon('heart')}</span>
 		<div><b>{newcomers.length}</b><span>새가족 (최근 60일)</span></div>
+	</a>
+	<div class="kpi">
+		<span class="ico rose">{@render icon('alert')}</span>
+		<div><b>{absent.length}</b><span>장기 결석자 (3주 이상)</span></div>
 	</div>
+	<a class="kpi" href="/visits">
+		<span class="ico teal">{@render icon('visit')}</span>
+		<div><b>{registry.perms.visit ? visits30 : '-'}</b><span>{registry.perms.visit ? `최근 30일 심방 · 예정 ${planned}건` : '심방 권한 필요'}</span></div>
+	</a>
 </div>
+
+<section class="card">
+	<div class="card-head"><h2>캘린더</h2><span class="sub">생일 · 성도 기념일 · 교회 기념일 · 사역 · 성례 · 심방 계획 (색으로 구분, 아래 항목을 눌러 켜고 끔)</span></div>
+	<Calendar />
+</section>
 
 <div class="dash-grid">
 	<section class="card">
@@ -235,7 +255,10 @@
 
 <div class="dash-grid even">
 	<section class="card">
-		<div class="card-head"><h2>공동체별 이번 주일 출석</h2><span class="sub">{md(latest.date)} 기준</span></div>
+		<div class="card-head"><h2>공동체 · 소그룹 출석</h2>
+			<div class="seg"><button type="button" class:on={unit === 'community'} onclick={() => (unit = 'community')}>공동체</button><button type="button" class:on={unit === 'group'} onclick={() => (unit = 'group')}>소그룹</button></div></div>
+		<p class="sub" style="margin:-.4rem 0 .6rem;color:var(--muted);font-size:.8rem">{md(latest.date)} 주일 기준{unit === 'group' ? ' · 출석률 높은 순' : ''}</p>
+		<div style="max-height:{unit === 'group' ? '420px' : 'none'};overflow:auto">
 		{#each byCommunity as [name, c]}
 			<div class="li" style="flex-direction:column; align-items:stretch; gap:.4rem">
 				<div class="row" style="justify-content:space-between"><b style="font-size:.93rem">{name}</b><span class="muted" style="font-size:.85rem">{c.present} / {c.total}명 · {Math.round((c.present * 100) / c.total)}%</span></div>
@@ -244,10 +267,12 @@
 		{:else}
 			<p class="empty">재적 교인이 없습니다.</p>
 		{/each}
+		</div>
 	</section>
 
 	<section class="card">
-		<div class="card-head"><h2>장기 결석 알림</h2><span class="sub">연속 3주 이상 결석</span></div>
+		<div class="card-head"><h2>장기 결석 알림</h2><span class="sub">연속 3주 이상 결석 · {absent.length}명</span></div>
+		<div style="max-height:430px;overflow:auto">
 		{#each absent as a (a.p.id)}
 			<div class="li">
 				<span class="avatar rose">{a.p.name.slice(0, 1)}</span>
@@ -260,12 +285,14 @@
 		{:else}
 			<p class="empty">연속 결석 중인 교인이 없습니다.</p>
 		{/each}
+		</div>
 	</section>
 </div>
 
 <div class="dash-grid even">
 	<section class="card">
-		<div class="card-head"><h2>새가족</h2><span class="sub">등록 후 60일 이내</span></div>
+		<div class="card-head"><h2>새가족</h2><span class="sub">등록 후 60일 이내 · {newcomers.length}명</span></div>
+		<div style="max-height:430px;overflow:auto">
 		{#each newcomers as { p, s } (p.id)}
 			<div class="li">
 				<span class="avatar">{p.name.slice(0, 1)}</span>
@@ -288,7 +315,7 @@
 					<span class="avatar warm">{nameOf(v.person_id).slice(0, 1)}</span>
 					<div class="grow">
 						<b><a href="/{v.person_id}">{nameOf(v.person_id)}</a></b>
-						<small>{v.visit_date} · {v.visitor} · {v.content.length > 34 ? v.content.slice(0, 34) + '…' : v.content}</small>
+						<small>{v.visit_date} · {v.pastor} · {v.content.length > 34 ? v.content.slice(0, 34) + '…' : v.content}</small>
 					</div>
 				</div>
 			{:else}
@@ -304,9 +331,13 @@
 	<div class="card-head"><h2>바로 가기</h2></div>
 	<div class="quick">
 		<a href="/members">교인 목록<small>검색 · 필터 · 내려받기</small></a>
+		<a href="/communities">공동체 편성표<small>인도자 · 장소 · 출석</small></a>
+		<a href="/attendance">주일 출석 등록<small>공동체·소그룹별</small></a>
+		<a href="/visits">심방<small>등록 · 검색 · 달력</small></a>
 		<a href="/new">새가족 등록<small>등록카드 순서로 입력</small></a>
 		<a href="/households">세대<small>세대원 · 분가</small></a>
-		<a href="/reports">명단 · 통계<small>생일 · 직분자 · 교세</small></a>
+		<a href="/reports">명단<small>생일 · 직분자 · 교세</small></a>
+		<a href="/stats">통계<small>출석 · 임직 · 세례</small></a>
 		<a href="/candidates">확인 목록<small>중복 · 미등록 확인</small></a>
 	</div>
 </section>

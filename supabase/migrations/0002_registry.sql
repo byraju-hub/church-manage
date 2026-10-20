@@ -4,6 +4,13 @@
 create schema if not exists registry;
 
 -- 교적 카드 (사람당 1장). 이름·전화·성별·생년월일·이메일은 custom_users 에 있음
+-- 교인구분: 최대 3단계 (교인/미등록·타교인 > 장년/청년/교육부서/새가족 > 예배출석/가끔출석/불출석, 별세·이사/이민·보관은 1단계)
+create table registry.categories (
+  id uuid primary key default gen_random_uuid(),
+  parent_id uuid references registry.categories(id),
+  name text not null, sort_order int not null default 0
+);
+
 create table registry.people (
   id uuid primary key default gen_random_uuid(),
   custom_user_id uuid,                        -- 앱 가입자면 custom_users.id (has_account 는 계산)
@@ -12,7 +19,7 @@ create table registry.people (
   reg_no text unique,                         -- 교번 (재정 시작할 때 매김)
   address_zip text, address1 text, address2 text,  -- 비면 세대 주소 사용
   occupation text, workplace text,
-  marital_status text check (marital_status in ('미혼','기혼','사별','기타')),
+  marital_status text check (marital_status in ('미혼','기혼','이혼','사별','기타')),
   wedding_date date,
   previous_church text,
   guide_person_id uuid references registry.people(id),  -- 인도자: 교인이면 연결
@@ -20,7 +27,14 @@ create table registry.people (
   sms_opt_out boolean not null default false,            -- 칸만 있음, 문자 발송 기능은 아직 없음
   faith_checked_on date,                                 -- 신급 확인일 (원입교인 판정)
   note text,
-  purged_on date                                         -- 전출·별세·제적 5년 뒤 인적사항 지운 날
+  purged_on date,                                        -- 전출·별세·제적 5년 뒤 인적사항 지운 날 (보관은 지우지 않음)
+  photo text,                                            -- 사진 (저장소 경로)
+  category_id uuid references registry.categories(id),   -- 교인구분 (3단계 카테고리의 한 칸)
+  clergy_title text check (clergy_title in ('담임목사','부목사','교육목사','전임전도사','교육전도사')),
+  edu_dept text check (edu_dept in ('영아부','유치부','유초등부','중고등부','청년부')),
+  mission_society text,                                  -- 전도회: 1~6남전도회, 1~10여전도회
+  big_family_head_id uuid references registry.people(id),-- 대가족 세대주 (세대와 별개)
+  big_family_relation text
 );
 
 -- 세대(가족)
@@ -44,7 +58,7 @@ create unique index one_head_per_household on registry.household_members(househo
 create table registry.status_events (
   id uuid primary key default gen_random_uuid(),
   person_id uuid not null references registry.people(id) on delete cascade,
-  kind text not null check (kind in ('등록','전입','복적','보류','전출','별세','제적')),
+  kind text not null check (kind in ('등록','전입','복적','보류','보관','전출','별세','제적')),
   event_date date, reason text, church text
 );
 create table registry.faith_events (
@@ -56,9 +70,11 @@ create table registry.faith_events (
 create table registry.office_terms (
   id uuid primary key default gen_random_uuid(),
   person_id uuid not null references registry.people(id) on delete cascade,
-  office text not null check (office in ('목사','전도사','장로','시무집사','권사','서리집사')),
-  rank_status text not null check (rank_status in ('시무','은퇴','원로','명예','협동','사임')),
-  start_date date, end_date date, note text
+  office text not null check (office in ('목사','전도사','사모','장로','시무집사','권사','서리집사')),
+  rank_status text not null check (rank_status in ('시무','은퇴','원로','명예','협동','사임','전입','서리')),
+  start_date date, end_date date,          -- start_date = 임직일
+  church text,                             -- 임직교회 (비면 본 교회)
+  note text                                -- 휴직·무임 등
 );
 
 -- 메모·동의
@@ -97,23 +113,47 @@ create table registry.change_log (       -- 수정 전후 값
   at timestamptz not null default now(), by_user uuid, field text, before text, after text
 );
 
--- ---- 안내서 '새 자료 필요' 기능을 위한 제안 (실제 도입 여부는 논의 필요) ----
+-- ---- 심방 ('교적 프로그램 구조' 문서) : 전임 교역자까지만 열람 ----
 create table registry.visits (
   id uuid primary key default gen_random_uuid(),
   person_id uuid not null references registry.people(id) on delete cascade,
-  visit_date date not null, visitor text not null, content text, follow_up text
-  -- 누가 볼지(쓴 교역자만 / 교역자 전체 / 담임목사까지) 칸은 아직 미정
-);
-create table registry.affiliations (    -- 선교회·부서·찬양대·봉사
-  id uuid primary key default gen_random_uuid(),
-  person_id uuid not null references registry.people(id) on delete cascade,
-  org text not null, role text, start_date date, end_date date
-);
-create table registry.small_group_history (  -- 소그룹 이동 이력 (지금은 현재 소속만 있음)
-  id uuid primary key default gen_random_uuid(),
-  person_id uuid not null references registry.people(id) on delete cascade,
-  small_group text not null, start_date date, end_date date
+  visit_date date not null,
+  state text not null check (state in ('계획','완료')),
+  kind text not null,                         -- 심방 구분 (디모데 목록 기준)
+  method text not null check (method in ('방문','전화')),
+  pastor text not null, companions text, scripture text, hymn text,
+  content text, follow_up text
 );
 
--- 공동체·소그룹은 교적에 두지 않고 출석부의 공동체 → 소그룹 → 구성원 명단을 그대로 씁니다.
+-- 교회 조직표 (위원회 > 실무부서), 교회봉사 소속 (여러 곳 가능)
+create table registry.org_units (
+  id uuid primary key default gen_random_uuid(),
+  parent_id uuid references registry.org_units(id), name text not null, sort_order int not null default 0,
+  leader_id uuid references registry.people(id)   -- 위원장(장로) / 실무부서 담당자
+);
+create table registry.affiliations (
+  id uuid primary key default gen_random_uuid(),
+  person_id uuid not null references registry.people(id) on delete cascade,
+  org_unit_id uuid references registry.org_units(id), role text, start_date date, end_date date
+);
+
+-- 교육 (지금은 새가족 교육만)
+create table registry.education_courses (id uuid primary key default gen_random_uuid(), name text not null);
+create table registry.education_records (
+  id uuid primary key default gen_random_uuid(),
+  person_id uuid not null references registry.people(id) on delete cascade,
+  course_id uuid not null references registry.education_courses(id),
+  start_date date, end_date date, completed boolean not null default false, instructor text, note text
+);
+
+-- 일정 (캘린더): 교회 기념일·사역·성례·성도 기념일(수술·입원 등). 생일·결혼기념일·심방 계획은 다른 표에서 계산
+create table registry.events (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('성도 기념일','교회 기념일','사역 일정','성례 일정')),
+  event_date date not null, end_date date, title text not null,
+  person_id uuid references registry.people(id), note text
+);
+
+-- 공동체·소그룹은 출석부 자료를 그대로 씁니다(편성표: 공동체 3개, 소그룹 27개 + 로뎀나무숲).
+-- 교적에서는 편성표(인도자·장소)와 소속을 가져와 보여 주기만 하고, 출석 기록과 인도자 특이사항은 출석부에 있습니다.
 -- RLS: 교적 권한자만 접근하도록 registry.staff 기준 정책을 개발 시 추가해야 합니다.
