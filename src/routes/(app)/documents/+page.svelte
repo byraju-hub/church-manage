@@ -91,7 +91,7 @@
 		<div class="tabs" style="margin-bottom:.8rem">{#each DOCS as d}<button class:on={doc === d} onclick={() => (doc = d)}>{d}</button>{/each}</div>
 		<div class="toolbar">
 			{#if needsPerson}
-				<div style="min-width:260px;flex:1"><PersonPicker bind:value={personId} placeholder="교인 이름 검색" /></div>
+				<div style="flex:1 1 320px;max-width:420px"><PersonPicker bind:value={personId} placeholder="교인 이름 검색" /></div>
 				{#if doc !== '교적부'}<label class="row" style="gap:.4rem"><span class="muted">용도</span><select bind:value={purpose} style="width:auto">{#each ['제출용', '이명용', '학교 제출용', '직장 제출용', '기타'] as x}<option>{x}</option>{/each}</select></label>{/if}
 			{:else if doc === '생일 명단'}
 				<label class="row" style="gap:.4rem"><span class="muted">월</span><select bind:value={month} style="width:auto">{#each Array.from({ length: 12 }, (_, i) => i + 1) as m}<option value={m}>{m}월</option>{/each}</select></label>
