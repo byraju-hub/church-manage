@@ -77,7 +77,7 @@
 			<span class="badge">{s.faith}</span>
 			{#if s.memberCert}<span class="tag now">앱 교인 인증 켜짐</span>{/if}
 		</h1>
-		<a class="btn ghost" href="/">← 목록</a>
+		<a class="btn ghost" href="/members">← 목록</a>
 	</div>
 	<p class="muted" style="margin-top:-.6rem">
 		등록일 {s.registered ?? '미상'} · {s.community ? `${s.community} › ${s.smallGroup}` : '소그룹 없음'} · 교번 {p.reg_no ?? '미배정'}
@@ -313,5 +313,5 @@
 		</div>
 	{/if}
 {:else}
-	<p>교적을 찾을 수 없습니다. <a href="/">목록으로</a></p>
+	<p>교적을 찾을 수 없습니다. <a href="/members">목록으로</a></p>
 {/if}
