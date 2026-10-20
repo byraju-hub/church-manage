@@ -7,7 +7,7 @@
 	let open = $state(false);
 	let input = $state<HTMLInputElement | null>(null);
 	// 검색 목록은 화면 위에 떠서 보이게 함 (카드·표 안에서 잘리지 않도록 입력 칸 위치를 따라감)
-	let pos = $state({ top: 0, left: 0, width: 0, up: false });
+	let pos = $state({ top: 0, left: 0, width: 0, maxH: 300, up: false });
 	const picked = $derived(value ? registry.person(value) : undefined);
 	const matches = $derived.by(() => {
 		const t = q.trim().toLowerCase();
@@ -18,18 +18,23 @@
 	function place() {
 		if (!input) return;
 		const r = input.getBoundingClientRect();
-		const below = window.innerHeight - r.bottom;
-		const up = below < 260 && r.top > below;
-		pos = { top: up ? r.top - 4 : r.bottom + 4, left: r.left, width: Math.max(r.width, Math.min(360, window.innerWidth - r.left - 8)), up };
+		// 휴대폰 자판이 올라와 있으면 보이는 화면 높이(visualViewport)로 계산. 웬만하면 입력 칸 아래에, 입력 칸과 같은 폭으로
+		const vv = window.visualViewport;
+		const vh = vv ? vv.offsetTop + vv.height : window.innerHeight;
+		const below = vh - r.bottom - 8;
+		const up = below < 140 && r.top > below;
+		pos = { top: up ? r.top - 4 : r.bottom + 4, left: r.left, width: r.width, maxH: Math.max(140, Math.min(320, up ? r.top - 12 : below)), up };
 	}
 	$effect(() => {
 		if (!open || !matches.length) return;
 		place();
 		window.addEventListener('scroll', place, true);
 		window.addEventListener('resize', place);
+		window.visualViewport?.addEventListener('resize', place);
 		return () => {
 			window.removeEventListener('scroll', place, true);
 			window.removeEventListener('resize', place);
+			window.visualViewport?.removeEventListener('resize', place);
 		};
 	});
 	function pick(id: string) { value = id; q = ''; open = false; onpick?.(id); }
@@ -42,7 +47,7 @@
 	{:else}
 		<input bind:this={input} bind:value={q} {placeholder} autocomplete="off" />
 		{#if open && matches.length}
-			<div class="pop" class:up={pos.up} style="top:{pos.top}px;left:{pos.left}px;width:{pos.width}px">
+			<div class="pop" class:up={pos.up} style="top:{pos.top}px;left:{pos.left}px;width:{pos.width}px;max-height:{pos.maxH}px">
 				{#each matches as p (p.id)}
 					<button type="button" class="opt" onclick={() => pick(p.id)}><b>{p.name}</b>{p.name_note ? ` (${p.name_note})` : ''}<small>{p.birth_date?.slice(0, 4) ?? ''}년생 · {p.phone ?? '전화 없음'} · {registry.summary(p).smallGroup || registry.summary(p).category}</small></button>
 				{/each}

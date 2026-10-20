@@ -1,5 +1,6 @@
 <script lang="ts">
 	// 대시보드·심방 화면의 달력. 생일·기념일·일정·심방을 색으로 구분하고, 항목을 누르면 그것만 보여 줌
+	import { tick } from 'svelte';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { EVENT_KINDS, type EventKind } from '#lib/registry/types.ts';
 	import { KIND_COLOR, isoDate, type CalItem } from '#lib/registry/calendar.ts';
@@ -61,6 +62,42 @@
 	const solo = $derived(on.length === 1 ? on[0] : null);
 	function pick(k: EventKind) { on = solo === k ? [...kinds] : [k]; }
 	function all() { on = [...kinds]; }
+
+	// 일정 추가·수정 (교회 기념일 · 사역 일정 · 성례 일정)
+	type EditKind = '교회 기념일' | '사역 일정' | '성례 일정';
+	const EDIT_KINDS: EditKind[] = ['교회 기념일', '사역 일정', '성례 일정'];
+	const editKinds = $derived(EDIT_KINDS.filter((k) => kinds.includes(k)));
+	const canEdit = $derived(registry.perms.edit && editKinds.length > 0);
+	let formEl = $state<HTMLFormElement | null>(null);
+	const showForm = () => tick().then(() => formEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+	let form = $state<{ id: string | null; kind: EditKind; title: string; date: string; end: string; note: string } | null>(null);
+	function openNew() {
+		form = { id: null, kind: editKinds[0], title: '', date: sel ?? todayIso, end: '', note: '' };
+		showForm();
+	}
+	function openEdit(eventId: string) {
+		const e = registry.d.events.find((x) => x.id === eventId);
+		if (!e) return;
+		form = { id: e.id, kind: e.kind as EditKind, title: e.title, date: e.date, end: e.end_date ?? '', note: e.note ?? '' };
+		showForm();
+	}
+	const editable = (it: CalItem) => canEdit && !!it.event_id && (EDIT_KINDS as string[]).includes(it.kind);
+	function saveForm(e: SubmitEvent) {
+		e.preventDefault();
+		if (!form || !form.title.trim() || !form.date) return;
+		const end = form.end && form.end > form.date ? form.end : null;
+		const data = { kind: form.kind, title: form.title.trim(), date: form.date, end_date: end, note: form.note.trim() || null };
+		if (form.id) registry.updateEvent(form.id, data);
+		else registry.addEvent({ ...data, person_id: null });
+		// 저장한 날짜로 달력을 옮기고, 그 항목이 보이도록
+		const [yy, mo] = form.date.split('-').map(Number);
+		y = yy; m = mo; sel = form.date;
+		if (!on.includes(form.kind)) on = [...on, form.kind];
+		form = null;
+	}
+	function removeForm() {
+		if (form?.id && confirm(`'${form.title}' 일정을 지웁니다.`)) { registry.removeEvent(form.id); form = null; }
+	}
 </script>
 
 <div class="cal">
@@ -70,6 +107,7 @@
 			<h3>{y}년 {m}월</h3>
 			<button type="button" class="ghost sm" onclick={() => go(1)} aria-label="다음 달">›</button>
 			<button type="button" class="ghost sm" onclick={toToday}>오늘</button>
+			{#if canEdit}<button type="button" class="sm" onclick={openNew}>+ 일정 추가</button>{/if}
 		</div>
 		<div class="legend">
 			<button type="button" class="chip" class:sel={on.length === kinds.length} onclick={all}>전체</button>
@@ -95,6 +133,24 @@
 		{/each}
 	</div>
 
+	{#if form}
+		<form class="cal-detail cal-form" bind:this={formEl} onsubmit={saveForm}>
+			<b>{form.id ? '일정 수정' : '일정 추가'}</b>
+			<div class="form" style="margin-top:.5rem">
+				<label>종류<select bind:value={form.kind}>{#each editKinds as k}<option>{k}</option>{/each}</select></label>
+				<label class="wide">제목 <input required bind:value={form.title} placeholder="예: 전교인 수련회, 성찬식" /></label>
+				<label>날짜<input type="date" required bind:value={form.date} /></label>
+				<label><span class="lt">끝나는 날 <small class="hint">(하루면 비움)</small></span><input type="date" bind:value={form.end} min={form.date} /></label>
+				<label class="wide">메모<input bind:value={form.note} placeholder="장소 · 담당 등" /></label>
+			</div>
+			<div class="row" style="margin-top:.7rem">
+				<button type="submit" class="sm">저장</button>
+				<button type="button" class="ghost sm" onclick={() => (form = null)}>취소</button>
+				{#if form.id}<button type="button" class="ghost sm" style="margin-left:auto;color:#e0245e" onclick={removeForm}>삭제</button>{/if}
+			</div>
+		</form>
+	{/if}
+
 	{#if sel}
 		<div class="cal-detail">
 			<b>{selLabel}</b>
@@ -105,6 +161,7 @@
 						<b>{#if it.href}<a href={it.href}>{it.title}</a>{:else}{it.title}{/if}</b>
 						<small>{it.kind}{it.sub ? ` · ${it.sub}` : ''}{it.end_date ? ` · ~${it.end_date.slice(5)}` : ''}</small>
 					</div>
+					{#if editable(it)}<button type="button" class="ghost sm" onclick={() => openEdit(it.event_id!)}>수정</button>{/if}
 				</div>
 			{:else}
 				<p class="muted" style="margin:.4rem 0 0">이 날은 일정이 없습니다.</p>

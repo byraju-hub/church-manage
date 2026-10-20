@@ -68,7 +68,7 @@
 			{#if img}<img {src} alt="" draggable="false" style="width:{img.width * scale}px;height:{img.height * scale}px;transform:translate({ox}px,{oy}px)" />{:else}<span class="muted" style="padding:1rem">불러오는 중…</span>{/if}
 		</div>
 		<label class="row" style="margin:.8rem 0;gap:.6rem;flex-wrap:nowrap;font-size:.85rem;color:var(--muted)">크기
-			<input type="range" min="1" max="3" step="0.01" value={zoom} oninput={onZoom} style="padding:0" /></label>
+			<input type="range" min="1" max="8" step="0.01" value={zoom} oninput={onZoom} style="padding:0" /></label>
 		<div class="row"><button type="button" onclick={done} disabled={!img}>이 부분으로 저장</button><button type="button" class="ghost" onclick={oncancel}>취소</button></div>
 	</div>
 </div>

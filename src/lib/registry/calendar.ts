@@ -63,6 +63,7 @@ export interface CalItem {
 	sub?: string;
 	person_id?: string | null;
 	href?: string;
+	event_id?: string; // 직접 등록한 일정 (수정·삭제 가능)
 }
 
 export const KIND_COLOR: Record<import('./types.ts').EventKind, string> = {

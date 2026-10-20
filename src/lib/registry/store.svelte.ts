@@ -309,7 +309,7 @@ class Registry {
 			const end = e.end_date ?? e.date;
 			if (end < monthStart || e.date > monthEnd) continue;
 			const who = nameOf(e.person_id);
-			out.push({ date: e.date, end_date: e.end_date, kind: e.kind, title: who ? `${who} ${e.title}` : e.title, person_id: e.person_id, href: e.person_id ? `/${e.person_id}` : undefined });
+			out.push({ date: e.date, end_date: e.end_date, kind: e.kind, title: who ? `${who} ${e.title}` : e.title, sub: e.note ?? undefined, event_id: e.id, person_id: e.person_id, href: e.person_id ? `/${e.person_id}` : undefined });
 		}
 		if (kinds.has('심방 계획') && this.perms.visit) {
 			for (const v of this.d.visits) {
@@ -431,6 +431,24 @@ class Registry {
 	addVisit(v: Omit<T.Visit, 'id'>) {
 		this.d.visits.unshift({ ...v, id: uid() });
 		this.log('심방 기록', this.person(v.person_id)?.name ?? '');
+	}
+	// 캘린더 일정 (교회 기념일 · 사역 일정 · 성례 일정)
+	// [실제 시스템] events 표에 저장. 수정 권한이 있는 회원만 등록·수정·삭제
+	addEvent(e: Omit<T.ChurchEvent, 'id'>) {
+		this.d.events.push({ ...e, id: uid() });
+		this.log('일정 등록', `${e.date} ${e.title}`);
+	}
+	updateEvent(id: string, patch: Partial<Omit<T.ChurchEvent, 'id'>>) {
+		const e = this.d.events.find((x) => x.id === id);
+		if (!e) return;
+		Object.assign(e, patch);
+		this.log('일정 수정', `${e.date} ${e.title}`);
+	}
+	removeEvent(id: string) {
+		const e = this.d.events.find((x) => x.id === id);
+		if (!e) return;
+		this.d.events = this.d.events.filter((x) => x.id !== id);
+		this.log('일정 삭제', `${e.date} ${e.title}`);
 	}
 	addAffiliation(a: Omit<T.Affiliation, 'id'>) {
 		this.d.affiliations.push({ ...a, id: uid() });
