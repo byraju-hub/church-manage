@@ -11,9 +11,16 @@
 			return h.no.includes(q) || (h.address ?? '').includes(q) || names.some((n) => n.includes(q));
 		})
 	);
+	const headOf = (hid: string) => registry.membersOfHousehold(hid).find((x) => x.relation === '본인');
 	const head = (hid: string) => {
-		const m = registry.membersOfHousehold(hid).find((x) => x.relation === '본인');
+		const m = headOf(hid);
 		return m?.person_id ? registry.person(m.person_id)?.name : m?.name ?? '-';
+	};
+	// 세대주 생년: 1976년생
+	const headBirth = (hid: string) => {
+		const m = headOf(hid);
+		const y = m?.person_id ? registry.person(m.person_id)?.birth_date?.slice(0, 4) : null;
+		return y ? `${y}년생` : '-';
 	};
 	const noHousehold = $derived(registry.d.people.filter((p) => !registry.memberOf(p.id)));
 
@@ -27,17 +34,17 @@
 	<h1>세대 <small class="muted">({rows.length})</small></h1>
 	{#if registry.perms.edit}<button onclick={create}>+ 세대 만들기</button>{/if}
 </div>
-<div class="toolbar"><input type="search" placeholder="세대번호·주소·세대원 이름 검색" bind:value={q} /></div>
+<div class="toolbar"><input type="search" placeholder="세대번호·세대원 이름 검색" bind:value={q} /></div>
 <div class="card" style="padding:0">
 	<table>
-		<thead><tr><th>세대번호</th><th>세대주</th><th>세대원</th><th>주소</th></tr></thead>
+		<thead><tr><th>세대번호</th><th>세대주</th><th>생년</th><th>세대원</th></tr></thead>
 		<tbody>
 			{#each rows as h (h.id)}
 				<tr>
 					<td><a href="/households/{h.id}">{h.no}</a></td>
 					<td>{head(h.id)}</td>
+					<td>{headBirth(h.id)}</td>
 					<td>{registry.membersOfHousehold(h.id).length}명</td>
-					<td>{h.address ?? '-'}</td>
 				</tr>
 			{/each}
 		</tbody>
