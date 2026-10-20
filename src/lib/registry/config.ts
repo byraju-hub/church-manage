@@ -1,12 +1,12 @@
 // 조직 구성 같은 '설정' 성격의 자료. 실제로는 관리자 화면에서 바꾸는 값입니다.
-import type { Category, OrgUnit } from './types.ts';
+import type { Category, MeetingOfficer, OrgUnit } from './types.ts';
 
 // ---- 교인구분 (3단계) : '교적 프로그램 구조' 문서 ----
-//   교인 / 미등록·타교인  >  장년 / 새가족 / 청년부 / 중고등부 / 유초등부 / 유치부 / 영아부  >  예배출석 / 가끔출석 / 불출석
+//   교인 / 미등록·타교인  >  장년 / 새가족 / 청년부 / 중고등부 / 유초등부 / 유치부 / 영아부  >  예배출석 / 가끔출석 / 불출석 / 장기결석자
 //   별세 · 이사/이민 · 보관 은 1단계로 끝남
 const L1: [string, string][] = [['m', '교인'], ['o', '미등록/타교인']];
 const L2: [string, string][] = [['a', '장년'], ['n', '새가족'], ['y', '청년부'], ['h', '중고등부'], ['e', '유초등부'], ['k', '유치부'], ['b', '영아부']];
-const L3: [string, string][] = [['a', '예배출석'], ['s', '가끔출석'], ['n', '불출석']];
+const L3: [string, string][] = [['a', '예배출석'], ['s', '가끔출석'], ['n', '불출석'], ['l', '장기결석자']];
 
 export const CATEGORIES: Category[] = (() => {
 	const out: Category[] = [];
@@ -23,7 +23,7 @@ export const CATEGORIES: Category[] = (() => {
 	return out;
 })();
 export type L2Code = 'a' | 'n' | 'y' | 'h' | 'e' | 'k' | 'b';
-export const catId = (l1: 'm' | 'o', l2: L2Code, l3: 'a' | 's' | 'n') => `${l1}.${l2}.${l3}`;
+export const catId = (l1: 'm' | 'o', l2: L2Code, l3: 'a' | 's' | 'n' | 'l') => `${l1}.${l2}.${l3}`;
 
 // ---- 공동체·소그룹 (2026년 편성표 구조: 공동체 3개, 소그룹 27개 + 로뎀나무숲) ----
 export interface GroupDef { name: string; size: number; place: string; care?: boolean }
@@ -56,23 +56,30 @@ export const COMMUNITY_DEFS: CommunityDef[] = [
 	}
 ];
 
-// ---- 교회 조직표 (위원회 / 실무부서) : 2026년도 교회조직표의 구조. 담당자는 가상 인물 ----
+// ---- 교회 조직표 (위원회 > 부서) : 2026년도 교회조직표 순서. 위원장·부서장·담당자는 '관리자 › 설정'에서 지정 ----
 const COMMITTEES: [string, string[]][] = [
-	['공동체위원회', ['열매공동체', '줄기공동체', '뿌리공동체', '로뎀나무숲']],
-	['교육위원회', ['영아부', '유치부', '유초등부', '중고등부', '새가족부', '청년부']],
-	['기획위원회', ['사역기획부', '장학부', '조직관리부']],
-	['관리위원회', ['시설관리부']],
-	['봉사위원회', ['주차봉사부', '차량관리부', '식당봉사부', '수양관관리부', '환경미화부']],
-	['미디어위원회', ['방송부', '카페봉사부', '콘텐츠제작부']],
-	['예배위원회', ['예배부', '할렐루야찬양대', '시온찬양대', '그레이스찬양대', '아가페찬양대', '셀라 챔버', '찬양단']],
-	['선교위원회', ['국내선교부', '국외선교부', '지역전도부', '전도폭발부']],
-	['재정위원회', ['수집부', '계수부', '수지부']]
+	['예배위원회', ['예배부', '할렐루야 찬양대', '시온 찬양대', '그레이스 찬양대', '아가페 찬양대', '셀라 챔버', '더프레이즈 찬양단']],
+	['선교위원회', ['국내 선교부', '국외 선교부', '지역 전도부', '전도폭발부']],
+	['공동체위원회', ['열매 공동체', '줄기 공동체', '뿌리 공동체', '새가족부', '로뎀나무숲']],
+	['교육위원회', ['영아부', '유치부', '유초등부', '중고등부', '청년부', '장학부']],
+	['재정위원회', ['수집부', '계수부', '수지부']],
+	['관리위원회', ['시설 관리부', '차량 관리부', '수양관 관리부']],
+	['봉사위원회', ['주차 봉사부', '식당 봉사부', '환경미화부', '카페 봉사부']],
+	['기획위원회', ['사역 기획부', '조직 관리부']],
+	['미디어위원회', ['방송부', '콘텐츠 제작부']]
 ];
 export const ORG_UNITS: OrgUnit[] = (() => {
 	const out: OrgUnit[] = [];
 	COMMITTEES.forEach(([c, ds], i) => {
-		out.push({ id: `ou${i + 1}`, parent_id: null, name: c, sort_order: i + 1, leader_id: null });
-		ds.forEach((d, j) => out.push({ id: `ou${i + 1}-${j + 1}`, parent_id: `ou${i + 1}`, name: d, sort_order: j + 1, leader_id: null }));
+		out.push({ id: `ou${i + 1}`, parent_id: null, name: c, sort_order: i + 1, leader_id: null, staff_ids: [] });
+		ds.forEach((d, j) => out.push({ id: `ou${i + 1}-${j + 1}`, parent_id: `ou${i + 1}`, name: d, sort_order: j + 1, leader_id: null, staff_ids: [] }));
 	});
 	return out;
 })();
+
+// 공동의회·당회·제직회 의장·서기 (가상 인물. 실제 이름은 관리자 › 설정에서 입력)
+export const MEETING_OFFICERS: MeetingOfficer[] = [
+	{ meeting: '공동의회', chair: '정담임 목사', secretary: '홍길동 장로' },
+	{ meeting: '당회', chair: '정담임 목사', secretary: '홍길동 장로' },
+	{ meeting: '제직회', chair: '정담임 목사', secretary: '김영수 집사' }
+];

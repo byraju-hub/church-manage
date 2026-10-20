@@ -6,7 +6,8 @@
 	//  - 이름이 한 명이면 바로 들어가고, 같은 이름이 여러 명이면 목록에서 고릅니다.
 	//  - allowFree: 교적에 없는 이름(교인 아님)도 그대로 넣을 수 있음
 	export interface Chip { id: string | null; name: string }
-	let { chips = $bindable([]), allowFree = false, placeholder = '이름을 쓰고 쉼표(,)' }: { chips?: Chip[]; allowFree?: boolean; placeholder?: string } = $props();
+	let { chips = $bindable([]), allowFree = false, placeholder = '이름을 쓰고 쉼표(,)', onchange }: { chips?: Chip[]; allowFree?: boolean; placeholder?: string; onchange?: (chips: Chip[]) => void } = $props();
+	function setChips(next: Chip[]) { chips = next; onchange?.(next); }
 
 	let text = $state('');
 	let pending = $state<{ term: string; cands: Person[] }[]>([]);
@@ -17,7 +18,7 @@
 	};
 	function add(c: Chip) {
 		if (c.id ? chips.some((x) => x.id === c.id) : chips.some((x) => !x.id && x.name === c.name)) return;
-		chips = [...chips, c];
+		setChips([...chips, c]);
 	}
 	function commit(raw: string) {
 		const t = raw.trim();
@@ -35,7 +36,7 @@
 	}
 	function onKey(e: KeyboardEvent) {
 		if (e.key === 'Enter') { e.preventDefault(); commit(text); text = ''; }
-		else if (e.key === 'Backspace' && !text && chips.length) chips = chips.slice(0, -1);
+		else if (e.key === 'Backspace' && !text && chips.length) setChips(chips.slice(0, -1));
 	}
 	function choose(term: string, p: Person) {
 		add({ id: p.id, name: p.name });
@@ -49,7 +50,7 @@
 		{#each chips as c, i (c.id ?? `n-${c.name}`)}
 			<span class="nc-chip" class:bad={!c.id && !allowFree} class:free={!c.id && allowFree}>
 				{#if c.id}<a href="/{c.id}" target="_blank" rel="noreferrer">{c.name}</a>{:else}{c.name}{/if}
-				<button type="button" aria-label="{c.name} 빼기" onclick={() => (chips = chips.filter((_, j) => j !== i))}>×</button>
+				<button type="button" aria-label="{c.name} 빼기" onclick={() => setChips(chips.filter((_, j) => j !== i))}>×</button>
 			</span>
 		{/each}
 		<input bind:value={text} oninput={onInput} onkeydown={onKey} onblur={() => { commit(text); text = ''; }} {placeholder} />

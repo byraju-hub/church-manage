@@ -13,7 +13,7 @@
 	let q = $state(page.url.searchParams.get('q') ?? '');
 	let c1 = $state('');
 	let c2 = $state(page.url.searchParams.get('l2') ?? '');
-	let c3 = $state('');
+	let c3 = $state(page.url.searchParams.get('l3') ?? '');
 	let society = $state('');
 	// 기본은 재적 교인만 보임 (복수 검색으로 이름을 고른 경우는 상태와 관계없이 보임)
 	let status = $state('재적');

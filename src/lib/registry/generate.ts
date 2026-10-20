@@ -17,7 +17,7 @@ function mulberry32(a: number) {
 const pad = (n: number) => String(n).padStart(2, '0');
 
 type L2 = L2Code;
-type L3 = 'a' | 's' | 'n';
+type L3 = 'a' | 's' | 'n' | 'l';
 
 export function generate(reservedNames: string[] = []) {
 	const rnd = mulberry32(20261020);
@@ -378,7 +378,7 @@ export function generate(reservedNames: string[] = []) {
 		addStatus(p.id, '보류', daysAgo(ri(40, 900)), pick(['장기 결석', '연락 두절', '해외 체류']));
 		const gi = personGroups.findIndex((g) => g.person_id === p.id);
 		if (gi >= 0) personGroups.splice(gi, 1);
-		p.category_id = p.category_id!.replace(/\.[asn]$/, '.n');
+		p.category_id = p.category_id!.replace(/\.[asnl]$/, '.n');
 	}
 
 	// 재적에서 빠진 사람 (전출·별세·제적·보관)
@@ -446,7 +446,8 @@ export function generate(reservedNames: string[] = []) {
 		const p = pick(grouped);
 		absentStreak[p.id] = ri(3, 16);
 		// 아직 교인구분은 예배출석·가끔출석으로 남아 있는 경우 (알림으로 찾아내야 하는 사람)
-		p.category_id = p.category_id!.replace(/\.[asn]$/, chance(0.6) ? '.s' : '.a');
+		// 일부는 이미 '장기결석자'로 분류, 나머지는 아직 예배출석·가끔출석으로 남아 있어 알림으로 찾아내야 하는 사람
+		p.category_id = p.category_id!.replace(/\.[asnl]$/, absentStreak[p.id] >= 12 && chance(0.4) ? '.l' : chance(0.6) ? '.s' : '.a');
 		attendRate[p.id] = 0.45;
 	}
 

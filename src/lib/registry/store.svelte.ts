@@ -14,7 +14,7 @@ import { wasPresent } from './attendance.mock.ts';
 import { isoDate, type CalItem } from './calendar.ts';
 import { MAX_CATEGORY_DEPTH } from './types.ts';
 
-const KEY = 'church-registry-proto-v8';
+const KEY = 'church-registry-proto-v11';
 const USER_KEY = 'reg-user';
 const hasLS = typeof localStorage !== 'undefined';
 
@@ -40,6 +40,7 @@ interface Data {
 	educationCourses: T.EducationCourse[];
 	educationRecords: T.EducationRecord[];
 	orgUnits: T.OrgUnit[];
+	meetings: T.MeetingOfficer[];
 	attendance: Record<string, Record<string, T.AttendanceMark>>;
 	users: T.AppUser[];
 	grades: T.GradeDef[];
@@ -368,7 +369,7 @@ class Registry {
 		const gone: Partial<Record<T.StatusKind, string>> = { 별세: 'dead', 전출: 'move', 제적: 'keep', 보관: 'keep' };
 		let next = cur;
 		if (gone[kind]) next = gone[kind]!;
-		else if (kind === '보류' && cur.startsWith('m.')) next = cur.replace(/\.[asn]$/, '.n');
+		else if (kind === '보류' && cur.startsWith('m.')) next = cur.replace(/\.[asnl]$/, '.n');
 		else if (kind === '등록' || kind === '전입' || kind === '복적') {
 			if (cur.startsWith('o.')) next = 'm' + cur.slice(1);
 			else if (!cur.startsWith('m.')) next = 'm.a.a';
@@ -497,7 +498,7 @@ class Registry {
 	}
 	addOrgUnit(parent_id: string | null, name: string) {
 		if (!name.trim()) return;
-		this.d.orgUnits.push({ id: uid(), parent_id, name: name.trim(), sort_order: this.d.orgUnits.filter((o) => o.parent_id === parent_id).length + 1, leader_id: null });
+		this.d.orgUnits.push({ id: uid(), parent_id, name: name.trim(), sort_order: this.d.orgUnits.filter((o) => o.parent_id === parent_id).length + 1, leader_id: null, staff_ids: [] });
 		this.save();
 	}
 	renameOrgUnit(id: string, name: string) {
@@ -512,6 +513,23 @@ class Registry {
 	setOrgLeader(id: string, leader_id: string | null) {
 		const o = this.d.orgUnits.find((x) => x.id === id);
 		if (o) { o.leader_id = leader_id; this.save(); }
+	}
+	setOrgStaff(id: string, staff_ids: string[]) {
+		const o = this.d.orgUnits.find((x) => x.id === id);
+		if (o) { o.staff_ids = staff_ids; this.save(); }
+	}
+	moveOrgUnit(id: string, dir: -1 | 1) {
+		const o = this.d.orgUnits.find((x) => x.id === id);
+		if (!o) return;
+		const sibs = this.d.orgUnits.filter((x) => x.parent_id === o.parent_id).sort((a, b) => a.sort_order - b.sort_order);
+		const i = sibs.indexOf(o), j = i + dir;
+		if (j < 0 || j >= sibs.length) return;
+		[sibs[i].sort_order, sibs[j].sort_order] = [sibs[j].sort_order, sibs[i].sort_order];
+		this.save();
+	}
+	setMeeting(meeting: string, field: 'chair' | 'secretary', value: string) {
+		const m = this.d.meetings.find((x) => x.meeting === meeting);
+		if (m) { m[field] = value.trim(); this.save(); }
 	}
 	deleteOrgUnit(id: string) {
 		const ids = new Set([id, ...this.d.orgUnits.filter((o) => o.parent_id === id).map((o) => o.id)]);

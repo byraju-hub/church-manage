@@ -119,6 +119,11 @@
 	const visits30 = $derived(registry.d.visits.filter((v) => (+t0 - +new Date(v.visit_date)) / 864e5 <= 30 && new Date(v.visit_date) <= t0).length);
 	const planned = $derived(registry.d.visits.filter((v) => new Date(v.visit_date) > t0).length);
 	const nameOf = (id: string) => registry.person(id)?.name ?? '';
+	// 장기 결석 알림에서 '장기결석자'로 분류 (교인구분 3단계만 바꿈)
+	function markLong(p: { id: string; category_id: string | null }) {
+		if (p.category_id) registry.updatePerson(p.id, { category_id: p.category_id.replace(/\.[asnl]$/, '.l') });
+	}
+	const longCount = $derived(rows.filter(({ s }) => s.cat3 === '장기결석자' && s.memberCert).length);
 	// 장기 결석자 → 심방 계획: 이미 앞으로 잡힌 심방이 있으면 그 날짜를 보여 줌
 	const todayIso = `${t0.getFullYear()}-${String(t0.getMonth() + 1).padStart(2, '0')}-${String(t0.getDate()).padStart(2, '0')}`;
 	const nextWeek = (() => { const d = new Date(t0); d.setDate(d.getDate() + 7); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
@@ -292,12 +297,14 @@
 					<small>{a.s.smallGroup || '소그룹 없음'} · {a.s.title || a.s.faith}</small>
 				</div>
 				<span class="dday today" title={a.lastSeen ? `마지막 출석 ${a.lastSeen}` : '반년 넘게 출석 없음'}>{a.streak >= LONG.length ? '반년 이상' : `${a.streak}주째`}</span>
+				{#if registry.perms.edit}<button type="button" class="ghost sm" title="교인구분 3단계를 '장기결석자'로 바꿉니다" onclick={() => markLong(a.p)}>장기결석자로</button>{/if}
 				{#if registry.perms.visit}{#if planOf(a.p.id)}<a class="tag now" href="/visits?tab=list&q={encodeURIComponent(a.p.name)}">심방 예정 {planOf(a.p.id)?.slice(5)}</a>{:else}<a class="btn ghost sm" href="/visits?person={a.p.id}&date={nextWeek}&kind=일반">심방 계획</a>{/if}{/if}
 			</div>
 		{:else}
-			<p class="empty">연속 결석 중인 교인이 없습니다.</p>
+			<p class="empty">2달 이상 결석한 예배출석·가끔출석 교인이 없습니다.</p>
 		{/each}
 		</div>
+		<p style="margin:.7rem 0 0;font-size:.88rem"><a href="/members?l3=장기결석자">이미 '장기결석자'로 분류된 교인 {longCount}명 보기 →</a></p>
 	</section>
 </div>
 

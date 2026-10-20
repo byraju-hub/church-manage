@@ -9,7 +9,7 @@
 	// 문서 출력: 화면에서 미리 보고 → 인쇄 또는 PDF 내려받기. 출력할 때마다 접속기록(출력)과 발급번호를 남김
 	// [실제 시스템] 증명서 발급 대장을 따로 두고(발급번호·용도·발급자), 교회 직인 이미지를 넣습니다.
 	//              PDF는 지금처럼 브라우저에서 만들어도 되고, 서버에서 만들면 글꼴·서식이 더 일정합니다.
-	const DOCS = ['교적부', '교인증명서', '세례증명서', '교인 요람', '생일 명단', '직분자 명단'] as const;
+	const DOCS = ['교적부', '교인증명서', '세례증명서', '교인 요람', '생일 명단', '직분자 명단', '교회 조직표'] as const;
 	type Doc = (typeof DOCS)[number];
 	let doc = $state<Doc>((page.url.searchParams.get('doc') as Doc) ?? '교적부');
 	let personId = $state(page.url.searchParams.get('person') ?? '');
@@ -54,6 +54,9 @@
 			.map((t) => ({ t, p: registry.person(t.person_id)! }))
 			.sort((a, b) => ['목사', '전도사', '사모', '장로', '시무집사', '권사', '서리집사'].indexOf(a.t.office) - ['목사', '전도사', '사모', '장로', '시무집사', '권사', '서리집사'].indexOf(b.t.office) || a.p.name.localeCompare(b.p.name, 'ko'))
 	);
+	const committees = $derived(registry.d.orgUnits.filter((o) => !o.parent_id).sort((a, b) => a.sort_order - b.sort_order));
+	const deptsOf = (id: string) => registry.d.orgUnits.filter((o) => o.parent_id === id).sort((a, b) => a.sort_order - b.sort_order);
+	const pname = (id: string | null) => (id ? registry.person(id)?.name ?? '' : '');
 	const ready = $derived(!needsPerson || (!!p && (doc !== '세례증명서' || !!baptism)));
 	const fileName = $derived(`${doc}${p && needsPerson ? `-${p.name}` : doc === '생일 명단' ? `-${month}월` : ''}-${now.toISOString().slice(0, 10)}.pdf`);
 
@@ -203,6 +206,21 @@
 				</tbody></table>
 				<p class="foot-note">음력 생일은 해당 연도의 양력 날짜로 바꿔야 정확합니다. (실제 시스템에서 변환)</p>
 
+			{:else if doc === '교회 조직표'}
+				<div class="doc-head"><span>{CHURCH}</span><h2>{now.getFullYear()}년도 교회 조직표</h2><span>{todayKo}</span></div>
+				<table class="dt list meet-t"><thead><tr><th>회의</th><th>의장</th><th>서기</th></tr></thead><tbody>
+					{#each registry.d.meetings as m (m.meeting)}<tr><td class="c"><b>{m.meeting}</b></td><td class="c">{m.chair}</td><td class="c">{m.secretary}</td></tr>{/each}
+				</tbody></table>
+				<div class="org-cols">
+					{#each committees as c, ci (c.id)}
+						<table class="dt list keep">
+							<thead><tr><th colspan="3" class="cm-th">{ci + 1}. {c.name} <span>위원장 {c.leader_id ? `${pname(c.leader_id)} 장로` : ''}</span></th></tr>
+								<tr><th>부서</th><th>부서장</th><th>담당자</th></tr></thead>
+							<tbody>{#each deptsOf(c.id) as d}<tr><td>{d.name}</td><td class="c">{pname(d.leader_id)}</td><td class="c">{d.staff_ids.map(pname).join(', ')}</td></tr>{/each}</tbody>
+						</table>
+					{/each}
+				</div>
+
 			{:else if doc === '직분자 명단'}
 				<div class="doc-head"><span>{CHURCH}</span><h2>직분자 명단</h2><span>{officers.length}명</span></div>
 				<table class="dt list zebra"><thead><tr><th>직분</th><th>신분</th><th>이름</th><th>표시</th><th>임직일</th><th>임직교회</th><th>소그룹</th></tr></thead><tbody>
@@ -232,6 +250,10 @@
 	.photo-cell img { width: 26mm; height: 34mm; object-fit: cover; display: block; margin: 0 auto; }
 	.photo-cell span { display: grid; place-items: center; width: 26mm; height: 34mm; margin: 0 auto; border: 1px dashed #aaa; color: #999; font-size: 9pt; }
 	.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+	.meet-t { margin-bottom: 12px; }
+	.org-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+	.cm-th { background: #2a50c8 !important; color: #fff !important; text-align: left !important; font-size: 10pt !important; }
+	.cm-th span { float: right; font-weight: 500; font-size: 9pt; }
 	.foot-note { margin-top: 14px; font-size: 8.5pt; color: #666; border-top: 1px solid #ccc; padding-top: 6px; }
 	.cert { padding: 6mm 4mm; }
 	.cert-no { font-size: 10pt; color: #333; margin: 0 0 18mm; }

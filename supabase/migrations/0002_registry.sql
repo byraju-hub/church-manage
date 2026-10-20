@@ -52,7 +52,7 @@ create trigger on_auth_user_created after insert on auth.users for each row exec
 
 -- ============================================================================
 -- 교인구분: 최대 3단계
---   교인 / 미등록·타교인 > 장년·새가족·청년부·중고등부·유초등부·유치부·영아부 > 예배출석·가끔출석·불출석
+--   교인 / 미등록·타교인 > 장년·새가족·청년부·중고등부·유초등부·유치부·영아부 > 예배출석·가끔출석·불출석·장기결석자
 --   별세 · 이사/이민 · 보관 은 1단계. (재적 이력을 남기면 1단계가 자동으로 바뀜 — 트리거)
 --   'dead'·'move'·'keep'·'m.a.a' 같은 고정 id 는 지우지 못하게 합니다.
 -- ============================================================================
@@ -208,13 +208,24 @@ create table registry.visits (
 );
 
 -- ============================================================================
--- 교회 조직표 (위원회 9개 > 실무부서), 교회봉사 소속 (교인마다 최대 3개)
+-- 교회 조직표 (위원회 9개 > 부서: 예배·선교·공동체·교육·재정·관리·봉사·기획·미디어), 교회봉사 소속 (교인마다 최대 3개)
 -- ============================================================================
 create table registry.org_units (
   id uuid primary key default gen_random_uuid(),
   parent_id uuid references registry.org_units(id),
   name text not null, sort_order int not null default 0,
-  leader_id uuid references registry.people(id)   -- 위원회: 위원장(장로) / 실무부서: 담당자
+  leader_id uuid references registry.people(id)   -- 위원회: 위원장(장로) / 부서: 부서장
+);
+create table registry.org_unit_staff (            -- 부서 담당자 (여러 명)
+  org_unit_id uuid not null references registry.org_units(id) on delete cascade,
+  person_id uuid not null references registry.people(id),
+  sort_order int not null default 0,
+  primary key (org_unit_id, person_id)
+);
+create table registry.meeting_officers (          -- 공동의회·당회·제직회 의장·서기
+  meeting text primary key check (meeting in ('공동의회','당회','제직회')),
+  chair text not null, secretary text not null,   -- 예: '정담임 목사', '홍길동 장로'
+  chair_person_id uuid references registry.people(id), secretary_person_id uuid references registry.people(id)
 );
 create table registry.affiliations (
   id uuid primary key default gen_random_uuid(),

@@ -76,20 +76,42 @@
 		</div>
 	{/if}
 {:else}
-	<div class="card">
-		<div class="card-head"><h2>교회 조직표 <span class="tag">위원회 / 부서</span></h2><span class="sub">이름과 구성은 '관리자 › 설정'에서 바꿉니다 · 부서를 누르면 봉사자 명단</span></div>
-		{#each committees as c (c.id)}
-			<div style="margin-bottom:1.1rem">
-				<h3 style="margin:.2rem 0 .5rem;font-size:1rem">{c.name}{#if c.leader_id}<span class="tag now">위원장 <a href="/{c.leader_id}">{nameOf(c.leader_id)}</a> 장로</span>{/if}</h3>
-				<div class="org-grid">
-					{#each units.filter((u) => u.parent_id === c.id).sort((a, b) => a.sort_order - b.sort_order) as d (d.id)}
-						<button type="button" class="org-card" class:on={pickedOrg === d.name} onclick={() => (pickedOrg = d.name)}><b>{d.name}</b><span>{d.leader_id ? `담당 ${nameOf(d.leader_id)} · ` : ''}{deptMembers(d.name).length}명</span></button>
-					{/each}
+	<div class="org-head">
+		<div><h2 style="margin:0">2026년도 교회 조직표</h2><span class="muted" style="font-size:.85rem">위원회 9개 · 부서 {units.filter((u) => u.parent_id).length}개 · 위원장 · 부서장 · 담당자는 '관리자 › 설정'에서 바꿉니다</span></div>
+		{#if registry.perms.export}<a class="btn ghost" href="/documents?doc=교회 조직표">조직표 출력</a>{/if}
+	</div>
+
+	<div class="card" style="padding:0;overflow-x:auto">
+		<table class="sm meet">
+			<thead><tr><th>회의</th><th>의장</th><th>서기</th></tr></thead>
+			<tbody>{#each registry.d.meetings as m (m.meeting)}<tr><td><b>{m.meeting}</b></td><td>{m.chair}</td><td>{m.secretary}</td></tr>{/each}</tbody>
+		</table>
+	</div>
+
+	<div class="org-grid2">
+		{#each committees as c, ci (c.id)}
+			<section class="card committee">
+				<div class="cm-head">
+					<span class="num">{ci + 1}</span>
+					<div><h3>{c.name}</h3><small>위원장 {#if c.leader_id}<a href="/{c.leader_id}">{nameOf(c.leader_id)}</a> 장로{:else}<span class="muted">미정</span>{/if}</small></div>
 				</div>
-			</div>
+				<table class="sm">
+					<thead><tr><th>부서</th><th>부서장</th><th>담당자</th><th style="text-align:right">봉사</th></tr></thead>
+					<tbody>
+						{#each units.filter((u) => u.parent_id === c.id).sort((a, b) => a.sort_order - b.sort_order) as d, di (d.id)}
+							<tr class="pick" class:on={pickedOrg === d.name} onclick={() => (pickedOrg = pickedOrg === d.name ? '' : d.name)}>
+								<td><span class="muted">{ci + 1}-{di + 1}</span> <b>{d.name}</b></td>
+								<td>{#if d.leader_id}<a href="/{d.leader_id}" onclick={(e) => e.stopPropagation()}>{nameOf(d.leader_id)}</a>{:else}<span class="muted">-</span>{/if}</td>
+								<td>{#each d.staff_ids as sid, k (sid)}{k ? ', ' : ''}<a href="/{sid}" onclick={(e) => e.stopPropagation()}>{nameOf(sid)}</a>{:else}<span class="muted">-</span>{/each}</td>
+								<td style="text-align:right">{deptMembers(d.name).length}명</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</section>
 		{/each}
 	</div>
-	<div class="card"><h2>회의 의장 · 서기</h2><p class="muted" style="margin:0">공동의회·당회 의장은 담임목사, 제직회 서기는 집사가 맡습니다. (서기 지정은 관리자 설정 후보)</p></div>
+
 	{#if pickedOrg}
 		<div class="card">
 			<h2>{pickedOrg} 봉사자</h2>
@@ -100,3 +122,16 @@
 		</div>
 	{/if}
 {/if}
+
+<style>
+	.org-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+	.meet td, .meet th { text-align: center; }
+	.org-grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem; align-items: start; }
+	.org-grid2 .card { margin: 0; padding: 0; }
+	.cm-head { display: flex; align-items: center; gap: 0.7rem; padding: 0.85rem 1rem; background: linear-gradient(120deg, #2a50c8, #4a78f5); color: #fff; }
+	.cm-head h3 { margin: 0; font-size: 1.02rem; }
+	.cm-head small { opacity: 0.92; font-size: 0.82rem; }
+	.cm-head a { color: #fff; text-decoration: underline; text-underline-offset: 2px; }
+	.cm-head .num { flex: none; width: 1.8rem; height: 1.8rem; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: rgba(255, 255, 255, 0.22); }
+	.committee td { white-space: nowrap; }
+</style>

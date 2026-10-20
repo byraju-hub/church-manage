@@ -1,7 +1,7 @@
 // 모든 인물·전화·주소는 가상입니다.
 import type * as T from './types.ts';
 import { generate } from './generate.ts';
-import { CATEGORIES, ORG_UNITS } from './config.ts';
+import { CATEGORIES, MEETING_OFFICERS, ORG_UNITS } from './config.ts';
 
 const P = (o: Partial<T.Person> & { id: string; name: string }): T.Person => ({
 	name_note: null, phone: null, gender: null, birth_date: null, email: null, has_account: false,
@@ -15,6 +15,7 @@ const P = (o: Partial<T.Person> & { id: string; name: string }): T.Person => ({
 // 교인구분(3단계)과 교회 조직표는 config.ts 에서 만듦. 이름은 관리자 화면에서 바꿀 수 있음
 export const categories: T.Category[] = structuredClone(CATEGORIES);
 export const orgUnits: T.OrgUnit[] = structuredClone(ORG_UNITS);
+export const meetings: T.MeetingOfficer[] = structuredClone(MEETING_OFFICERS);
 
 export const people: T.Person[] = [
 	P({ id: 'p1', name: '홍길동', gender: 'M', birth_date: '1962-04-05', phone: '010-0000-0001', has_account: true, reg_no: '0001', occupation: '자영업', marital_status: '기혼', wedding_date: '1988-05-14', email: 'gildong@example.com', category_id: 'm.a.a', mission_society: '3남전도회' }),
@@ -139,9 +140,9 @@ export const educationRecords: T.EducationRecord[] = [
 	{ id: 'er2', person_id: 'p6', course_id: 'ec1', start_date: '2020-05-03', end_date: '2020-06-07', completed: true, instructor: '정담임', note: null }
 ];
 export const affiliations: T.Affiliation[] = [
-	{ id: 'af1', person_id: 'p2', org: '찬양대', role: '소프라노 파트장', start_date: '2015-01-01', end_date: null },
-	{ id: 'af2', person_id: 'p3', org: '미디어부', role: '부원', start_date: '2022-03-01', end_date: null },
-	{ id: 'af3', person_id: 'p1', org: '선교부', role: '부장', start_date: '2020-01-01', end_date: null }
+	{ id: 'af1', person_id: 'p2', org: '할렐루야 찬양대', role: '소프라노 파트장', start_date: '2015-01-01', end_date: null },
+	{ id: 'af2', person_id: 'p3', org: '방송부', role: '부원', start_date: '2022-03-01', end_date: null },
+	{ id: 'af3', person_id: 'p1', org: '국내 선교부', role: '부장', start_date: '2020-01-01', end_date: null }
 ];
 
 // ---- 실제 규모(재적 약 1,000명)의 가상 교인을 위 시험용 인물 뒤에 덧붙임 ----
@@ -159,14 +160,19 @@ consents.push(...gen.consents);
 visits.push(...gen.visits);
 affiliations.push(...gen.affiliations);
 educationRecords.push(...gen.educationRecords);
-// 조직표 담당자(가상): 위원장은 시무 장로, 실무부서는 장년 교인 가운데 한 명
+// 조직표 위원장·부서장·담당자 (가상 인물). 위원장은 시무 장로, 부서장은 시무집사·권사, 담당자는 장년 교인 1~2명
 {
-	const elders = people.filter((x) => officeTerms.some((o) => o.person_id === x.id && o.office === '장로' && o.rank_status === '시무' && !o.end_date));
-	const adults = people.filter((x) => x.category_id?.startsWith('m.a.') && x.birth_date && +x.birth_date.slice(0, 4) < 1990 && x.birth_date < '1985');
-	orgUnits.forEach((o, i) => {
-		const pool = o.parent_id ? adults : elders;
-		if (pool.length) o.leader_id = pool[(i * 7 + (o.parent_id ? 3 : 0)) % pool.length].id;
-	});
+	const live = (office: string) => people.filter((x) => officeTerms.some((o) => o.person_id === x.id && o.office === office && o.rank_status === '시무' && !o.end_date));
+	const elders = live('장로');
+	const heads = [...live('시무집사'), ...live('권사')];
+	const adults = people.filter((x) => x.category_id?.startsWith('m.a.') && x.birth_date && x.birth_date < '1990' && !heads.includes(x));
+	let e = 0, h = 0, a = 7;
+	for (const o of orgUnits) {
+		if (!o.parent_id) { o.leader_id = elders.length ? elders[e++ % elders.length].id : null; continue; }
+		o.leader_id = heads.length ? heads[(h += 5) % heads.length].id : null;
+		const n = o.sort_order % 3 === 0 ? 2 : 1;
+		o.staff_ids = Array.from({ length: n }, () => adults[(a += 11) % adults.length].id);
+	}
 }
 export const smallGroups: T.SmallGroup[] = gen.smallGroups;
 

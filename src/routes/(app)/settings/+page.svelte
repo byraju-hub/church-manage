@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
+	import NameChips from '#lib/components/NameChips.svelte';
 	import { CLERGY_TITLES, FULL_TIME_CLERGY, MAX_CATEGORY_DEPTH, MISSION_SOCIETIES, OFFICE_STATUS_OPTIONS, VISIT_KINDS } from '#lib/registry/types.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 
@@ -82,24 +83,53 @@
 		</div>
 	{:else if tab === '교회 조직표'}
 		<div class="card">
-			<h2>교회 조직표 <span class="tag">위원회 / 부서</span></h2>
-			<p class="muted">교인 카드의 '교회봉사'에서 고르는 부서 목록입니다. 봉사자가 있는 부서는 지울 수 없습니다.</p>
-			{#each committees as c (c.id)}
-				<div class="cat-row"><span class="lvl">1</span><input value={c.name} onchange={(e) => registry.renameOrgUnit(c.id, e.currentTarget.value)} />
-					<div style="width:15rem"><PersonPicker value={c.leader_id ?? ''} placeholder="위원장(장로)" onpick={(id) => registry.setOrgLeader(c.id, id)} /></div>
-					<button type="button" class="ghost sm" onclick={() => { if (!registry.deleteOrgUnit(c.id)) msg = '봉사자가 있는 부서가 있어 지울 수 없습니다.'; else msg = ''; }}>삭제</button></div>
-				{#each registry.d.orgUnits.filter((o) => o.parent_id === c.id).sort((a, b) => a.sort_order - b.sort_order) as d (d.id)}
-					<div class="cat-row" style="padding-left:1.6rem"><span class="lvl">2</span><input value={d.name} onchange={(e) => registry.renameOrgUnit(d.id, e.currentTarget.value)} />
-						<div style="width:15rem"><PersonPicker value={d.leader_id ?? ''} placeholder="담당자" onpick={(id) => registry.setOrgLeader(d.id, id)} /></div>
-						<span class="muted" style="font-size:.8rem;white-space:nowrap">{registry.d.affiliations.filter((a) => a.org === d.name && !a.end_date).length}명</span>
-						<button type="button" class="ghost sm" onclick={() => { if (!registry.deleteOrgUnit(d.id)) msg = '봉사자가 있는 부서는 지울 수 없습니다.'; else msg = ''; }}>삭제</button></div>
+			<h2>회의 의장 · 서기</h2>
+			<table class="sm"><thead><tr><th>회의</th><th>의장</th><th>서기</th></tr></thead><tbody>
+				{#each registry.d.meetings as m (m.meeting)}
+					<tr><td><b>{m.meeting}</b></td>
+						<td><input value={m.chair} onchange={(e) => registry.setMeeting(m.meeting, 'chair', e.currentTarget.value)} placeholder="예: 정담임 목사" /></td>
+						<td><input value={m.secretary} onchange={(e) => registry.setMeeting(m.meeting, 'secretary', e.currentTarget.value)} placeholder="예: 홍길동 장로" /></td></tr>
 				{/each}
+			</tbody></table>
+		</div>
+		<div class="card">
+			<h2>교회 조직표 <span class="tag">위원회 / 부서</span></h2>
+			<p class="muted">위원회마다 위원장(장로), 부서마다 부서장과 담당자(여러 명)를 정합니다. ▲▼로 순서를 바꿉니다. 교인 카드의 '교회봉사'에서 이 부서 목록을 고릅니다. 봉사자가 있는 부서는 지울 수 없습니다.</p>
+			{#each committees as c, ci (c.id)}
+				<div class="org-edit">
+					<div class="cat-row">
+						<span class="lvl">{ci + 1}</span><input value={c.name} onchange={(e) => registry.renameOrgUnit(c.id, e.currentTarget.value)} style="max-width:12rem" />
+						<span class="muted" style="font-size:.8rem">위원장</span>
+						<div style="width:14rem"><PersonPicker value={c.leader_id ?? ''} placeholder="장로 검색" onpick={(id) => registry.setOrgLeader(c.id, id)} /></div>
+						<button type="button" class="ghost sm" onclick={() => registry.moveOrgUnit(c.id, -1)} aria-label="위로">▲</button>
+						<button type="button" class="ghost sm" onclick={() => registry.moveOrgUnit(c.id, 1)} aria-label="아래로">▼</button>
+						<button type="button" class="ghost sm" onclick={() => { if (!registry.deleteOrgUnit(c.id)) msg = '봉사자가 있는 부서가 있어 지울 수 없습니다.'; else msg = ''; }}>삭제</button>
+					</div>
+					<table class="sm" style="margin-top:.4rem">
+						<thead><tr><th>부서</th><th style="min-width:13rem">부서장</th><th style="min-width:16rem">담당자 (이름을 쓰고 쉼표)</th><th>봉사</th><th></th></tr></thead>
+						<tbody>
+							{#each registry.d.orgUnits.filter((o) => o.parent_id === c.id).sort((a, b) => a.sort_order - b.sort_order) as d (d.id)}
+								<tr>
+									<td><input value={d.name} onchange={(e) => registry.renameOrgUnit(d.id, e.currentTarget.value)} style="min-width:9rem" /></td>
+									<td><PersonPicker value={d.leader_id ?? ''} placeholder="부서장 검색" onpick={(id) => registry.setOrgLeader(d.id, id)} /></td>
+									<td><NameChips chips={d.staff_ids.map((id) => ({ id, name: registry.person(id)?.name ?? '' }))} onchange={(cs) => registry.setOrgStaff(d.id, cs.filter((x) => x.id).map((x) => x.id!))} placeholder="담당자 이름," /></td>
+									<td style="white-space:nowrap">{registry.d.affiliations.filter((a) => a.org === d.name && !a.end_date).length}명</td>
+									<td style="white-space:nowrap">
+										<button type="button" class="ghost sm" onclick={() => registry.moveOrgUnit(d.id, -1)} aria-label="위로">▲</button>
+										<button type="button" class="ghost sm" onclick={() => registry.moveOrgUnit(d.id, 1)} aria-label="아래로">▼</button>
+										<button type="button" class="ghost sm" onclick={() => { if (!registry.deleteOrgUnit(d.id)) msg = '봉사자가 있는 부서는 지울 수 없습니다.'; else msg = ''; }}>삭제</button>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
 			{/each}
 			<form class="cat-row" style="margin-top:.8rem" onsubmit={(e) => { e.preventDefault(); registry.addOrgUnit(null, orgName); orgName = ''; }}>
-				<span class="lvl">1</span><input bind:value={orgName} placeholder="새 위원회 이름" /><button type="submit" class="sm">위원회 추가</button>
+				<span class="lvl">+</span><input bind:value={orgName} placeholder="새 위원회 이름" /><button type="submit" class="sm">위원회 추가</button>
 			</form>
 			<form class="cat-row" onsubmit={(e) => { e.preventDefault(); if (deptFor) registry.addOrgUnit(deptFor, deptName); deptName = ''; }}>
-				<span class="lvl">2</span>
+				<span class="lvl">+</span>
 				<select bind:value={deptFor} style="max-width:12rem"><option value="">위원회 선택</option>{#each committees as c}<option value={c.id}>{c.name}</option>{/each}</select>
 				<input bind:value={deptName} placeholder="새 부서 이름" /><button type="submit" class="sm" disabled={!deptFor}>부서 추가</button>
 			</form>
@@ -125,3 +155,7 @@
 		</div>
 	{/if}
 {/if}
+
+<style>
+	.org-edit { padding: 0.8rem 0; border-bottom: 1px dashed var(--line-strong); overflow-x: auto; }
+</style>

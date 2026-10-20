@@ -283,7 +283,15 @@ export interface OrgUnit {
 	parent_id: string | null;
 	name: string;
 	sort_order: number;
-	leader_id: string | null; // 위원회는 위원장(장로), 실무부서는 담당자
+	leader_id: string | null; // 위원회: 위원장(장로) / 부서: 부서장
+	staff_ids: string[]; // 부서 담당자 (여러 명 가능)
+}
+
+// 공동의회·당회·제직회 의장과 서기 (이름과 직분을 그대로 적음)
+export interface MeetingOfficer {
+	meeting: '공동의회' | '당회' | '제직회';
+	chair: string;
+	secretary: string;
 }
 
 export interface Affiliation {
