@@ -26,6 +26,8 @@
 	let regTo = $state('');
 	let account = $state('');
 	let searched = $state(false);
+	let selId = $state('');
+	let shown = $state(200);
 
 	const digits = (x: string) => x.replace(/\D/g, '');
 	// 복수 검색: 쉼표·줄바꿈으로 여러 사람을 한꺼번에
@@ -68,6 +70,14 @@
 				(!account || (account === 'y') === p.has_account);
 		}).sort((a, b) => a.p.name.localeCompare(b.p.name, 'ko'))
 	);
+
+	const sel = $derived(selId ? registry.person(selId) : undefined);
+	const selSummary = $derived(sel ? registry.summary(sel) : null);
+	const selFamily = $derived.by(() => { const h = sel ? registry.householdOf(sel.id) : undefined; return h ? registry.membersOfHousehold(h.id) : []; });
+	const selNotes = $derived(sel ? registry.d.notes.filter((n) => n.person_id === sel.id).slice(0, 3) : []);
+	const selVisits = $derived(sel ? registry.d.visits.filter((v) => v.person_id === sel.id && v.state === '완료').sort((a, b) => b.visit_date.localeCompare(a.visit_date)).slice(0, 2) : []);
+	// 조건이 바뀌면 목록을 처음 200명으로 되돌림
+	$effect(() => { rows.length; shown = 200; });
 
 	const uniq = (xs: string[]) => [...new Set(xs.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
 	const summaries = $derived(registry.d.people.map((p) => registry.summary(p)));
@@ -125,26 +135,69 @@
 	</div>
 </div>
 
-<div class="card" style="padding:0;overflow-x:auto">
-	<table>
-		<thead><tr><th>이름</th><th>호칭</th><th>상태</th><th>교인구분</th><th>신급</th><th>공동체 / 소그룹</th><th>휴대폰</th><th>등록일</th><th>앱</th></tr></thead>
-		<tbody>
-			{#each rows as { p, s } (p.id)}
-				<tr>
-					<td><a href="/{p.id}">{p.name}</a>{#if p.name_note}<span class="muted"> ({p.name_note})</span>{/if}</td>
-					<td>{s.title || '-'}</td>
-					<td><span class="badge {s.status === '재적' ? '' : s.status === '보류' ? 'inactive' : 'transferred'}">{s.status}</span></td>
-					<td>{s.faith}</td>
-					<td>{s.community ? `${s.community} / ${s.smallGroup}` : '-'}</td>
-					<td>{p.phone ?? '-'}</td>
-					<td>{s.registered ?? '미상'}</td>
-					<td>{p.has_account ? '가입' : '-'}</td>
-				</tr>
-			{:else}
-				<tr><td colspan="9" class="muted">조건에 맞는 교인이 없습니다.</td></tr>
-			{/each}
-		</tbody>
-	</table>
+<div class="split">
+	<div class="card list-pane" style="padding:0">
+		<table>
+			<thead><tr><th>이름</th><th>호칭</th><th>상태</th><th>교인구분</th><th>소그룹</th></tr></thead>
+			<tbody>
+				{#each rows.slice(0, shown) as { p, s } (p.id)}
+					<tr class="pick" class:on={selId === p.id} tabindex="0" onclick={() => (selId = p.id)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selId = p.id; } }}>
+						<td><b>{p.name}</b>{#if p.name_note}<span class="muted"> ({p.name_note})</span>{/if}</td>
+						<td>{s.title || '-'}</td>
+						<td><span class="badge {s.status === '재적' ? '' : s.status === '보류' ? 'inactive' : 'transferred'}">{s.status}</span></td>
+						<td>{s.cat2 || s.cat1 || '-'}</td>
+						<td>{s.smallGroup || '-'}</td>
+					</tr>
+				{:else}
+					<tr><td colspan="5" class="muted">조건에 맞는 교인이 없습니다.</td></tr>
+				{/each}
+			</tbody>
+		</table>
+		{#if rows.length > shown}<div style="padding:.7rem;text-align:center"><button class="ghost sm" onclick={() => (shown += 200)}>더 보기 ({rows.length - shown}명 남음)</button></div>{/if}
+	</div>
+
+	<aside class="card detail-pane">
+		{#if sel && selSummary}
+			{@const p = sel}
+			{@const s = selSummary}
+			{@const hh = registry.householdOf(p.id)}
+			<div class="row" style="flex-wrap:nowrap;gap:.9rem;margin-bottom:.8rem">
+				{#if p.photo}<img class="mugshot2" src={p.photo} alt="{p.name} 사진" />{:else}<span class="avatar" style="width:64px;height:64px;font-size:1.5rem;border-radius:16px">{p.name.slice(0, 1)}</span>{/if}
+				<div>
+					<h2 style="margin:0">{p.name}{#if p.name_note}<small class="muted"> ({p.name_note})</small>{/if} <small class="muted">{s.title}</small></h2>
+					<span class="badge {s.status === '재적' ? '' : s.status === '보류' ? 'inactive' : 'transferred'}">{s.status}</span>
+					<span class="badge">{s.faith}</span>{#if p.clergy_title}<span class="tag now">{p.clergy_title}</span>{/if}
+				</div>
+			</div>
+			<dl class="compact">
+				<dt>교인구분</dt><dd>{s.category || '-'}</dd>
+				<dt>생년월일</dt><dd>{p.birth_date ?? '-'}{p.birth_lunar ? ' (음력)' : ''} · 만 {ageOf(p.birth_date) ?? '-'}세 · {p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : '-'}</dd>
+				<dt>휴대폰</dt><dd>{p.phone ?? '-'}{p.sms_opt_out ? ' (문자 수신 거부)' : ''}</dd>
+				<dt>주소</dt><dd>{[p.address1, p.address2].filter(Boolean).join(' ') || hh?.address || '-'}</dd>
+				<dt>직업 / 직장</dt><dd>{[p.occupation, p.workplace].filter(Boolean).join(' / ') || '-'}</dd>
+				<dt>결혼</dt><dd>{p.marital_status ?? '-'}{p.wedding_date ? ` · ${p.wedding_date}` : ''}</dd>
+				<dt>소그룹</dt><dd>{s.community ? `${s.community} › ${s.smallGroup}` : '-'}</dd>
+				<dt>전도회</dt><dd>{p.mission_society ?? '-'}</dd>
+				<dt>등록일</dt><dd>{s.registered ?? '미상'}{p.reg_no ? ` · 교번 ${p.reg_no}` : ''}</dd>
+				<dt>인도자</dt><dd>{#if p.guide_person_id}{registry.person(p.guide_person_id)?.name}{:else}-{/if}</dd>
+			</dl>
+			{#if selFamily.length}
+				<h3 class="mini-h">세대 {hh?.no}</h3>
+				<div class="chips">
+					{#each selFamily as m (m.id)}
+						{#if m.person_id}<button type="button" class="chip2" onclick={() => (selId = m.person_id!)}>{registry.person(m.person_id)?.name} <small>{m.relation}</small></button>
+						{:else}<span class="chip2 plain">{m.name} <small>{m.relation}</small></span>{/if}
+					{/each}
+				</div>
+			{/if}
+			{#if p.note}<h3 class="mini-h">기타 메모</h3><p style="margin:.2rem 0;white-space:pre-wrap">{p.note}</p>{/if}
+			{#if selNotes.length}<h3 class="mini-h">담당자 메모</h3>{#each selNotes as n}<p class="muted" style="margin:.2rem 0">{n.created_at} · {n.body}</p>{/each}{/if}
+			{#if registry.perms.visit && selVisits.length}<h3 class="mini-h">최근 심방</h3>{#each selVisits as v}<p class="muted" style="margin:.2rem 0">{v.visit_date} · {v.kind} · {v.pastor} — {v.content}</p>{/each}{/if}
+			<div class="row" style="margin-top:1rem"><a class="btn" href="/{p.id}">교적 카드 열기</a>{#if registry.perms.edit}<a class="btn ghost" href="/{p.id}">수정</a>{/if}</div>
+		{:else}
+			<p class="empty">왼쪽 목록에서 교인을 누르면<br />여기에 자세한 내용이 나옵니다.</p>
+		{/if}
+	</aside>
 </div>
 
 {#if registry.perms.export}

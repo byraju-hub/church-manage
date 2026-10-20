@@ -392,3 +392,30 @@ button.org-card:hover, .org-card.on { background: var(--primary-50); border-colo
 .cat-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.22rem 0; }
 .cat-row input { max-width: 22rem; padding: 0.38rem 0.65rem; }
 .cat-row .lvl { flex: none; width: 1.4rem; height: 1.4rem; border-radius: 50%; display: grid; place-items: center; font-size: 0.72rem; font-weight: 700; background: var(--primary-100); color: var(--primary-600); }
+
+.chip.sel { border-color: var(--primary); background: var(--primary-50); box-shadow: 0 0 0 2px rgba(53, 99, 233, 0.15); }
+
+/* ===== 등록 화면 구획 ===== */
+.sec { grid-column: 1 / -1; border: 1px solid var(--line); border-radius: 14px; padding: 0.9rem 1.1rem 1.1rem; background: #fbfcfe; }
+.sec > h3 { margin: 0 0 0.8rem; font-size: 0.98rem; color: var(--primary-600); display: flex; align-items: center; gap: 0.5rem; }
+.sec > h3::before { content: ''; width: 4px; height: 1rem; border-radius: 2px; background: var(--primary); }
+.form.card { display: grid; gap: 1.1rem; }
+
+/* ===== 교인 목록 2단 ===== */
+.split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr); gap: 1.1rem; align-items: start; margin-bottom: 1.1rem; }
+.split > .card { margin-bottom: 0; }
+.list-pane { max-height: calc(100vh - 150px); overflow: auto; }
+.list-pane thead th { position: sticky; top: 0; z-index: 1; }
+.detail-pane { position: sticky; top: 84px; max-height: calc(100vh - 110px); overflow: auto; }
+tr.pick { cursor: pointer; }
+tr.pick.on, tr.pick.on:hover { background: var(--primary-100); }
+tr.pick:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+dl.compact { grid-template-columns: 88px 1fr; gap: 0.4rem 0.8rem; font-size: 0.9rem; }
+.mini-h { margin: 1rem 0 0.2rem; font-size: 0.82rem; color: var(--muted); }
+.mugshot2 { width: 64px; height: 86px; border-radius: 12px; object-fit: cover; border: 1px solid var(--line-strong); }
+.chips { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.chip2 { display: inline-flex; gap: 0.3rem; align-items: baseline; padding: 0.25rem 0.65rem; font-size: 0.84rem; font-weight: 600; color: var(--primary-600); background: var(--primary-50); border: 1px solid var(--primary-100); border-radius: 999px; box-shadow: none; }
+.chip2 small { color: var(--muted); font-weight: 500; }
+button.chip2:hover { background: var(--primary-100); transform: none; box-shadow: none; filter: none; color: var(--primary-600); }
+.chip2.plain { color: var(--text); background: #f1f4fa; border-color: var(--line); }
+@media (max-width: 960px) { .split { grid-template-columns: 1fr; } .detail-pane { position: static; max-height: none; } .list-pane { max-height: 60vh; } }

@@ -3,7 +3,7 @@
 // - 같은 시드로 만들기 때문에 열 때마다 같은 사람들이 나옵니다. (날짜는 오늘 기준으로 맞춤)
 // - 공동체·소그룹 구성(3개 공동체, 소그룹 27개 + 로뎀나무숲)만 2026년 편성표의 구조를 따릅니다.
 import type * as T from './types.ts';
-import { COMMUNITY_DEFS, ORG_UNITS, catId, type GroupDef } from './config.ts';
+import { COMMUNITY_DEFS, ORG_UNITS, catId, type GroupDef, type L2Code } from './config.ts';
 import { churchSeasons, isoDate, nthSunday } from './calendar.ts';
 
 function mulberry32(a: number) {
@@ -16,7 +16,7 @@ function mulberry32(a: number) {
 }
 const pad = (n: number) => String(n).padStart(2, '0');
 
-type L2 = 'a' | 'y' | 'e' | 'n';
+type L2 = L2Code;
 type L3 = 'a' | 's' | 'n';
 
 export function generate(reservedNames: string[] = []) {
@@ -195,10 +195,11 @@ export function generate(reservedNames: string[] = []) {
 	// ---- 교인구분·교육부서·전도회 ----
 	const eduDeptOf = (age: number): T.EduDept | null =>
 		age <= 2 ? '영아부' : age <= 6 ? '유치부' : age <= 12 ? '유초등부' : age <= 18 ? '중고등부' : age <= 34 ? '청년부' : null;
+	const deptCode = (age: number): L2 => (age <= 2 ? 'b' : age <= 6 ? 'k' : age <= 12 ? 'e' : 'h');
 	function l2Of(p: T.Person, birth: number, fresh: boolean): L2 {
 		const age = ageAt(birth);
 		if (fresh) return 'n';
-		if (age <= 18) return 'e';
+		if (age <= 18) return deptCode(age);
 		if (age <= 34 && p.marital_status !== '기혼') return 'y';
 		return 'a';
 	}
@@ -403,16 +404,16 @@ export function generate(reservedNames: string[] = []) {
 		const hb = ri(1950, 2006);
 		const age = ageAt(hb);
 		const p = mkPerson({ surname: pick(SUR), gender: chance(0.5) ? 'M' : 'F', birth: hb, hasReg: false, marital: age >= 30 ? '기혼' : null });
-		const l2: L2 = age <= 18 ? 'e' : age <= 34 ? 'y' : chance(0.2) ? 'n' : 'a';
+		const l2: L2 = age <= 18 ? deptCode(age) : age <= 34 ? 'y' : chance(0.2) ? 'n' : 'a';
 		p.edu_dept = l2 === 'a' ? null : eduDeptOf(age);
 		p.category_id = catId('o', l2, pick(['a', 's', 's', 'n']));
 		p.note = chance(0.5) ? '타교인(출석교회 별도)' : '등록 의사 확인 필요';
 	}
 
-	// 같은 이름 구분
+	// 같은 이름 구분 (A, B, C ...)
 	const byName = new Map<string, T.Person[]>();
 	for (const p of people) byName.set(p.name, [...(byName.get(p.name) ?? []), p]);
-	for (const list of byName.values()) if (list.length > 1) for (const p of list) p.name_note = `${birthOf(p)}년생`;
+	for (const list of byName.values()) if (list.length > 1) list.forEach((p, i) => (p.name_note = String.fromCharCode(65 + (i % 26))));
 
 	// ---- 소그룹 편성표 (인도자) ----
 	const grouped = people.filter((p) => personGroups.some((g) => g.person_id === p.id && g.small_group !== '로뎀나무숲') && ageAt(birthOf(p)) >= 30);

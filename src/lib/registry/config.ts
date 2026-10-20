@@ -2,10 +2,10 @@
 import type { Category, OrgUnit } from './types.ts';
 
 // ---- 교인구분 (3단계) : '교적 프로그램 구조' 문서 ----
-//   교인 / 미등록·타교인  >  장년 / 청년 / 교육부서 / 새가족  >  예배출석 / 가끔출석 / 불출석
+//   교인 / 미등록·타교인  >  장년 / 새가족 / 청년부 / 중고등부 / 유초등부 / 유치부 / 영아부  >  예배출석 / 가끔출석 / 불출석
 //   별세 · 이사/이민 · 보관 은 1단계로 끝남
 const L1: [string, string][] = [['m', '교인'], ['o', '미등록/타교인']];
-const L2: [string, string][] = [['a', '장년'], ['y', '청년'], ['e', '교육부서'], ['n', '새가족']];
+const L2: [string, string][] = [['a', '장년'], ['n', '새가족'], ['y', '청년부'], ['h', '중고등부'], ['e', '유초등부'], ['k', '유치부'], ['b', '영아부']];
 const L3: [string, string][] = [['a', '예배출석'], ['s', '가끔출석'], ['n', '불출석']];
 
 export const CATEGORIES: Category[] = (() => {
@@ -22,7 +22,8 @@ export const CATEGORIES: Category[] = (() => {
 	out.push({ id: 'keep', parent_id: null, name: '보관', sort_order: 5 });
 	return out;
 })();
-export const catId = (l1: 'm' | 'o', l2: 'a' | 'y' | 'e' | 'n', l3: 'a' | 's' | 'n') => `${l1}.${l2}.${l3}`;
+export type L2Code = 'a' | 'n' | 'y' | 'h' | 'e' | 'k' | 'b';
+export const catId = (l1: 'm' | 'o', l2: L2Code, l3: 'a' | 's' | 'n') => `${l1}.${l2}.${l3}`;
 
 // ---- 공동체·소그룹 (2026년 편성표 구조: 공동체 3개, 소그룹 27개 + 로뎀나무숲) ----
 export interface GroupDef { name: string; size: number; place: string; care?: boolean }

@@ -128,12 +128,12 @@
 <section class="hero">
 	<div>
 		<small>{dateLabel}</small>
-		<h1>교적 현황</h1>
+		<h1>부평동부교회 현황</h1>
 		<p>재적 교인 {joined}명 · 이번 주일 출석 {latest.n}명({rate}%)</p>
 	</div>
 	<div class="actions">
 		<a class="btn light" href="/members">교인 목록</a>
-		{#if registry.perms.edit}<a class="btn glass" href="/new">+ 새가족 등록</a>{/if}
+		{#if registry.perms.edit}<a class="btn glass" href="/new">+ 교인 등록</a>{/if}
 		<a class="btn glass" href="/reports">명단 · 통계</a>
 	</div>
 </section>
@@ -169,7 +169,7 @@
 </div>
 
 <section class="card">
-	<div class="card-head"><h2>캘린더</h2><span class="sub">생일 · 성도 기념일 · 교회 기념일 · 사역 · 성례 · 심방 계획 (색으로 구분, 아래 항목을 눌러 켜고 끔)</span></div>
+	<div class="card-head"><h2>캘린더</h2><span class="sub">생일 · 성도 기념일 · 교회 기념일 · 사역 · 성례 · 심방 계획 (색으로 구분 · 항목을 누르면 그것만 보임)</span></div>
 	<Calendar />
 </section>
 
@@ -334,7 +334,7 @@
 		<a href="/communities">공동체 편성표<small>인도자 · 장소 · 출석</small></a>
 		<a href="/attendance">주일 출석 등록<small>공동체·소그룹별</small></a>
 		<a href="/visits">심방<small>등록 · 검색 · 달력</small></a>
-		<a href="/new">새가족 등록<small>등록카드 순서로 입력</small></a>
+		<a href="/new">교인 등록<small>등록카드 순서로 입력</small></a>
 		<a href="/households">세대<small>세대원 · 분가</small></a>
 		<a href="/reports">명단<small>생일 · 직분자 · 교세</small></a>
 		<a href="/stats">통계<small>출석 · 임직 · 세례</small></a>

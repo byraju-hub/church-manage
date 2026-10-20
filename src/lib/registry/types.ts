@@ -34,6 +34,23 @@ export const ORDAINED: OfficeName[] = ['장로', '시무집사', '권사'];
 export const CLERGY_TITLES: ClergyTitle[] = ['담임목사', '부목사', '교육목사', '전임전도사', '교육전도사'];
 // 심방 기록은 전임 교역자까지만 볼 수 있음 (교육전도사 제외)
 export const FULL_TIME_CLERGY: ClergyTitle[] = ['담임목사', '부목사', '교육목사', '전임전도사'];
+// 직분 선택 목록: 교역자 직책(담임·부·교육 목사, 전임·교육 전도사)을 직분과 함께 고름
+export interface Position { label: string; office: OfficeName | null; clergy: ClergyTitle | null }
+export const POSITIONS: Position[] = [
+	{ label: '성도', office: null, clergy: null },
+	{ label: '담임목사', office: '목사', clergy: '담임목사' },
+	{ label: '부목사', office: '목사', clergy: '부목사' },
+	{ label: '교육목사', office: '목사', clergy: '교육목사' },
+	{ label: '전임전도사', office: '전도사', clergy: '전임전도사' },
+	{ label: '교육전도사', office: '전도사', clergy: '교육전도사' },
+	{ label: '사모', office: '사모', clergy: null },
+	{ label: '장로', office: '장로', clergy: null },
+	{ label: '시무집사', office: '시무집사', clergy: null },
+	{ label: '권사', office: '권사', clergy: null },
+	{ label: '서리집사', office: '서리집사', clergy: null }
+];
+// 동명이인 구분: A, B, C ...
+export const NAME_NOTES = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
 export const EDU_DEPTS: EduDept[] = ['영아부', '유치부', '유초등부', '중고등부', '청년부'];
 export const MARITAL_STATUSES: MaritalStatus[] = ['미혼', '기혼', '이혼', '사별', '기타'];
 // 전도회: 남 1~6, 여 1~10

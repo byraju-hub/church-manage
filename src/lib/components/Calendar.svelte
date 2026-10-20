@@ -54,7 +54,10 @@
 		sel = null;
 	}
 	function toToday() { y = now.getFullYear(); m = now.getMonth() + 1; sel = todayIso; }
-	function toggle(k: EventKind) { on = on.includes(k) ? on.filter((x) => x !== k) : [...on, k]; }
+	// 항목을 누르면 그 항목만 보이고, 같은 항목을 한 번 더 누르면(또는 '전체'를 누르면) 모두 보입니다.
+	const solo = $derived(on.length === 1 ? on[0] : null);
+	function pick(k: EventKind) { on = solo === k ? [...kinds] : [k]; }
+	function all() { on = [...kinds]; }
 </script>
 
 <div class="cal">
@@ -66,9 +69,10 @@
 			<button type="button" class="ghost sm" onclick={toToday}>오늘</button>
 		</div>
 		<div class="legend">
+			<button type="button" class="chip" class:sel={on.length === kinds.length} onclick={all}>전체</button>
 			{#each kinds as k}
 				{#if k !== '심방 계획' || registry.perms.visit}
-					<button type="button" class="chip" class:off={!on.includes(k)} onclick={() => toggle(k)} style="--c:{KIND_COLOR[k]}"><i></i>{k}</button>
+					<button type="button" class="chip" class:off={!on.includes(k)} class:sel={solo === k} onclick={() => pick(k)} style="--c:{KIND_COLOR[k]}"><i></i>{k}</button>
 				{/if}
 			{/each}
 		</div>

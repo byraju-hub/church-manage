@@ -6,7 +6,7 @@ import { wasPresent } from './attendance.mock.ts';
 import { isoDate, type CalItem } from './calendar.ts';
 import { MAX_CATEGORY_DEPTH } from './types.ts';
 
-const KEY = 'church-registry-proto-v3';
+const KEY = 'church-registry-proto-v4';
 const PERM_KEY = 'church-registry-perms-v1';
 const WHO = '데모 사용자';
 const hasLS = typeof localStorage !== 'undefined';
