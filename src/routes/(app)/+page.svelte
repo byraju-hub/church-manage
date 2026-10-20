@@ -58,18 +58,24 @@
 		return [...m.entries()].sort((a, b) => (unit === 'community' ? b[1].total - a[1].total : b[1].present / b[1].total - a[1].present / a[1].total));
 	});
 
-	// ---- 장기 결석 (연속 3주 이상) ----
+	// ---- 장기 결석: 교인구분이 '교인 › … › 예배출석·가끔출석'인 사람 중 2달 이상 주일에 나오지 않은 사람 ----
+	// (재적 상태가 아니라 교인구분 3단계를 기준으로 함. 불출석으로 분류된 사람은 이미 아는 경우라 뺌)
+	// [실제 시스템] 출석부의 주일 출석 기록에서 마지막 출석일을 구해 같은 규칙으로 고릅니다.
+	const LONG = recentSundays(26, today); // 최근 반년 주일
+	const twoMonthsAgo = (() => { const d = new Date(t0); d.setMonth(d.getMonth() - 2); return d; })();
 	const absent = $derived(
-		members
+		rows
+			.filter(({ s }) => s.cat1 === '교인' && (s.cat3 === '예배출석' || s.cat3 === '가끔출석'))
 			.map(({ p, s }) => {
 				let streak = 0;
-				for (let k = 0; k < WEEKS.length; k++) {
-					if (registry.attended(p.id, WEEKS[WEEKS.length - 1 - k], k)) break;
+				let lastSeen: string | null = null;
+				for (let k = 0; k < LONG.length; k++) {
+					if (registry.attended(p.id, LONG[LONG.length - 1 - k], k)) { lastSeen = LONG[LONG.length - 1 - k]; break; }
 					streak++;
 				}
-				return { p, s, streak };
+				return { p, s, streak, lastSeen };
 			})
-			.filter((x) => x.streak >= 3)
+			.filter((x) => !x.lastSeen || new Date(x.lastSeen) < twoMonthsAgo)
 			.sort((a, b) => b.streak - a.streak)
 	);
 
@@ -165,7 +171,7 @@
 	</a>
 	<div class="kpi">
 		<span class="ico rose">{@render icon('alert')}</span>
-		<div><b>{absent.length}</b><span>장기 결석자 (3주 이상)</span></div>
+		<div><b>{absent.length}</b><span>장기 결석자 (2달 이상)</span></div>
 	</div>
 	<a class="kpi" href="/visits">
 		<span class="ico teal">{@render icon('visit')}</span>
@@ -276,7 +282,7 @@
 	</section>
 
 	<section class="card">
-		<div class="card-head"><h2>장기 결석 알림</h2><span class="sub">연속 3주 이상 결석 · {absent.length}명</span></div>
+		<div class="card-head"><h2>장기 결석 알림</h2><span class="sub">예배출석·가끔출석 교인 중 2달 이상 결석 · {absent.length}명</span></div>
 		<div style="max-height:430px;overflow:auto">
 		{#each absent as a (a.p.id)}
 			<div class="li">
@@ -285,7 +291,7 @@
 					<b><a href="/{a.p.id}">{a.p.name}</a></b>
 					<small>{a.s.smallGroup || '소그룹 없음'} · {a.s.title || a.s.faith}</small>
 				</div>
-				<span class="dday today">{a.streak}주 연속</span>
+				<span class="dday today" title={a.lastSeen ? `마지막 출석 ${a.lastSeen}` : '반년 넘게 출석 없음'}>{a.streak >= LONG.length ? '반년 이상' : `${a.streak}주째`}</span>
 				{#if registry.perms.visit}{#if planOf(a.p.id)}<a class="tag now" href="/visits?tab=list&q={encodeURIComponent(a.p.name)}">심방 예정 {planOf(a.p.id)?.slice(5)}</a>{:else}<a class="btn ghost sm" href="/visits?person={a.p.id}&date={nextWeek}&kind=일반">심방 계획</a>{/if}{/if}
 			</div>
 		{:else}

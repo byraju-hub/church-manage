@@ -441,11 +441,12 @@ export function generate(reservedNames: string[] = []) {
 	}
 	groupNotes.sort((a, b) => b.date.localeCompare(a.date));
 
-	// 장기 결석 대상(재적·소그룹 있는 사람 중 일부)
-	for (let i = 0; i < 14; i++) {
+	// 결석이 이어지는 교인(소그룹 있는 사람 중 일부). 9주(약 2달) 이상이면 대시보드 장기 결석자로 잡힘
+	for (let i = 0; i < 18; i++) {
 		const p = pick(grouped);
-		absentStreak[p.id] = ri(3, 9);
-		p.category_id = p.category_id!.replace(/\.[asn]$/, chance(0.6) ? '.n' : '.s');
+		absentStreak[p.id] = ri(3, 16);
+		// 아직 교인구분은 예배출석·가끔출석으로 남아 있는 경우 (알림으로 찾아내야 하는 사람)
+		p.category_id = p.category_id!.replace(/\.[asn]$/, chance(0.6) ? '.s' : '.a');
 		attendRate[p.id] = 0.45;
 	}
 
