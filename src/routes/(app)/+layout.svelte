@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import type { AppUser } from '#lib/registry/types.ts';
+	import { formatMobile } from '#lib/registry/derive.ts';
 
 	let { children } = $props();
 
@@ -207,7 +208,7 @@
 							<input bind:value={su.name} placeholder="실명 (필수)" required style="margin:.25rem 0" />
 							<input bind:value={su.nickname} placeholder="카카오 프로필 이름" style="margin:.25rem 0" />
 							<input type="email" bind:value={su.email} placeholder="카카오 이메일 (선택)" style="margin:.25rem 0" />
-							<input bind:value={su.phone} placeholder="휴대폰 (선택)" style="margin:.25rem 0" />
+							<input value={su.phone} oninput={(e) => (e.currentTarget.value = su.phone = formatMobile(e.currentTarget.value))} inputmode="numeric" maxlength="13" placeholder="휴대폰 (선택)" style="margin:.25rem 0" />
 							<button type="submit" class="kakao" style="margin-top:.5rem">동의하고 가입 신청</button>
 						</form>
 						<p><button type="button" class="ghost sm" onclick={() => (mode = 'kakao')}>돌아가기</button></p>

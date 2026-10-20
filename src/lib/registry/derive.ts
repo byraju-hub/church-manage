@@ -65,6 +65,15 @@ export function officeTitle(t: { office: OfficeName; rank_status: OfficeStatus }
 	return t.rank_status === '시무' ? base : `${t.rank_status}${base}`;
 }
 
+// 휴대폰 번호 입력 중 하이픈 자동: 010-1234-5678 (숫자 10자리는 011-123-4567)
+export function formatMobile(v: string): string {
+	const d = v.replace(/\D/g, '').slice(0, 11);
+	if (d.length <= 3) return d;
+	if (d.length <= 7) return `${d.slice(0, 3)}-${d.slice(3)}`;
+	if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
+	return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
+}
+
 // 이름 옆에 붙이는 직분 표시: 직분 (어떤 직분인지). 예) 권사 (시무), 권사 (은퇴), 집사 (서리), 목사 (담임)
 export function officeWithKind(t: { office: OfficeName; rank_status: OfficeStatus }, clergy?: string | null): string {
 	const base = t.office === '시무집사' || t.office === '서리집사' ? '집사' : t.office;

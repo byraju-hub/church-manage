@@ -5,7 +5,7 @@
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
 	import HeadRelation from '#lib/components/HeadRelation.svelte';
 	import PhotoCropper from '#lib/components/PhotoCropper.svelte';
-	import { ageOf, categoryPath } from '#lib/registry/derive.ts';
+	import { ageOf, categoryPath, formatMobile } from '#lib/registry/derive.ts';
 	import { EDU_DEPTS, MARITAL_STATUSES, MISSION_SOCIETIES, NAME_NOTES } from '#lib/registry/types.ts';
 
 	// f: 교인 카드의 칸들(빈 칸은 빈 문자열). 등록 화면과 카드 수정 화면이 함께 씀
@@ -79,7 +79,7 @@
 		<label>
 			<span class="row" style="justify-content:space-between;flex-wrap:nowrap"><span>휴대폰<b class="req">*</b></span>
 				<span class="mini"><input type="checkbox" bind:checked={f.sms_opt_out} />문자 수신 거부</span></span>
-			<input required bind:value={f.phone} placeholder="010-0000-0000" />
+			<input required value={f.phone} oninput={(e) => (e.currentTarget.value = f.phone = formatMobile(e.currentTarget.value))} inputmode="numeric" maxlength="13" placeholder="010-0000-0000" />
 		</label>
 		<label>이메일<input type="email" bind:value={f.email} /></label>
 		<label class="photo-box"><span class="lt">사진<b class="req">*</b></span>
