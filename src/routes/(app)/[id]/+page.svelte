@@ -5,11 +5,11 @@
 	import PersonFields from '#lib/components/PersonFields.svelte';
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
 	import VisitAnalyzer, { type Analysis } from '#lib/components/VisitAnalyzer.svelte';
-	import { ageOf, officeTitle, officeWithKind } from '#lib/registry/derive.ts';
+	import { ageOf, officeWithKind } from '#lib/registry/derive.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import {
-		STATUS_KINDS, FAITH_KINDS, POSITIONS, OFFICE_STATUS_OPTIONS, ORDAINED, CONSENT_KINDS, VISIT_KINDS, FULL_TIME_CLERGY,
-		type StatusKind, type FaithKind, type OfficeStatus, type ConsentKind, type VisitMethod
+		STATUS_KINDS, FAITH_KINDS, POSITIONS, ORDAINED, parseRank, rankChoices, CONSENT_KINDS, VISIT_KINDS, FULL_TIME_CLERGY,
+		type StatusKind, type FaithKind, type ConsentKind, type VisitMethod
 	} from '#lib/registry/types.ts';
 
 	const p = $derived(registry.person(page.params.id!));
@@ -57,7 +57,7 @@
 	// 이력 입력 폼 상태
 	let st = $state<{ kind: StatusKind; date: string; reason: string; church: string }>({ kind: '등록', date: '', reason: '', church: '' });
 	let fa = $state<{ kind: FaithKind; date: string; church: string; officiant: string }>({ kind: '세례', date: '', church: '', officiant: '' });
-	let of = $state<{ pos: string; rank: OfficeStatus; start: string; end: string; church: string }>({ pos: '서리집사', rank: '서리', start: '', end: '', church: '' });
+	let of = $state<{ pos: string; rank: string; start: string; end: string; church: string }>({ pos: '서리집사', rank: '서리', start: '', end: '', church: '' });
 	const ofPos = $derived(POSITIONS.find((x) => x.label === of.pos)!);
 	let noteBody = $state('');
 	let cs = $state<{ kind: ConsentKind; method: '서면' | '앱' | '구두'; guardian: string }>({ kind: '교적 등록', method: '서면', guardian: '' });
@@ -89,8 +89,8 @@
 	const depts = $derived(registry.d.orgUnits.filter((o) => o.parent_id));
 	const courseName = (id: string) => registry.d.educationCourses.find((c) => c.id === id)?.name ?? '';
 	const bigHead = $derived(p?.big_family_head_id ? registry.person(p.big_family_head_id) : undefined);
-	const statusOpts = $derived(OFFICE_STATUS_OPTIONS[ofPos.office!]);
-	$effect(() => { if (ofPos.office && !OFFICE_STATUS_OPTIONS[ofPos.office].includes(of.rank)) of.rank = OFFICE_STATUS_OPTIONS[ofPos.office][0]; });
+	const statusOpts = $derived(rankChoices(ofPos.office!));
+	$effect(() => { if (!statusOpts.includes(of.rank)) of.rank = statusOpts[0]; });
 
 	function openMemo() {
 		showMemo = true;
@@ -201,13 +201,13 @@
 				{:else}<tr><td colspan="6" class="muted">직분 이력 없음 (성도)</td></tr>{/each}
 			</tbody></table>
 			{#if can}
-				<form class="form" style="margin-top:.7rem" onsubmit={(e) => { e.preventDefault(); registry.addOffice({ person_id: p.id, office: ofPos.office!, rank_status: of.rank, start_date: nn(of.start), end_date: nn(of.end), church: ORDAINED.includes(ofPos.office!) ? nn(of.church) : null, note: null }); if (ofPos.clergy) registry.updatePerson(p.id, { clergy_title: ofPos.clergy }); of.start = ''; of.end = ''; of.church = ''; }}>
-					<label>직분 <span class="muted" style="font-weight:400">(교역자 직책 포함)</span><select bind:value={of.pos}>{#each POSITIONS.filter((x) => x.office) as o}<option>{o.label}</option>{/each}</select></label>
+				<form class="form" style="margin-top:.7rem" onsubmit={(e) => { e.preventDefault(); registry.addOffice({ person_id: p.id, office: ofPos.office!, rank_status: parseRank(of.rank).rank_status, start_date: nn(of.start), end_date: nn(of.end), church: ORDAINED.includes(ofPos.office!) ? nn(of.church) : null, note: null }); if (parseRank(of.rank).clergy) registry.updatePerson(p.id, { clergy_title: parseRank(of.rank).clergy }); of.start = ''; of.end = ''; of.church = ''; }}>
+					<label>직분<select bind:value={of.pos}>{#each POSITIONS.filter((x) => x.office) as o}<option>{o.label}</option>{/each}</select></label>
 					<label>신분<select bind:value={of.rank}>{#each statusOpts as o}<option>{o}</option>{/each}</select></label>
 					<label>{ORDAINED.includes(ofPos.office!) ? '임직일' : '시작일'}<input type="date" bind:value={of.start} /></label>
 					<label>종료일<input type="date" bind:value={of.end} /></label>
 					{#if ORDAINED.includes(ofPos.office!)}<label>임직교회<input bind:value={of.church} placeholder="비우면 본 교회 (타교 임직이면 교회 이름)" /></label>{/if}
-					<div class="wide"><button type="submit">직분 기록 추가</button> <span class="muted">표시 미리보기: {officeTitle({ office: ofPos.office!, rank_status: of.rank })}</span></div>
+					<div class="wide"><button type="submit">직분 기록 추가</button> <span class="muted">표시 미리보기: {officeWithKind({ office: ofPos.office!, ...parseRank(of.rank) }, parseRank(of.rank).clergy)}</span></div>
 				</form>
 			{/if}
 		</div>

@@ -33,21 +33,27 @@ export const ORDAINED: OfficeName[] = ['장로', '시무집사', '권사'];
 export const CLERGY_TITLES: ClergyTitle[] = ['담임목사', '부목사', '교육목사', '전임전도사', '교육전도사'];
 // 심방 기록은 전임 교역자까지만 볼 수 있음 (교육전도사 제외)
 export const FULL_TIME_CLERGY: ClergyTitle[] = ['담임목사', '부목사', '교육목사', '전임전도사'];
-// 직분 선택 목록: 교역자 직책(담임·부·교육 목사, 전임·교육 전도사)을 직분과 함께 고름
-export interface Position { label: string; office: OfficeName | null; clergy: ClergyTitle | null }
+// 직분 선택 목록 (목사·전도사는 하나로 고르고, 담임·부·교육 같은 직책은 신분에서 고름)
+export interface Position { label: string; office: OfficeName | null }
 export const POSITIONS: Position[] = [
-	{ label: '성도', office: null, clergy: null },
-	{ label: '담임목사', office: '목사', clergy: '담임목사' },
-	{ label: '부목사', office: '목사', clergy: '부목사' },
-	{ label: '교육목사', office: '목사', clergy: '교육목사' },
-	{ label: '전임전도사', office: '전도사', clergy: '전임전도사' },
-	{ label: '교육전도사', office: '전도사', clergy: '교육전도사' },
-	{ label: '사모', office: '사모', clergy: null },
-	{ label: '장로', office: '장로', clergy: null },
-	{ label: '시무집사', office: '시무집사', clergy: null },
-	{ label: '권사', office: '권사', clergy: null },
-	{ label: '서리집사', office: '서리집사', clergy: null }
+	{ label: '성도', office: null },
+	...OFFICE_NAMES.map((o) => ({ label: o, office: o }))
 ];
+// 목사·전도사의 신분 목록: 지금 맡은 직책(담임목사 등)이 '시무'를 대신함
+const CLERGY_BY_OFFICE: Partial<Record<OfficeName, ClergyTitle[]>> = {
+	목사: ['담임목사', '부목사', '교육목사'],
+	전도사: ['전임전도사', '교육전도사']
+};
+export function rankChoices(o: OfficeName): string[] {
+	const c = CLERGY_BY_OFFICE[o];
+	return c ? [...c, ...OFFICE_STATUS_OPTIONS[o].filter((s) => s !== '시무')] : OFFICE_STATUS_OPTIONS[o];
+}
+// 고른 신분을 저장 값으로: 직책이면 신분 '시무' + 교역자 직책, 아니면 신분 그대로
+export function parseRank(choice: string): { rank_status: OfficeStatus; clergy: ClergyTitle | null } {
+	return (CLERGY_TITLES as string[]).includes(choice)
+		? { rank_status: '시무', clergy: choice as ClergyTitle }
+		: { rank_status: choice as OfficeStatus, clergy: null };
+}
 // 동명이인 구분: A, B, C ...
 export const NAME_NOTES = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
 export const EDU_DEPTS: EduDept[] = ['영아부', '유치부', '유초등부', '중고등부', '청년부'];

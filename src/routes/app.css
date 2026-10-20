@@ -152,6 +152,9 @@ select {
 }
 input[type='checkbox'], input[type='radio'] { width: auto; accent-color: var(--primary); cursor: pointer; }
 textarea { resize: vertical; }
+/* 아이폰 날짜 칸이 값이 있으면 칸 밖으로 넓어지는 문제 막기 */
+input[type='date'], input[type='month'], input[type='time'] { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; min-height: 2.6rem; }
+input::-webkit-date-and-time-value { text-align: left; }
 .toolbar { display: flex; gap: 0.55rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.8rem; }
 .toolbar:last-child { margin-bottom: 0; }
 .toolbar input, .toolbar select { width: auto; }
@@ -526,7 +529,7 @@ table.info tbody tr:hover { background: none; }
 	/* 등록 화면 구획: 바깥 여백을 줄여 입력 칸을 넓게 */
 	.form.card { padding: 0.6rem; }
 	.sec { padding: 0.8rem 0.8rem 0.9rem; }
-	.form { grid-template-columns: 1fr; gap: 0.8rem; }
+	.form { grid-template-columns: minmax(0, 1fr); gap: 0.8rem; }
 	.split { gap: 0.8rem; }
 }
 @media (prefers-reduced-motion: reduce) {

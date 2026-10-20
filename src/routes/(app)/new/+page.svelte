@@ -7,8 +7,8 @@
 	import { categoryPath } from '#lib/registry/derive.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import {
-		CONSENT_KINDS, FAITH_KINDS, OFFICE_STATUS_OPTIONS, ORDAINED, POSITIONS,
-		type ConsentKind, type ConsentMethod, type FaithKind, type OfficeStatus, type Person
+		CONSENT_KINDS, FAITH_KINDS, ORDAINED, POSITIONS, parseRank, rankChoices,
+		type ConsentKind, type ConsentMethod, type FaithKind, type Person
 	} from '#lib/registry/types.ts';
 
 	const today = new Date().toISOString().slice(0, 10);
@@ -24,7 +24,7 @@
 	let hhRelation = $state('본인');
 	// 신급 · 직분
 	let faith = $state<{ kind: FaithKind | '해당사항 없음'; date: string; church: string; officiant: string }>({ kind: '해당사항 없음', date: '', church: '', officiant: '' });
-	let office = $state<{ pos: string; status: OfficeStatus; date: string; church: string }>({ pos: '성도', status: '시무', date: '', church: '' });
+	let office = $state<{ pos: string; status: string; date: string; church: string }>({ pos: '성도', status: '시무', date: '', church: '' });
 	let services = $state<string[]>(['', '', '']);
 	let community = $state('');
 	let smallGroup = $state('');
@@ -39,11 +39,11 @@
 	const catPath = $derived(categoryPath(registry.d.categories, f.category_id || null));
 	const isAdult = $derived(catPath[1]?.name === '장년');
 	const position = $derived(POSITIONS.find((x) => x.label === office.pos)!);
-	const statusOptions = $derived(position.office ? OFFICE_STATUS_OPTIONS[position.office] : []);
+	const statusOptions = $derived(position.office ? rankChoices(position.office) : []);
 	const committees = $derived(registry.d.orgUnits.filter((o) => !o.parent_id).sort((a, b) => a.sort_order - b.sort_order));
 	const missing = $derived([!f.photo && '사진', faith.kind === '해당사항 없음' && '신급', office.pos === '성도' && '직분'].filter(Boolean) as string[]);
 
-	$effect(() => { if (position.office && !OFFICE_STATUS_OPTIONS[position.office].includes(office.status)) office.status = OFFICE_STATUS_OPTIONS[position.office][0]; });
+	$effect(() => { if (statusOptions.length && !statusOptions.includes(office.status)) office.status = statusOptions[0]; });
 
 	// 세대주 정보 가져오기: 주소와 우편번호를 세대주 것으로 채움
 	function fetchHead(id: string) {
@@ -64,7 +64,7 @@
 			wedding_date: nn(f.wedding_date), previous_church: nn(f.previous_church),
 			guide_person_id: nn(f.guide_person_id), guide_name: f.guide_person_id ? null : nn(f.guide_name),
 			sms_opt_out: f.sms_opt_out, faith_checked_on: null, note: nn(f.note), purged_on: null,
-			photo: nn(f.photo), category_id: nn(f.category_id), clergy_title: position.clergy,
+			photo: nn(f.photo), category_id: nn(f.category_id), clergy_title: position.office ? parseRank(office.status).clergy : null,
 			edu_dept: nn(f.edu_dept) as Person['edu_dept'], mission_society: nn(f.mission_society),
 			big_family_head_id: nn(f.big_family_head_id), big_family_relation: f.big_family_head_id ? nn(f.big_family_relation) : null
 		};
@@ -79,7 +79,7 @@
 		// 직분 · 임직
 		if (position.office) {
 			const ordained = ORDAINED.includes(position.office);
-			registry.addOffice({ person_id: id, office: position.office, rank_status: office.status, start_date: ordained ? nn(office.date) : null, end_date: null, church: ordained ? nn(office.church) : null, note: null });
+			registry.addOffice({ person_id: id, office: position.office, rank_status: parseRank(office.status).rank_status, start_date: ordained ? nn(office.date) : null, end_date: null, church: ordained ? nn(office.church) : null, note: null });
 		}
 		for (const org of new Set(services.filter(Boolean))) registry.addAffiliation({ person_id: id, org, role: null, start_date: regDate, end_date: null });
 		if (isAdult && community && smallGroup) registry.setGroup(id, community, smallGroup);
