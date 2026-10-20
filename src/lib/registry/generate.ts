@@ -1,4 +1,4 @@
-// 실제 교회 규모(재적 약 1,000명)의 가상 교적 데이터를 만듭니다.
+// 실제 교회 규모(재적 723명, 주일 출석 약 430명)의 가상 교적 데이터를 만듭니다.
 // - 이름·전화·주소는 모두 만들어 낸 값이며 실제 교인 자료를 쓰지 않습니다.
 // - 같은 시드로 만들기 때문에 열 때마다 같은 사람들이 나옵니다. (날짜는 오늘 기준으로 맞춤)
 // - 공동체·소그룹 구성(3개 공동체, 소그룹 27개 + 로뎀나무숲)만 2026년 편성표의 구조를 따릅니다.
@@ -19,7 +19,9 @@ const pad = (n: number) => String(n).padStart(2, '0');
 type L2 = L2Code;
 type L3 = 'a' | 's' | 'n' | 'l';
 
-export function generate(reservedNames: string[] = []) {
+// opts.targetActive: 생성기가 만드는 재적 교인 수(시험용 인물 제외). opts.groupP: 공동체별(뿌리·줄기·열매) 소그룹 소속 비율
+export function generate(reservedNames: string[] = [], opts: { targetActive?: number; groupP?: [number, number, number] } = {}) {
+	const GROUP_P = opts.groupP ?? [0.62, 0.55, 0.5];
 	const rnd = mulberry32(20261020);
 	const ri = (a: number, b: number) => a + Math.floor(rnd() * (b - a + 1));
 	const chance = (p: number) => rnd() < p;
@@ -213,7 +215,7 @@ export function generate(reservedNames: string[] = []) {
 	}
 	function l3Of(grouped: boolean): L3 {
 		const r = rnd();
-		return grouped ? (r < 0.78 ? 'a' : r < 0.97 ? 's' : 'n') : r < 0.35 ? 'a' : r < 0.7 ? 's' : 'n';
+		return grouped ? (r < 0.78 ? 'a' : r < 0.97 ? 's' : 'n') : r < 0.45 ? 'a' : r < 0.78 ? 's' : 'n';
 	}
 
 	function assignGroup(p: T.Person, birth: number, forceGroup?: GroupDef) {
@@ -302,7 +304,7 @@ export function generate(reservedNames: string[] = []) {
 			m.p.edu_dept = l2 === 'a' ? null : eduDeptOf(age);
 			if (l2 === 'a') m.p.mission_society = missionOf(m.p, age);
 			let grouped = false;
-			if (l2 === 'a' && age >= 20 && chance([0.93, 0.85, 0.82][commOf(m.birth)])) {
+			if (l2 === 'a' && age >= 20 && chance(GROUP_P[commOf(m.birth)])) {
 				grouped = true;
 				// 부부는 같은 소그룹
 				const isCouple = (m.p === head || m.p === spouse) && spouse;
@@ -336,11 +338,13 @@ export function generate(reservedNames: string[] = []) {
 
 	// 일반 세대
 	const actives = () => statusEvents.filter((e) => e.kind === '등록' || e.kind === '전입').length;
-	while (actives() < 960) {
+	const mainStart = households.length;
+	while (actives() < (opts.targetActive ?? 900) + 40) {
 		const c = pick([0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2]);
 		const hb = headBirthFor(c);
 		makeHousehold(hb, commKinds(c, hb));
 	}
+	const mainHouseholds = households.slice(mainStart);
 	// 새가족: 최근 60일 안에 등록 10세대, 그 전 1년 안에 등록 30세대
 	const freshMembers: T.Person[] = [];
 	for (let i = 0; i < 40; i++) {
@@ -410,6 +414,45 @@ export function generate(reservedNames: string[] = []) {
 		p.note = chance(0.5) ? '타교인(출석교회 별도)' : '등록 의사 확인 필요';
 	}
 
+	// ---- 재적 인원 맞추기: 넘치는 일반 세대를 뒤에서부터 지우고, 모자라면 세대원 한 명씩 지움 ----
+	if (opts.targetActive) {
+		const ACTIVE = new Set<T.StatusKind>(['등록', '전입', '복적']);
+		const lastKind = new Map<string, T.StatusKind>();
+		for (const e of statusEvents) lastKind.set(e.person_id, e.kind);
+		const isActive = (id: string) => ACTIVE.has(lastKind.get(id)!);
+		let excess = people.filter((p) => isActive(p.id)).length - opts.targetActive;
+		const drop = new Set<string>();
+		const freshIds = new Set(freshMembers.map((p) => p.id));
+		for (let i = mainHouseholds.length - 1; i >= 0 && excess > 0; i--) {
+			const mem = householdMembers.filter((m) => m.household_id === mainHouseholds[i].id && m.person_id).map((m) => m.person_id!);
+			const act = mem.filter(isActive).length;
+			if (!act || act > excess) continue;
+			mem.forEach((id) => drop.add(id));
+			excess -= act;
+		}
+		for (const m of [...householdMembers].reverse()) {
+			if (excess <= 0) break;
+			if (m.person_id && m.relation !== '본인' && isActive(m.person_id) && !drop.has(m.person_id) && !freshIds.has(m.person_id)) { drop.add(m.person_id); excess--; }
+		}
+		const keep = <X>(arr: X[], ok: (x: X) => boolean) => { const k = arr.filter(ok); arr.length = 0; arr.push(...k); };
+		const alive = (id: string | null) => !id || !drop.has(id);
+		keep(people, (x) => !drop.has(x.id));
+		keep(statusEvents, (x) => alive(x.person_id));
+		keep(faithEvents, (x) => alive(x.person_id));
+		keep(officeTerms, (x) => alive(x.person_id));
+		keep(personGroups, (x) => alive(x.person_id));
+		keep(consents, (x) => alive(x.person_id));
+		keep(educationRecords, (x) => alive(x.person_id));
+		keep(householdMembers, (x) => alive(x.person_id));
+		const used = new Set(householdMembers.map((m) => m.household_id));
+		keep(households, (h) => used.has(h.id));
+		for (const id of drop) { byId.delete(id); delete attendRate[id]; }
+		for (const x of people) {
+			if (!alive(x.guide_person_id)) x.guide_person_id = null;
+			if (!alive(x.big_family_head_id)) { x.big_family_head_id = null; x.big_family_relation = null; }
+		}
+	}
+
 	// 같은 이름 구분 (A, B, C ...)
 	const byName = new Map<string, T.Person[]>();
 	for (const p of people) byName.set(p.name, [...(byName.get(p.name) ?? []), p]);
@@ -449,6 +492,17 @@ export function generate(reservedNames: string[] = []) {
 		// 일부는 이미 '장기결석자'로 분류, 나머지는 아직 예배출석·가끔출석으로 남아 있어 알림으로 찾아내야 하는 사람
 		p.category_id = p.category_id!.replace(/\.[asnl]$/, absentStreak[p.id] >= 12 && i % 2 === 0 ? '.l' : chance(0.6) ? '.s' : '.a');
 		attendRate[p.id] = 0.45;
+	}
+
+	// 평소 주일 출석률: 교인구분 3단계를 따름 (예배출석 높게, 가끔출석 중간, 불출석·장기결석자 거의 없음, 보류는 낮게)
+	{
+		const lastKind = new Map<string, T.StatusKind>();
+		for (const e of statusEvents) lastKind.set(e.person_id, e.kind);
+		for (const x of people) {
+			if (absentStreak[x.id]) continue;
+			const l3 = x.category_id?.split('.')[2];
+			attendRate[x.id] = lastKind.get(x.id) === '보류' ? 0.05 : l3 === 'a' ? 0.72 + rnd() * 0.24 : l3 === 's' ? 0.2 + rnd() * 0.25 : l3 === 'n' ? 0.03 : l3 === 'l' ? 0 : 0.5;
+		}
 	}
 
 	// ---- 심방(교역자 열람용) ----
