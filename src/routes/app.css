@@ -436,3 +436,73 @@ button.chip2:hover { background: var(--primary-100); transform: none; box-shadow
 	.list-pane { max-height: none; }
 }
 @keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ===== 휴대폰 최적화 ===== */
+html { -webkit-tap-highlight-color: transparent; touch-action: manipulation; overflow-x: hidden; }
+body { overflow-x: hidden; overscroll-behavior-x: none; }
+.tabbar { display: none; }
+@media (max-width: 960px) {
+	/* 아래쪽 빠른 메뉴 */
+	.tabbar {
+		display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+		background: rgba(255, 255, 255, 0.97); backdrop-filter: blur(10px); border-top: 1px solid var(--line);
+		padding: 0.25rem 0.25rem calc(0.25rem + env(safe-area-inset-bottom));
+	}
+	.tabbar a, .tabbar button {
+		flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0.35rem 0 0.3rem;
+		font-size: 0.7rem; font-weight: 600; color: var(--muted); background: none; border: 0; border-radius: 10px; box-shadow: none;
+	}
+	.tabbar a:hover, .tabbar button:hover { text-decoration: none; transform: none; box-shadow: none; filter: none; background: none; color: var(--primary); }
+	.tabbar svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+	.tabbar .on { color: var(--primary); }
+	.site > main { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+	.site-footer { padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+	.pane-back { z-index: 55; }
+	.detail-pane.open { padding-bottom: calc(1.2rem + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 720px) {
+	/* 글자 입력 칸을 16px 로: 아이폰이 입력할 때 화면을 확대하지 않게 함 */
+	input, select, textarea { font-size: 16px; }
+	.site > main { padding-left: 0.9rem; padding-right: 0.9rem; padding-top: 1rem; }
+	.site-header .bar { padding: 0 0.9rem; }
+	.brand b { font-size: 0.98rem; }
+	h1 { font-size: 1.3rem; margin-bottom: 0.8rem; }
+	h2 { font-size: 1rem; }
+	.card { padding: 1rem; border-radius: 12px; margin-bottom: 0.9rem; }
+	/* 위쪽 큰 배너를 작게 */
+	.hero { padding: 1.2rem 1.2rem; border-radius: 16px; margin-bottom: 1rem; gap: 0.9rem; }
+	.hero h1 { font-size: 1.35rem; }
+	.hero p { font-size: 0.88rem; }
+	.hero .actions { gap: 0.4rem; }
+	.hero .actions .btn { padding: 0.45rem 0.75rem; font-size: 0.82rem; }
+	/* 숫자 카드는 두 줄로 나란히 */
+	.kpis { grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 1rem; }
+	.kpi { padding: 0.75rem 0.8rem; gap: 0.6rem; border-radius: 12px; }
+	.kpi .ico { width: 36px; height: 36px; border-radius: 11px; }
+	.kpi .ico svg { width: 20px; height: 20px; }
+	.kpi b { font-size: 1.3rem; }
+	.kpi span { font-size: 0.74rem; line-height: 1.3; }
+	/* 탭은 한 줄로 두고 옆으로 밀어서 봄 */
+	.tabs { flex-wrap: nowrap; overflow-x: auto; margin: 0 -0.9rem 0.9rem; padding: 0.15rem 0.9rem 0.35rem; scrollbar-width: none; }
+	.tabs::-webkit-scrollbar { display: none; }
+	.tabs button { flex: none; padding: 0.42rem 0.85rem; font-size: 0.86rem; }
+	.toolbar { gap: 0.4rem; }
+	.toolbar select, .toolbar input:not([type='checkbox']):not([type='radio']) { flex: 1 1 45%; min-width: 0; }
+	dl { grid-template-columns: 84px 1fr; gap: 0.45rem 0.7rem; font-size: 0.92rem; }
+	th, td { padding: 0.55rem 0.6rem; }
+	.card-head .sub { font-size: 0.76rem; }
+	.gs-box input { font-size: 16px; padding: 0.7rem 0; }
+	/* 달력: 날짜 칸에는 색 점만, 자세한 내용은 아래 목록에서 */
+	.cal-top h3 { font-size: 1rem; }
+	.legend .chip { padding: 0.18rem 0.5rem; font-size: 0.72rem; }
+	.day { display: grid; grid-template-columns: repeat(4, 7px); grid-auto-rows: 7px; gap: 3px; align-content: start; min-height: 50px; padding: 0.25rem; }
+	.day .n { grid-column: 1 / -1; grid-row: span 3; width: 1.35rem; height: 1.35rem; font-size: 0.72rem; }
+	.day .ev { font-size: 0; width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; background: var(--c); }
+	.day .more { grid-column: 1 / -1; grid-row: span 2; font-size: 0.6rem; line-height: 1; padding: 0; }
+	.cal-detail { padding: 0.8rem; }
+	/* 등록 화면 구획: 바깥 여백을 줄여 입력 칸을 넓게 */
+	.form.card { padding: 0.6rem; }
+	.sec { padding: 0.8rem 0.8rem 0.9rem; }
+	.form { grid-template-columns: 1fr; gap: 0.8rem; }
+	.split { gap: 0.8rem; }
+}

@@ -224,6 +224,17 @@
 		{/if}
 	</main>
 
+	{#if unlocked}
+		<!-- 휴대폰 아래쪽 메뉴: 자주 쓰는 화면을 엄지로 바로 -->
+		<nav class="tabbar" aria-label="빠른 메뉴">
+			<a href="/" class:on={path === '/'}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /></svg>홈</a>
+			<a href="/members" class:on={path.startsWith('/members') || isCard}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4" /><path d="M2 21v-1a7 7 0 0114 0v1" /><path d="M17 4a4 4 0 010 8M22 21v-1a6 6 0 00-4-5.6" /></svg>교인</a>
+			{#if registry.perms.edit}<a href="/new" class:on={path === '/new'}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" /></svg>등록</a>{/if}
+			{#if registry.perms.visit}<a href="/visits" class:on={path.startsWith('/visits')}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V9l8-6 8 6v12" /><path d="M9 21v-6h6v6" /></svg>심방</a>{/if}
+			<button type="button" class:on={menuOpen} onclick={() => (menuOpen = !menuOpen)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>메뉴</button>
+		</nav>
+	{/if}
+
 	<footer class="site-footer">
 		<div class="foot">
 			<div>
