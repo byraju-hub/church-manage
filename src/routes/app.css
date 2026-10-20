@@ -159,6 +159,10 @@ textarea { resize: vertical; }
 .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.95rem; }
 .form label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.82rem; font-weight: 600; color: var(--muted); }
 .form .wide { grid-column: 1 / -1; }
+/* 입력 칸 제목: 안내 문구를 제목 바로 옆에 한 줄로, 필수 표시(*)는 빨간색 */
+.form label .lt { display: block; }
+.hint { font-size: inherit; font-weight: 400; color: var(--muted); }
+.req { color: #e0245e; margin-left: 0.15rem; }
 dl { display: grid; grid-template-columns: 120px 1fr; gap: 0.6rem 1rem; margin: 0; }
 dt { color: var(--muted); font-weight: 600; font-size: 0.88rem; }
 dd { margin: 0; }

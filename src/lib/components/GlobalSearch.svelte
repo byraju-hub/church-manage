@@ -19,7 +19,7 @@
 <div class="gsearch" role="search" onfocusin={() => (focused = true)} onfocusout={(e) => { if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) focused = false; }}>
 	<div class="gs-box">
 		<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
-		<input type="search" bind:value={q} oninput={logSoon} placeholder="무엇이든 검색하세요  (이름 · 전화 · 주소 · 소그룹 · 직분 · 메모 · 심방 …)" aria-label="통합 검색" />
+		<input type="search" bind:value={q} oninput={logSoon} placeholder="무엇이든 검색하세요! (이름 · 전화 · 소그룹 · 직분 · 메모 · 심방 등)" aria-label="통합 검색" />
 	</div>
 	{#if focused && r}
 		<div class="gs-pop">

@@ -91,7 +91,7 @@
 {#if !registry.perms.edit}
 	<div class="warn">수정 권한이 꺼져 있어 등록할 수 없습니다. (최고관리자에게 수정 권한을 받아야 합니다)</div>
 {:else}
-	<p class="muted">등록카드 순서대로 입력합니다. <b>*</b> 표시는 필수 항목입니다. 같은 이름·전화가 있으면 먼저 보여 줍니다.</p>
+	<p class="muted">등록카드 순서대로 입력합니다. <b class="req">*</b> 표시는 필수 항목입니다. 같은 이름·전화가 있으면 먼저 보여 줍니다.</p>
 	<form class="form card" onsubmit={submit}>
 		<PersonFields bind:f autoNote>
 			{#snippet household()}
@@ -114,11 +114,11 @@
 		<div class="sec">
 			<h3>신급 · 직분</h3>
 			<div class="form">
-				<label>신급 *<select bind:value={faith.kind}><option>해당사항 없음</option>{#each FAITH_KINDS as k}<option>{k}</option>{/each}</select></label>
+				<label><span class="lt">신급<b class="req">*</b></span><select bind:value={faith.kind}><option>해당사항 없음</option>{#each FAITH_KINDS as k}<option>{k}</option>{/each}</select></label>
 				<label>신급일<input type="date" bind:value={faith.date} disabled={faith.kind === '해당사항 없음'} /></label>
 				<label>신급교회<input bind:value={faith.church} placeholder="비우면 본 교회" disabled={faith.kind === '해당사항 없음'} /></label>
 				<label>집례자<input bind:value={faith.officiant} disabled={faith.kind === '해당사항 없음'} /></label>
-				<label>직분 * <span class="muted" style="font-weight:400">(교역자 직책 포함)</span><select bind:value={office.pos}>{#each POSITIONS as o}<option>{o.label}</option>{/each}</select></label>
+				<label><span class="lt">직분<b class="req">*</b></span><select bind:value={office.pos}>{#each POSITIONS as o}<option>{o.label}</option>{/each}</select></label>
 				{#if position.office}
 					<label>신분<select bind:value={office.status}>{#each statusOptions as s}<option>{s}</option>{/each}</select></label>
 					{#if ORDAINED.includes(position.office)}
