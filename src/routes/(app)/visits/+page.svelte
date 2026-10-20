@@ -9,7 +9,7 @@
 
 	const today = new Date().toISOString().slice(0, 10);
 	let tab = $state<'list' | 'cal' | 'new'>('list');
-	let q = $state('');
+	let q = $state(page.url.searchParams.get('q') ?? '');
 	let kind = $state('');
 	let pastor = $state('');
 	let from = $state('');
@@ -29,7 +29,7 @@
 	);
 
 	// 등록 폼
-	let f = $state({ person: page.url.searchParams.get('person') ?? '', date: today, kind: '일반', method: '대면' as VisitMethod, pastor: '', scripture: '', hymn: '', content: '', follow: '' });
+	let f = $state({ person: page.url.searchParams.get('person') ?? '', date: page.url.searchParams.get('date') ?? today, kind: page.url.searchParams.get('kind') ?? '일반', method: '대면' as VisitMethod, pastor: '', scripture: '', hymn: '', content: '', follow: '' });
 	let companions = $state<Chip[]>([]);
 	const nn = (x: string) => (x.trim() === '' ? null : x.trim());
 	function submit(e: SubmitEvent) {
@@ -54,7 +54,7 @@
 
 <h1>심방</h1>
 {#if !registry.perms.visit}
-	<div class="warn">심방 권한이 꺼져 있어 볼 수 없습니다. 심방 기록은 전임 교역자까지만 볼 수 있습니다. (상단 '권한 시험'에서 '심방'을 켜 보세요)</div>
+	<div class="warn">심방 권한이 꺼져 있어 볼 수 없습니다. 심방 기록은 전임 교역자까지만 볼 수 있습니다. (최고관리자가 '관리자 › 사용자 · 권한'에서 심방 권한을 준 사용자만 볼 수 있습니다)</div>
 {:else}
 	<div class="tabs">
 		<button class:on={tab === 'list'} onclick={() => (tab = 'list')}>목록으로 검색</button>

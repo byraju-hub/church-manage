@@ -68,7 +68,7 @@
 	</div>
 	{#if names.includes(pickedSociety)}
 		<div class="card" style="padding:0;overflow-x:auto">
-			<table class="sm"><thead><tr><th>{pickedSociety}</th><th>호칭</th><th>나이</th><th>소그룹</th><th>휴대폰</th></tr></thead><tbody>
+			<table class="sm"><thead><tr><th>{pickedSociety}</th><th>직분</th><th>나이</th><th>소그룹</th><th>휴대폰</th></tr></thead><tbody>
 				{#each society(pickedSociety).map((p) => ({ p, s: registry.summary(p) })).sort((a, b) => a.p.name.localeCompare(b.p.name, 'ko')) as { p, s } (p.id)}
 					<tr><td><a href="/{p.id}">{p.name}</a></td><td>{s.title || '-'}</td><td>{p.birth_date ? new Date().getFullYear() - +p.birth_date.slice(0, 4) : '-'}</td><td>{s.smallGroup || '-'}</td><td>{p.phone ?? '-'}</td></tr>
 				{:else}<tr><td colspan="5" class="muted">회원이 없습니다.</td></tr>{/each}

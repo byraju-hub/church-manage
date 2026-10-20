@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { ageOf } from '#lib/registry/derive.ts';
-	import { EDU_DEPTS, MISSION_SOCIETIES } from '#lib/registry/types.ts';
+	import { MISSION_SOCIETIES } from '#lib/registry/types.ts';
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
 
 	// 검색 방식: 기본(한 줄) / 복수(여러 명을 한꺼번에) / 항목별(칸을 골라서)
@@ -14,9 +14,9 @@
 	let c1 = $state('');
 	let c2 = $state(page.url.searchParams.get('l2') ?? '');
 	let c3 = $state('');
-	let eduDept = $state('');
 	let society = $state('');
-	let status = $state('');
+	// 기본은 재적 교인만 보임 (복수 검색으로 이름을 고른 경우는 상태와 관계없이 보임)
+	let status = $state('재적');
 	let faith = $state('');
 	let office = $state('');
 	let community = $state('');
@@ -59,10 +59,9 @@
 			if (c1 && s.cat1 !== c1) return false;
 			if (c2 && s.cat2 !== c2) return false;
 			if (c3 && s.cat3 !== c3) return false;
-			if (eduDept && p.edu_dept !== eduDept) return false;
 			if (society && p.mission_society !== society) return false;
 			const age = ageOf(p.birth_date);
-			return (!status || s.status === status) && (!faith || s.faith === faith) &&
+			return ((mode === 'multi' && chips.length) || !status || s.status === status) && (!faith || s.faith === faith) &&
 				(!office || s.title === office) && (!community || s.community === community) &&
 				(!smallGroup || s.smallGroup === smallGroup) && (!gender || p.gender === gender) &&
 				(!ageMin || (age !== null && age >= +ageMin)) && (!ageMax || (age !== null && age <= +ageMax)) &&
@@ -73,6 +72,11 @@
 	);
 
 	const sel = $derived(selId ? registry.person(selId) : undefined);
+	// 상세를 열면 교적 카드를 연 것과 같이 열람 기록을 남김
+	let loggedId = '';
+	$effect(() => {
+		if (sel && loggedId !== sel.id) { loggedId = sel.id; registry.log('열람', sel.name); }
+	});
 	const selSummary = $derived(sel ? registry.summary(sel) : null);
 	const selFamily = $derived.by(() => { const h = sel ? registry.householdOf(sel.id) : undefined; return h ? registry.membersOfHousehold(h.id) : []; });
 	const selNotes = $derived(sel ? registry.d.notes.filter((n) => n.person_id === sel.id).slice(0, 3) : []);
@@ -91,10 +95,10 @@
 		이름: (p) => p.name, 동명이인구분: (p) => p.name_note ?? '', 성별: (p) => (p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : ''),
 		생년월일: (p) => p.birth_date ?? '', 나이: (p) => String(ageOf(p.birth_date) ?? ''), 휴대폰: (p) => p.phone ?? '',
 		주소: (p) => [p.address1, p.address2].filter(Boolean).join(' ') || registry.householdOf(p.id)?.address || '',
-		호칭: (_, s) => s.title, 상태: (_, s) => s.status, 교인구분: (_, s) => s.category, 전도회: (p) => p.mission_society ?? '', 교육부서: (p) => p.edu_dept ?? '', 신급: (_, s) => s.faith, 공동체: (_, s) => s.community,
+		직분: (_, s) => s.title, 상태: (_, s) => s.status, 교인구분: (_, s) => s.category, 전도회: (p) => p.mission_society ?? '', 신급: (_, s) => s.faith, 공동체: (_, s) => s.community,
 		소그룹: (_, s) => s.smallGroup, 등록일: (_, s) => s.registered ?? ''
 	};
-	let picked = $state<string[]>(['이름', '휴대폰', '호칭', '상태', '신급']);
+	let picked = $state<string[]>(['이름', '휴대폰', '직분', '상태', '신급']);
 
 	function download() {
 		const head = picked.join(',');
@@ -142,13 +146,12 @@
 		<select bind:value={c1} onchange={() => { c2 = ''; c3 = ''; }}><option value="">교인구분 전체</option>{#each l1opts as o}<option>{o.name}</option>{/each}</select>
 		<select bind:value={c2}><option value="">2단계 전체</option>{#each l2opts as o}<option>{o}</option>{/each}</select>
 		<select bind:value={c3}><option value="">3단계 전체</option>{#each l3opts as o}<option>{o}</option>{/each}</select>
-		<select bind:value={eduDept}><option value="">교육부서 전체</option>{#each EDU_DEPTS as o}<option>{o}</option>{/each}</select>
 		<select bind:value={society}><option value="">전도회 전체</option>{#each MISSION_SOCIETIES as o}<option>{o}</option>{/each}</select>
 	</div>
 	<div class="toolbar">
 		<select bind:value={status}><option value="">재적상태 전체</option>{#each ['재적', '보류', '보관', '전출', '별세', '제적', '미등록'] as v}<option>{v}</option>{/each}</select>
 		<select bind:value={faith}><option value="">신급 전체</option>{#each ['세례교인', '유아세례교인', '학습교인', '원입교인', '미확인'] as v}<option>{v}</option>{/each}</select>
-		<select bind:value={office}><option value="">직분(호칭) 전체</option>{#each titles as v}<option>{v}</option>{/each}</select>
+		<select bind:value={office}><option value="">직분 전체</option>{#each titles as v}<option>{v}</option>{/each}</select>
 		<select bind:value={community} onchange={() => (smallGroup = '')}><option value="">공동체 전체</option>{#each communities as v}<option>{v}</option>{/each}</select>
 		<select bind:value={smallGroup}><option value="">소그룹 전체</option>{#each groups as v}<option>{v}</option>{/each}</select>
 		<select bind:value={gender}><option value="">성별 전체</option><option value="M">남</option><option value="F">여</option></select>
@@ -163,7 +166,7 @@
 <div class="split">
 	<div class="card list-pane" style="padding:0">
 		<table>
-			<thead><tr><th>이름</th><th>호칭</th><th>상태</th><th>교인구분</th><th>소그룹</th></tr></thead>
+			<thead><tr><th>이름</th><th>직분</th><th>상태</th><th>교인구분</th><th>소그룹</th></tr></thead>
 			<tbody>
 				{#each rows.slice(0, shown) as { p, s } (p.id)}
 					<tr class="pick" class:on={selId === p.id} tabindex="0" onclick={() => (selId = p.id)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selId = p.id; } }}>
@@ -181,7 +184,9 @@
 		{#if rows.length > shown}<div style="padding:.7rem;text-align:center"><button class="ghost sm" onclick={() => (shown += 200)}>더 보기 ({rows.length - shown}명 남음)</button></div>{/if}
 	</div>
 
-	<aside class="card detail-pane">
+	{#if selId}<button type="button" class="pane-back" aria-label="상세 닫기" onclick={() => (selId = '')}></button>{/if}
+	<aside class="card detail-pane" class:open={!!selId}>
+		{#if selId}<button type="button" class="ghost sm pane-close" onclick={() => (selId = '')}>닫기 ✕</button>{/if}
 		{#if sel && selSummary}
 			{@const p = sel}
 			{@const s = selSummary}
@@ -234,5 +239,5 @@
 		<p><button onclick={download} disabled={!picked.length}>현재 목록 {rows.length}명 내려받기</button></p>
 	</div>
 {:else}
-	<p class="muted">내려받기 권한이 꺼져 있습니다. (위 '내 교적 권한'에서 켜 볼 수 있습니다)</p>
+	<p class="muted">내려받기 권한이 꺼져 있습니다. (최고관리자에게 내려받기·출력 권한을 받아야 합니다)</p>
 {/if}

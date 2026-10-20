@@ -2,34 +2,36 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
+	import type { AppUser } from '#lib/registry/types.ts';
 
 	let { children } = $props();
 
-	// 교적 전용 비밀번호 (프로토타입 데모: 0000). 5번 틀리면 잠김, 30분 미사용 시 다시 잠김
-	const PIN = '0000';
+	// 로그인: 카카오로 회원가입·로그인 → 최고관리자가 회원 목록에서 승인하고 등급(1~3) 지정 → 사용
+	// 30분 동안 쓰지 않으면 로그아웃
+	// [실제 시스템] 홈페이지와 같은 카카오 로그인을 씁니다. Supabase Auth 의 Kakao 공급자:
+	//   supabase.auth.signInWithOAuth({ provider: 'kakao', options: { redirectTo: `${location.origin}/auth/callback` } })
+	//   카카오 개발자 콘솔에 Redirect URI(…supabase.co/auth/v1/callback) 등록, 동의 항목(닉네임·이메일) 설정 필요.
+	//   아래 '카카오 계정 고르기' 창은 프로토타입 시연용입니다.
 	const IDLE_MS = 30 * 60 * 1000;
-	let unlocked = $state(false);
-	let locked = $state(false);
-	let fails = $state(0);
-	let pin = $state('');
+	let mode = $state<'login' | 'kakao' | 'signup' | 'sent'>('login');
+	let su = $state({ name: '', nickname: '', email: '', phone: '' });
+	let loginMsg = $state('');
 	let last = Date.now();
 	let menuOpen = $state(false);
-	let permOpen = $state(false);
+	let userOpen = $state(false);
+	const me = $derived(registry.me);
+	const unlocked = $derived(!!me && me.status === '사용');
 
 	onMount(() => {
-		try {
-			unlocked = sessionStorage.getItem('reg-unlocked') === '1';
-			locked = localStorage.getItem('reg-locked') === '1';
-		} catch {}
 		const touch = () => (last = Date.now());
 		const outside = (e: MouseEvent) => {
-			if (!(e.target as HTMLElement).closest?.('.perm')) permOpen = false;
+			if (!(e.target as HTMLElement).closest?.('.perm')) userOpen = false;
 		};
 		window.addEventListener('click', touch);
 		window.addEventListener('click', outside);
 		window.addEventListener('keydown', touch);
 		const t = setInterval(() => {
-			if (unlocked && Date.now() - last > IDLE_MS) lock();
+			if (unlocked && Date.now() - last > IDLE_MS) logout();
 		}, 30000);
 		return () => {
 			window.removeEventListener('click', touch);
@@ -45,32 +47,37 @@
 		menuOpen = false;
 	});
 
-	function lock() {
-		unlocked = false;
-		permOpen = false;
-		try { sessionStorage.removeItem('reg-unlocked'); } catch {}
+	function logout() {
+		userOpen = false;
+		registry.logout();
+		mode = 'login';
 	}
-	function submit(e: SubmitEvent) {
+	// (시연) 카카오 계정으로 로그인
+	function kakaoLogin(u: AppUser) {
+		loginMsg = '';
+		if (u.status === '승인 대기') { loginMsg = `${u.name}님은 가입 신청이 접수되어 최고관리자의 승인을 기다리고 있습니다.`; mode = 'login'; }
+		else if (u.status === '정지') { loginMsg = '사용이 정지된 회원입니다. 최고관리자에게 문의해 주세요.'; mode = 'login'; }
+		else { last = Date.now(); registry.login(u.id); }
+	}
+	function signUp(e: SubmitEvent) {
 		e.preventDefault();
-		if (pin === PIN) {
-			unlocked = true; fails = 0; last = Date.now();
-			try { sessionStorage.setItem('reg-unlocked', '1'); } catch {}
-		} else if (++fails >= 5) {
-			locked = true;
-			try { localStorage.setItem('reg-locked', '1'); } catch {}
-		}
-		pin = '';
+		if (!su.name.trim()) return;
+		registry.signUpKakao(su.name, su.nickname, su.email, su.phone);
+		su = { name: '', nickname: '', email: '', phone: '' };
+		mode = 'sent';
 	}
-	function adminUnlock() {
-		locked = false; fails = 0;
-		try { localStorage.removeItem('reg-locked'); } catch {}
+	function switchUser(id: string) {
+		registry.login(id);
+		userOpen = false;
 	}
+	const roleOf = (u: AppUser) => (u.is_super ? '최고관리자' : (registry.gradeDef(u.grade)?.name ?? '등급 없음'));
 
 	// 상단 메뉴 ('교적 프로그램 구조' 문서 순서)
 	type Item = { href: string; label: string; hint?: string };
 	const memberMenu: Item[] = [
 		{ href: '/members', label: '교인 목록', hint: '기본 · 복수 · 항목별 검색' },
 		{ href: '/new', label: '교인 등록', hint: '등록카드 순서로 입력' },
+		{ href: '/newcomers', label: '새가족 정착', hint: '등록 → 교육 → 수료 → 소그룹' },
 		{ href: '/households', label: '세대', hint: '세대원 · 분가' },
 		{ href: '/candidates', label: '확인 목록', hint: '중복 · 미등록 확인' }
 	];
@@ -80,28 +87,31 @@
 	];
 	const statMenu: Item[] = [
 		{ href: '/stats', label: '통계', hint: '출석 · 소그룹 · 임직 · 세례' },
-		{ href: '/reports', label: '명단', hint: '생일 · 직분자 · 세례 대상자' }
+		{ href: '/reports', label: '명단', hint: '생일 · 직분자 · 세례 대상자' },
+		{ href: '/documents', label: '문서 출력', hint: '교적부 · 증명서 · 요람 · PDF' }
 	];
 	const adminMenu: Item[] = [
-		{ href: '/admin', label: '권한 · 기록', hint: '접속기록 · 권한' },
+		{ href: '/admin', label: '회원 · 권한', hint: '가입 승인 · 등급 · 접속기록' },
 		{ href: '/settings', label: '설정', hint: '교인구분 · 소그룹 · 조직표' },
 		{ href: '/ideas', label: '기능 아이디어', hint: '안내서 기능 표' }
 	];
 	const path = $derived(page.url.pathname);
 	const inMenu = (items: Item[]) => items.some((i) => path === i.href || path.startsWith(i.href + '/'));
 	// 교적 카드(/p10 같은 주소)는 '교적'에 속한 화면으로 봄
-	const known = ['/', '/members', '/new', '/households', '/candidates', '/communities', '/attendance', '/visits', '/orgs', '/stats', '/reports', '/admin', '/settings', '/ideas'];
+	const known = ['/', '/members', '/new', '/newcomers', '/households', '/candidates', '/communities', '/attendance', '/visits', '/orgs', '/stats', '/reports', '/documents', '/admin', '/settings', '/ideas'];
 	const isCard = $derived(path !== '/' && !known.some((p) => path === p || path.startsWith(p + '/')));
-	const setPerm = (key: keyof typeof registry.perms, v: boolean) => registry.setPerms({ ...registry.perms, [key]: v });
+	const showAdmin = $derived(registry.perms.admin || registry.isSuper);
 </script>
+
+{#snippet kakaoIcon()}
+	<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="#191919" d="M12 3C6.48 3 2 6.5 2 10.82c0 2.8 1.88 5.25 4.7 6.63-.15.53-.97 3.4-1 3.62 0 0-.02.17.09.24.11.06.24.01.24.01.31-.04 3.62-2.37 4.19-2.77.58.08 1.17.12 1.78.12 5.52 0 10-3.5 10-7.82C22 6.5 17.52 3 12 3z" /></svg>
+{/snippet}
 
 <div class="site">
 	<header class="site-header">
 		<div class="bar">
 			<a class="brand" href="/">
-				<span class="logo">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 3v18M6 9h12" /></svg>
-				</span>
+				<img class="logo" src="/logo.png" alt="" width="38" height="38" />
 				<span><b>부평동부교회 교적 관리</b><small>프로토타입</small></span>
 			</a>
 
@@ -128,33 +138,35 @@
 					{/snippet}
 					{@render dd('교적', memberMenu, inMenu(memberMenu) || isCard)}
 					{@render dd('공동체', commMenu, inMenu(commMenu))}
-					<a href="/visits" class:active={path.startsWith('/visits')}>심방</a>
+					{#if registry.perms.visit}<a href="/visits" class:active={path.startsWith('/visits')}>심방</a>{/if}
 					<a href="/orgs" class:active={path.startsWith('/orgs')}>조직</a>
 					{@render dd('통계', statMenu, inMenu(statMenu))}
-					{@render dd('관리자', adminMenu, inMenu(adminMenu))}
+					{#if showAdmin}{@render dd('관리자', adminMenu, inMenu(adminMenu))}{/if}
 
 					<div class="nav-tools">
 						<div class="perm">
-							<button type="button" class="tool-btn" aria-expanded={permOpen} onclick={() => (permOpen = !permOpen)}>
-								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z" /><path d="M9 12l2 2 4-4" /></svg>
-								권한 시험
+							<button type="button" class="tool-btn" aria-expanded={userOpen} onclick={() => (userOpen = !userOpen)}>
+								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21v-1a6 6 0 0112 0v1" /></svg>
+								{me?.name} <small class="role">{me ? roleOf(me) : ''}</small>
 							</button>
-							{#if permOpen}
+							{#if userOpen}
 								<div class="perm-panel">
-									<b>내 교적 권한 (시험용)</b>
-									<p class="muted">기본은 열람입니다. 켜고 끄면서 화면이 어떻게 달라지는지 볼 수 있습니다.</p>
-									<label><input type="checkbox" checked={registry.perms.edit} onchange={(e) => setPerm('edit', e.currentTarget.checked)} />수정</label>
-									<label><input type="checkbox" checked={registry.perms.export} onchange={(e) => setPerm('export', e.currentTarget.checked)} />내려받기</label>
-									<label><input type="checkbox" checked={registry.perms.visit} onchange={(e) => setPerm('visit', e.currentTarget.checked)} />심방</label>
-									<label><input type="checkbox" checked={registry.perms.admin} onchange={(e) => setPerm('admin', e.currentTarget.checked)} />사이트 관리자</label>
+									<b>{me?.name}</b> <span class="tag">{me ? roleOf(me) : ''}</span>
+									<p class="muted">카카오 로그인 · 등급은 최고관리자가 '관리자 › 회원 · 권한'에서 정합니다.</p>
+									<hr />
+									<b style="font-size:.85rem">다른 회원으로 보기 (시험용)</b>
+									<p class="muted">등급마다 보이는 화면이 어떻게 다른지 확인할 수 있습니다.</p>
+									{#each registry.d.users.filter((u) => u.status === '사용') as u (u.id)}
+										<button type="button" class="ghost sm user-sw" class:on={u.id === me?.id} onclick={() => switchUser(u.id)}>{u.name} <small>{roleOf(u)}</small></button>
+									{/each}
 									<hr />
 									<button type="button" class="ghost sm" onclick={() => { if (confirm('교적 샘플 데이터를 처음 상태로 되돌립니다.')) registry.reset(); }}>교적 데이터 초기화</button>
 								</div>
 							{/if}
 						</div>
-						<button type="button" class="tool-btn" onclick={lock}>
-							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></svg>
-							잠그기
+						<button type="button" class="tool-btn" onclick={logout}>
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4" /><path d="M10 17l5-5-5-5M15 12H3" /></svg>
+							로그아웃
 						</button>
 					</div>
 				</nav>
@@ -163,24 +175,51 @@
 	</header>
 
 	<main>
-		{#if locked}
+		{#if !unlocked}
 			<div class="card lock">
-				<h2>교적 잠금</h2>
-				<p>비밀번호를 5번 틀려 잠겼습니다. 사이트 관리자가 풀어 줘야 합니다.</p>
-				<button class="ghost" onclick={adminUnlock}>(데모) 관리자가 잠금 해제</button>
+				<img src="/logo.png" alt="" width="64" height="64" style="display:block;margin:0 auto .8rem;border-radius:18px;box-shadow:0 6px 18px rgba(30,60,140,.25)" />
+				{#if mode === 'login'}
+					<h2>부평동부교회 교적 관리</h2>
+					<p class="muted">홈페이지와 같은 카카오 계정으로 로그인합니다.<br />처음이면 가입 신청이 되고, 최고관리자가 승인하면 쓸 수 있습니다.</p>
+					<button type="button" class="kakao" onclick={() => { loginMsg = ''; mode = 'kakao'; }}>{@render kakaoIcon()} 카카오로 로그인</button>
+					{#if loginMsg}<p style="color:#b13a32;font-size:.88rem;margin-top:.8rem">{loginMsg}</p>{/if}
+					<p class="muted" style="font-size:.78rem;margin-top:1rem">로그인하면 교적 열람 기록이 남습니다.</p>
+				{:else if mode === 'kakao'}
+					<div class="kakao-sheet">
+						<div class="kakao-top">{@render kakaoIcon()} <b>kakao</b> <span class="tag part">시연</span></div>
+						<p style="margin:.6rem 0 .3rem;font-weight:700">계정을 선택하세요</p>
+						<p class="muted" style="font-size:.8rem;margin:0 0 .6rem">실제로는 카카오 로그인 창이 열립니다. 여기서는 가상의 카카오 계정을 고릅니다.</p>
+						{#each registry.d.users as u (u.id)}
+							<button type="button" class="kakao-acc" onclick={() => kakaoLogin(u)}>
+								<span class="avatar warm" style="width:34px;height:34px">{u.name.slice(0, 1)}</span>
+								<span class="grow"><b>{u.kakao_nickname ?? u.name}</b><small>{u.name}{u.status !== '사용' ? ` · ${u.status}` : ` · ${roleOf(u)}`}</small></span>
+							</button>
+						{/each}
+						<button type="button" class="kakao-acc new" onclick={() => (mode = 'signup')}>＋ 새 카카오 계정으로 가입 신청</button>
+						<p><button type="button" class="ghost sm" onclick={() => (mode = 'login')}>취소</button></p>
+					</div>
+				{:else if mode === 'signup'}
+					<div class="kakao-sheet">
+						<div class="kakao-top">{@render kakaoIcon()} <b>kakao</b> <span class="tag part">시연</span></div>
+						<p style="margin:.6rem 0 .2rem;font-weight:700">부평동부교회 교적 관리 서비스에 동의</p>
+						<p class="muted" style="font-size:.8rem;margin:0 0 .6rem">카카오가 프로필 이름·이메일을 교회에 전달합니다. 실명은 교회가 확인할 수 있게 적어 주세요.</p>
+						<form onsubmit={signUp}>
+							<input bind:value={su.name} placeholder="실명 (필수)" required style="margin:.25rem 0" />
+							<input bind:value={su.nickname} placeholder="카카오 프로필 이름" style="margin:.25rem 0" />
+							<input type="email" bind:value={su.email} placeholder="카카오 이메일 (선택)" style="margin:.25rem 0" />
+							<input bind:value={su.phone} placeholder="휴대폰 (선택)" style="margin:.25rem 0" />
+							<button type="submit" class="kakao" style="margin-top:.5rem">동의하고 가입 신청</button>
+						</form>
+						<p><button type="button" class="ghost sm" onclick={() => (mode = 'kakao')}>돌아가기</button></p>
+					</div>
+				{:else}
+					<h2>가입 신청이 접수되었습니다</h2>
+					<p class="muted">최고관리자가 회원 목록에서 승인하고 등급을 정하면 카카오로 로그인해 쓸 수 있습니다.</p>
+					<p><button type="button" class="ghost" onclick={() => (mode = 'login')}>처음 화면으로</button></p>
+				{/if}
 			</div>
-		{:else if !unlocked}
-			<form class="card lock" onsubmit={submit}>
-				<div class="lock-icon">
-					<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></svg>
-				</div>
-				<h2>교적 비밀번호</h2>
-				<p class="muted">교적 화면 전용 비밀번호입니다.<br />(프로토타입 데모 비밀번호: <b>0000</b>)</p>
-				<input type="password" bind:value={pin} placeholder="비밀번호" />
-				{#if fails}<p class="muted">틀렸습니다. ({fails}/5)</p>{/if}
-				<p><button type="submit">들어가기</button></p>
-			</form>
 		{:else}
+			{#if registry.saveError}<div class="warn">{registry.saveError}</div>{/if}
 			{@render children()}
 		{/if}
 	</main>
@@ -195,3 +234,15 @@
 		</div>
 	</footer>
 </div>
+
+<style>
+	.kakao { width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1rem; font-size: 0.98rem; font-weight: 700; color: #191919; background: #fee500; border: 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12); }
+	.kakao:hover { background: #fada0a; color: #191919; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16); filter: none; }
+	.kakao-sheet { text-align: left; }
+	.kakao-top { display: flex; align-items: center; gap: 0.4rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--line); }
+	.kakao-acc { display: flex; align-items: center; justify-content: flex-start; gap: 0.7rem; width: 100%; text-align: left; margin: 0.25rem 0; padding: 0.5rem 0.6rem; font-weight: 500; color: var(--text); background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: none; }
+	.kakao-acc:hover { background: #fffbe0; border-color: #f2d600; color: var(--text); transform: none; box-shadow: none; filter: none; }
+	.kakao-acc .grow { display: flex; flex-direction: column; }
+	.kakao-acc small { color: var(--muted); font-size: 0.76rem; }
+	.kakao-acc.new { justify-content: center; font-weight: 700; color: #6b5800; border-style: dashed; }
+</style>

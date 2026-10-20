@@ -88,11 +88,11 @@
 
 <h1>교인 등록</h1>
 {#if !registry.perms.edit}
-	<div class="warn">수정 권한이 꺼져 있어 등록할 수 없습니다. (상단 '권한 시험'에서 '수정'을 켜 보세요)</div>
+	<div class="warn">수정 권한이 꺼져 있어 등록할 수 없습니다. (최고관리자에게 수정 권한을 받아야 합니다)</div>
 {:else}
 	<p class="muted">등록카드 순서대로 입력합니다. <b>*</b> 표시는 필수 항목입니다. 같은 이름·전화가 있으면 먼저 보여 줍니다.</p>
 	<form class="form card" onsubmit={submit}>
-		<PersonFields bind:f>
+		<PersonFields bind:f autoNote>
 			{#snippet household()}
 				<div class="sec">
 					<h3>세대주 · 관계</h3>

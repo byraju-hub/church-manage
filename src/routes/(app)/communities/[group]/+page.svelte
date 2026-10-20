@@ -44,6 +44,7 @@
 		</section>
 		<section class="card">
 			<div class="card-head"><h2>인도자 특이사항</h2><span class="sub">출석부에서 인도자가 적는 개별 메모</span></div>
+			{#if !registry.perms.visit}<p class="empty">건강 등 민감한 내용이 있어 심방 권한이 있는 사용자만 볼 수 있습니다.</p>{:else}
 			{#each notes.slice(0, 8) as n (n.id)}
 				<div class="li">
 					<span class="avatar warm">{nameOf(n.person_id).slice(0, 1)}</span>
@@ -56,12 +57,13 @@
 					<input bind:value={noteBody} placeholder="특이사항 입력" /><button type="submit">추가</button>
 				</form>
 			{/if}
+			{/if}
 		</section>
 	</div>
 
 	<div class="card" style="padding:0;overflow-x:auto">
 		<table class="sm">
-			<thead><tr><th>이름</th><th>호칭</th><th>신급</th><th>휴대폰</th>{#each WEEKS as d}<th style="text-align:center">{md(d)}</th>{/each}</tr></thead>
+			<thead><tr><th>이름</th><th>직분</th><th>신급</th><th>휴대폰</th>{#each WEEKS as d}<th style="text-align:center">{md(d)}</th>{/each}</tr></thead>
 			<tbody>
 				{#each members as { p, s } (p.id)}
 					<tr>

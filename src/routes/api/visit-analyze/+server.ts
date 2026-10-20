@@ -2,7 +2,14 @@
 //  - 녹음 파일  → OPENAI_API_KEY 로 받아쓰기(Whisper) → 요약
 //  - 텍스트·PDF → 바로 요약
 //  - 요약은 ANTHROPIC_API_KEY (Claude API)로 만듭니다.
-// 키가 없으면 '시연용 예시'를 돌려줍니다. 키는 Cloudflare 환경 변수(또는 로컬 .env)에 넣으며 코드·저장소에는 두지 않습니다.
+// 키가 없으면 '시연용 예시'를 돌려줍니다.
+//
+// [실제 시스템으로 옮길 때 — 꼭 해야 할 것]
+//  1. 로그인 확인: 요청의 Supabase 세션(JWT)을 검증하고, registry.app_users 에서 status='사용' 이고
+//     can_visit = true 인 사용자만 허용합니다. (최고관리자가 '관리자 › 사용자 · 권한'에서 지정한 사람)
+//  2. 호출 횟수 제한: 사용자별 하루 한도를 두어 사용료가 갑자기 늘지 않게 합니다.
+//  3. 기록: 누가 언제 분석했는지 접속기록에 남깁니다. (파일 내용은 남기지 않음)
+//  지금 프로토타입은 서버에 로그인 정보가 없으므로 같은 사이트에서 온 요청만 받고, 주소별 호출 횟수만 제한합니다. 키는 Cloudflare 환경 변수(또는 로컬 .env)에 넣으며 코드·저장소에는 두지 않습니다.
 import { json } from '@sveltejs/kit';
 import { ANTHROPIC_API_KEY, ANTHROPIC_MODEL, OPENAI_API_KEY } from '$app/env/private';
 
@@ -63,7 +70,27 @@ async function summarize(key: string, input: { text?: string; pdfBase64?: string
 	return JSON.parse(m[0]);
 }
 
-export async function POST({ request }: { request: Request }) {
+// 주소(IP)별 호출 제한: 10분에 10번. (서버가 다시 시작되면 초기화되는 간단한 방식)
+const WINDOW_MS = 10 * 60 * 1000;
+const LIMIT = 10;
+const hits = new Map<string, number[]>();
+function tooMany(key: string) {
+	const now = Date.now();
+	const list = (hits.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
+	list.push(now);
+	hits.set(key, list);
+	return list.length > LIMIT;
+}
+
+export async function POST({ request, getClientAddress }: { request: Request; getClientAddress: () => string }) {
+	// 같은 사이트의 심방 화면에서 보낸 요청만 받음
+	const origin = request.headers.get('origin');
+	if (origin && origin !== new URL(request.url).origin) return json({ error: '허용되지 않은 요청입니다.' }, { status: 403 });
+	if (request.headers.get('x-visit-analyze') !== '1') return json({ error: '허용되지 않은 요청입니다.' }, { status: 403 });
+	let ip = 'unknown';
+	try { ip = getClientAddress(); } catch {}
+	if (tooMany(ip)) return json({ error: '잠시 후 다시 시도해 주세요. (10분에 10번까지)' }, { status: 429 });
+
 	let file: File | null = null;
 	try {
 		const fd = await request.formData();

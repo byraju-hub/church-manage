@@ -8,14 +8,18 @@
 	import { EDU_DEPTS, MARITAL_STATUSES, MISSION_SOCIETIES, NAME_NOTES } from '#lib/registry/types.ts';
 
 	// f: 교인 카드의 칸들(빈 칸은 빈 문자열). 등록 화면과 카드 수정 화면이 함께 씀
-	let { f = $bindable(), household }: { f: Record<string, any>; household?: Snippet } = $props();
+	let { f = $bindable(), household, autoNote = false, selfId = '' }: { f: Record<string, any>; household?: Snippet; autoNote?: boolean; selfId?: string } = $props();
+	// 새로 등록할 때는 동명이인 구분을 등록 순서대로 자동으로 붙임
+	const nextNote = $derived(autoNote && f.name?.trim() ? registry.nextNameNote(f.name) : null);
 
 	// ---- 교인구분 3단계 ----
 	const initPath = categoryPath(registry.d.categories, f.category_id || null).map((c) => c.id);
 	let l1 = $state(initPath[0] ?? '');
 	let l2 = $state(initPath[1] ?? '');
 	let l3 = $state(initPath[2] ?? '');
-	const o1 = $derived(registry.childrenOf(null));
+	// 별세·이사/이민·보관은 재적 이력을 남기면 자동으로 바뀌므로 직접 고르지 않음
+	const FIXED = ['dead', 'move', 'keep'];
+	const o1 = $derived(registry.childrenOf(null).filter((c) => !FIXED.includes(c.id) || c.id === l1));
 	const o2 = $derived(l1 ? registry.childrenOf(l1) : []);
 	const o3 = $derived(l2 ? registry.childrenOf(l2) : []);
 	function pickL1() { l2 = ''; l3 = ''; sync(); }
@@ -62,7 +66,11 @@
 	<h3>기본 정보</h3>
 	<div class="form">
 		<label>이름 *<input required bind:value={f.name} /></label>
-		<label>동명이인 구분<select bind:value={f.name_note}><option value="">해당 없음</option>{#each noteOptions as n}<option>{n}</option>{/each}</select></label>
+		{#if autoNote}
+			<label>동명이인 구분 <span class="muted" style="font-weight:400">(자동)</span><input readonly tabindex="-1" value={nextNote ? `${nextNote} (같은 이름이 있어 등록 순서대로)` : '해당 없음'} /></label>
+		{:else}
+			<label>동명이인 구분<select bind:value={f.name_note}><option value="">해당 없음</option>{#each noteOptions as n}<option>{n}</option>{/each}</select></label>
+		{/if}
 		<label>생년월일 *<input type="date" required bind:value={f.birth_date} /></label>
 		<label>양력 / 음력<select bind:value={f.birth_lunar}><option value={false}>양력</option><option value={true}>음력</option></select></label>
 		<label>나이 <span class="muted" style="font-weight:400">(자동 계산)</span><input value={age === null ? '' : `만 ${age}세`} readonly tabindex="-1" /></label>
@@ -123,7 +131,7 @@
 <div class="sec">
 	<h3>교인구분 · 전도회</h3>
 	<div class="form">
-		<label>교인구분 (1단계)<select bind:value={l1} onchange={pickL1}><option value="">선택</option>{#each o1 as c}<option value={c.id}>{c.name}</option>{/each}</select></label>
+		<label>교인구분 (1단계) <span class="muted" style="font-weight:400">(별세·이사·보관은 재적 이력으로 자동)</span><select bind:value={l1} onchange={pickL1}><option value="">선택</option>{#each o1 as c}<option value={c.id}>{c.name}</option>{/each}</select></label>
 		<label>2단계 <span class="muted" style="font-weight:400">(장년 · 새가족 · 청년부 · 중고등부 · 유초등부 · 유치부 · 영아부)</span><select bind:value={l2} onchange={pickL2} disabled={!o2.length}><option value="">{o2.length ? '선택' : '-'}</option>{#each o2 as c}<option value={c.id}>{c.name}</option>{/each}</select></label>
 		<label>3단계<select bind:value={l3} onchange={sync} disabled={!o3.length}><option value="">{o3.length ? '선택' : '-'}</option>{#each o3 as c}<option value={c.id}>{c.name}</option>{/each}</select></label>
 		<label>전도회<select bind:value={f.mission_society}>

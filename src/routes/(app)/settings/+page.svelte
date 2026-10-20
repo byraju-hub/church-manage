@@ -32,7 +32,7 @@
 
 <h1>설정 <span class="tag">사이트 관리자</span></h1>
 {#if !registry.perms.admin}
-	<div class="warn">사이트 관리자 권한이 필요합니다. (상단 '권한 시험'에서 '사이트 관리자'를 켜 보세요)</div>
+	<div class="warn">사이트 관리자 권한이 필요합니다. (최고관리자에게 사이트 관리자 권한을 받아야 합니다)</div>
 {:else}
 	<div class="tabs">{#each tabs as t}<button class:on={tab === t} onclick={() => { tab = t; msg = ''; }}>{t}</button>{/each}</div>
 	{#if msg}<div class="warn">{msg}</div>{/if}
@@ -111,7 +111,7 @@
 				<table class="sm"><thead><tr><th>직분</th><th>고를 수 있는 신분</th></tr></thead><tbody>
 					{#each Object.entries(OFFICE_STATUS_OPTIONS) as [o, st]}<tr><td><b>{o}</b></td><td>{st.join(' · ')}</td></tr>{/each}
 				</tbody></table>
-				<p class="muted" style="font-size:.82rem">임직일과 임직교회는 장로·시무집사·권사에게 적습니다. 호칭은 신분에서 자동으로 만들어집니다 (예: 시무 → 권사, 은퇴 → 은퇴권사).</p>
+				<p class="muted" style="font-size:.82rem">임직일과 임직교회는 장로·시무집사·권사에게 적습니다. 표시되는 직분 이름은 신분에서 자동으로 만들어집니다 (예: 시무 → 권사, 은퇴 → 은퇴권사).</p>
 			</section>
 			<section class="card">
 				<h2>교역자 직책</h2>

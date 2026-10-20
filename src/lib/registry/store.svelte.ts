@@ -1,4 +1,12 @@
 // 프로토타입 저장소: 브라우저 localStorage. 실제 개발 시 Supabase 호출로 교체.
+//
+// [실제 시스템으로 옮길 때]
+//  - 이 클래스의 조회·기록 메서드를 Supabase 질의로 바꿉니다. 화면은 registry.* 만 부르므로 화면 코드는 거의 그대로 둡니다.
+//  - 권한(registry.perms)은 지금 브라우저에서만 확인합니다. 실제로는 로그인한 사용자의 권한을 DB 접근 규칙(RLS)으로
+//    막아야 합니다. (예: 심방 표는 app_users.can_visit 인 사람만 select/insert)
+//  - 접속기록·변경 이력은 화면이 아니라 DB 트리거나 서버 함수에서 남겨야 빠짐이 없습니다.
+//  - 사진은 localStorage 가 아니라 Supabase Storage(비공개 버킷)에 두고, 교적에는 경로만 저장합니다.
+//  - localStorage 는 브라우저마다 약 5MB 까지라 사진이 많으면 저장이 실패합니다. (아래 save() 에서 실패를 알림)
 import * as seed from './seed.ts';
 import type * as T from './types.ts';
 import { categoryPath, currentFaith, currentOffice, currentStatus, officeTitle, registeredOn } from './derive.ts';
@@ -6,9 +14,8 @@ import { wasPresent } from './attendance.mock.ts';
 import { isoDate, type CalItem } from './calendar.ts';
 import { MAX_CATEGORY_DEPTH } from './types.ts';
 
-const KEY = 'church-registry-proto-v5';
-const PERM_KEY = 'church-registry-perms-v1';
-const WHO = '데모 사용자';
+const KEY = 'church-registry-proto-v7';
+const USER_KEY = 'reg-user';
 const hasLS = typeof localStorage !== 'undefined';
 
 interface Data {
@@ -34,6 +41,8 @@ interface Data {
 	educationRecords: T.EducationRecord[];
 	orgUnits: T.OrgUnit[];
 	attendance: Record<string, Record<string, T.AttendanceMark>>;
+	users: T.AppUser[];
+	grades: T.GradeDef[];
 }
 
 const initial = (): Data => {
@@ -54,28 +63,105 @@ function load(): Data {
 	}
 	return initial();
 }
-function loadPerms(): T.Perms {
-	if (hasLS) {
-		try {
-			const raw = localStorage.getItem(PERM_KEY);
-			if (raw) return JSON.parse(raw);
-		} catch {}
-	}
-	return { edit: true, export: true, visit: true, admin: true };
+function loadUser(): string {
+	try { return sessionStorage.getItem(USER_KEY) ?? ''; } catch { return ''; }
 }
+const NO_PERMS: T.Perms = { edit: false, export: false, visit: false, admin: false };
 
 const fmt = (v: unknown) => (v === null || v === undefined || v === '' ? null : String(v));
 
 class Registry {
 	d = $state<Data>(load());
-	perms = $state<T.Perms>(loadPerms());
+	userId = $state<string>(loadUser());
+	saveError = $state('');
 
 	private save() {
-		if (hasLS) try { localStorage.setItem(KEY, JSON.stringify(this.d)); } catch {}
+		if (!hasLS) return;
+		try {
+			localStorage.setItem(KEY, JSON.stringify(this.d));
+			this.saveError = '';
+		} catch {
+			// 브라우저 저장 공간(약 5MB)이 차면 여기로 옴. 실제 시스템에서는 DB에 저장하므로 생기지 않는 문제
+			this.saveError = '브라우저 저장 공간이 가득 차 방금 입력한 내용을 저장하지 못했습니다. 사진을 줄이거나 ‘교적 데이터 초기화’를 해 주세요.';
+		}
 	}
-	setPerms(p: T.Perms) {
-		this.perms = p;
-		if (hasLS) try { localStorage.setItem(PERM_KEY, JSON.stringify(p)); } catch {}
+
+	// ---- 회원·권한 ----
+	// 지금 로그인한 회원. 승인(사용) 상태여야 교적을 볼 수 있음. 권한은 등급에서 오고, 최고관리자는 모든 권한
+	get me(): T.AppUser | undefined { return this.d.users.find((u) => u.id === this.userId); }
+	gradeDef(g: T.Grade | null | undefined) { return this.d.grades.find((x) => x.grade === g); }
+	permsOf(u: T.AppUser | undefined): T.Perms {
+		if (!u || u.status !== '사용') return NO_PERMS;
+		if (u.is_super) return { edit: true, export: true, visit: true, admin: true };
+		return this.gradeDef(u.grade)?.perms ?? NO_PERMS;
+	}
+	get perms(): T.Perms { return this.permsOf(this.me); }
+	get isSuper(): boolean { return !!this.me?.is_super && this.me.status === '사용'; }
+	private get who(): string { return this.me?.name ?? '알 수 없음'; }
+	login(id: string) {
+		this.userId = id;
+		try { sessionStorage.setItem(USER_KEY, id); } catch {}
+		this.log('로그인 (카카오)', this.me?.name ?? '');
+	}
+	logout() {
+		this.userId = '';
+		try { sessionStorage.removeItem(USER_KEY); } catch {}
+	}
+	// 카카오로 처음 로그인하면 '승인 대기' 회원이 됨. 최고관리자가 승인하고 등급을 정하기 전에는 아무것도 볼 수 없음
+	// [실제 시스템] auth.users 에 사람이 생길 때 트리거로 만듭니다. (이름·이메일은 카카오 동의 항목에서)
+	signUpKakao(name: string, nickname: string, email: string, phone: string) {
+		const id = uid();
+		this.d.users.push({
+			id, name: name.trim(), provider: '카카오', kakao_nickname: nickname.trim() || name.trim(), email: email.trim() || null, phone: phone.trim() || null,
+			person_id: null, status: '승인 대기', grade: null, is_super: false, requested_at: today(), decided_at: null, decided_by: null, note: null
+		});
+		this.save();
+		return id;
+	}
+	// 아래는 최고관리자만 (실제 시스템에서는 서버·RLS에서 다시 확인)
+	approveUser(id: string, grade: T.Grade) {
+		const u = this.d.users.find((x) => x.id === id);
+		if (!u || !this.isSuper) return;
+		u.status = '사용'; u.grade = grade; u.decided_at = today(); u.decided_by = this.who;
+		this.log(`회원 승인 (${this.gradeDef(grade)?.name})`, u.name);
+	}
+	setUserGrade(id: string, grade: T.Grade) {
+		const u = this.d.users.find((x) => x.id === id);
+		if (!u || !this.isSuper) return;
+		u.grade = grade;
+		this.log(`등급 변경 → ${this.gradeDef(grade)?.name}`, u.name);
+	}
+	setUserStatus(id: string, status: T.UserStatus) {
+		const u = this.d.users.find((x) => x.id === id);
+		if (!u || !this.isSuper || u.id === this.userId) return;
+		u.status = status; u.decided_at = today(); u.decided_by = this.who;
+		if (status === '사용' && !u.grade) u.grade = 1;
+		this.log(`회원 ${status === '사용' ? '사용 재개' : status}`, u.name);
+	}
+	setGradePerm(grade: T.Grade, key: keyof T.Perms, value: boolean) {
+		const g = this.gradeDef(grade);
+		if (!g || !this.isSuper) return;
+		g.perms[key] = value;
+		this.log(`등급 권한 ${value ? '부여' : '해제'}: ${({ edit: '수정', export: '내려받기·출력', visit: '심방', admin: '사이트 관리자' } as const)[key]}`, g.name);
+	}
+	renameGrade(grade: T.Grade, name: string) {
+		const g = this.gradeDef(grade);
+		if (g && this.isSuper && name.trim()) { g.name = name.trim(); this.save(); }
+	}
+	setUserSuper(id: string, value: boolean) {
+		const u = this.d.users.find((x) => x.id === id);
+		if (!u || !this.isSuper || (u.id === this.userId && !value)) return;
+		u.is_super = value;
+		this.log(value ? '최고관리자 지정' : '최고관리자 해제', u.name);
+	}
+	linkUserPerson(id: string, person_id: string | null) {
+		const u = this.d.users.find((x) => x.id === id);
+		if (u && this.isSuper) { u.person_id = person_id; this.save(); }
+	}
+	removeUser(id: string) {
+		if (!this.isSuper || id === this.userId) return;
+		this.d.users = this.d.users.filter((u) => u.id !== id);
+		this.save();
 	}
 	reset() {
 		this.d = initial();
@@ -181,12 +267,16 @@ class Registry {
 		const visits = this.perms.visit ? this.d.visits.filter((v) => hit(`${v.content} ${v.kind} ${v.pastor} ${v.scripture ?? ''} ${v.follow_up ?? ''} ${this.person(v.person_id)?.name ?? ''}`.toLowerCase())).slice(0, 5) : [];
 		const notes: { p: T.Person; body: string; kind: string }[] = [];
 		for (const n of this.d.notes) if (hit(n.body.toLowerCase())) { const p = this.person(n.person_id); if (p) notes.push({ p, body: n.body, kind: '담당자 메모' }); if (notes.length >= 4) break; }
-		for (const n of this.d.groupNotes) if (notes.length < 6 && hit(`${n.body} ${n.small_group}`.toLowerCase())) { const p = this.person(n.person_id); if (p) notes.push({ p, body: n.body, kind: `인도자 특이사항 · ${n.small_group}` }); }
+		// 인도자 특이사항은 건강 등 민감한 내용이 있어 심방 권한자만
+		if (this.perms.visit) for (const n of this.d.groupNotes) if (notes.length < 6 && hit(`${n.body} ${n.small_group}`.toLowerCase())) { const p = this.person(n.person_id); if (p) notes.push({ p, body: n.body, kind: `인도자 특이사항 · ${n.small_group}` }); }
 		const orgs = this.d.orgUnits.filter((o) => hit(o.name.toLowerCase())).slice(0, 5);
 		return { people, groups, households, visits, notes, orgs, total };
 	}
 
 	// ---- 캘린더 (달 단위) ----
+	// [실제 시스템] 음력 생일은 해마다 양력 날짜가 바뀝니다. 지금은 같은 월·일에 '음력' 표시만 합니다.
+	//   한국천문연구원 음양력 정보 API(공공데이터포털) 또는 음력 변환 라이브러리로 그해의 양력 날짜를 구해 표시하세요.
+	//   (생일 명단·대시보드·문서 출력의 생일도 같은 변환을 써야 합니다)
 	calendarItems(year: number, month: number, kinds: Set<string>): CalItem[] {
 		const out: CalItem[] = [];
 		const mm = String(month).padStart(2, '0');
@@ -239,7 +329,7 @@ class Registry {
 
 	// ---- 기록 ----
 	log(action: string, target: string) {
-		this.d.accessLog.unshift({ id: uid(), at: now(), who: WHO, action, target });
+		this.d.accessLog.unshift({ id: uid(), at: now(), who: this.who, action, target });
 		if (this.d.accessLog.length > 500) this.d.accessLog.length = 500;
 		this.save();
 	}
@@ -250,9 +340,9 @@ class Registry {
 		for (const [k, v] of Object.entries(patch)) {
 			const before = (p as any)[k];
 			if (fmt(before) === fmt(v)) continue;
-			if (k === 'photo') this.d.changeLog.unshift({ id: uid(), person_id: id, at: now(), by: WHO, field: '사진', before: before ? '(있음)' : null, after: v ? '(변경)' : null });
-			else if (k === 'category_id') this.d.changeLog.unshift({ id: uid(), person_id: id, at: now(), by: WHO, field: '교인구분', before: this.catLabel(before), after: this.catLabel(v as string | null) });
-			else this.d.changeLog.unshift({ id: uid(), person_id: id, at: now(), by: WHO, field: k, before: fmt(before), after: fmt(v) });
+			if (k === 'photo') this.d.changeLog.unshift({ id: uid(), person_id: id, at: now(), by: this.who, field: '사진', before: before ? '(있음)' : null, after: v ? '(변경)' : null });
+			else if (k === 'category_id') this.d.changeLog.unshift({ id: uid(), person_id: id, at: now(), by: this.who, field: '교인구분', before: this.catLabel(before), after: this.catLabel(v as string | null) });
+			else this.d.changeLog.unshift({ id: uid(), person_id: id, at: now(), by: this.who, field: k, before: fmt(before), after: fmt(v) });
 			(p as any)[k] = v;
 		}
 		this.log('수정', p.name);
@@ -260,13 +350,55 @@ class Registry {
 	private catLabel(id: string | null) { return categoryPath(this.d.categories, id).map((c) => c.name).join(' › ') || null; }
 
 	private change(person_id: string, field: string, after: string) {
-		this.d.changeLog.unshift({ id: uid(), person_id, at: now(), by: WHO, field, before: null, after });
+		this.d.changeLog.unshift({ id: uid(), person_id, at: now(), by: this.who, field, before: null, after });
 	}
 	addStatus(e: Omit<T.StatusEvent, 'id'>) {
 		this.d.statusEvents.push({ ...e, id: uid() });
+		this.syncCategory(e.person_id, e.kind);
 		this.change(e.person_id, '재적 이력', `${e.kind} ${e.event_date ?? '(날짜 미상)'}`);
 		this.log('수정', this.person(e.person_id)?.name ?? '');
 	}
+	// 재적 이력이 기준: 이력을 남기면 교인구분 1단계를 자동으로 맞춤
+	//  별세 → 별세, 전출 → 이사/이민, 제적·보관 → 보관, 보류 → 3단계 '불출석', 등록·전입·복적 → 교인(장년·예배출석)
+	// [실제 시스템] DB 트리거로 같은 규칙을 적용합니다. (카테고리 id 'dead'·'move'·'keep'·'m.a.a' 는 지우지 못하게 고정)
+	private syncCategory(person_id: string, kind: T.StatusKind) {
+		const p = this.person(person_id);
+		if (!p) return;
+		const cur = p.category_id ?? '';
+		const gone: Partial<Record<T.StatusKind, string>> = { 별세: 'dead', 전출: 'move', 제적: 'keep', 보관: 'keep' };
+		let next = cur;
+		if (gone[kind]) next = gone[kind]!;
+		else if (kind === '보류' && cur.startsWith('m.')) next = cur.replace(/\.[asn]$/, '.n');
+		else if (kind === '등록' || kind === '전입' || kind === '복적') {
+			if (cur.startsWith('o.')) next = 'm' + cur.slice(1);
+			else if (!cur.startsWith('m.')) next = 'm.a.a';
+		}
+		if (next !== cur && this.d.categories.some((c) => c.id === next)) {
+			this.d.changeLog.unshift({ id: uid(), person_id, at: now(), by: this.who, field: '교인구분(자동)', before: this.catLabel(cur || null), after: this.catLabel(next) });
+			p.category_id = next;
+		}
+	}
+
+	// 동명이인 구분: 같은 이름이 둘 이상이면 등록 순서대로 A, B, C … 를 붙임 (이미 붙은 글자는 그대로 둠)
+	assignNameNotes(name: string) {
+		const same = this.d.people.filter((p) => p.name === name);
+		if (same.length < 2) return;
+		const order = (p: T.Person) => registeredOn(this.statusOf(p.id)) ?? '9999';
+		const used = new Set(same.map((p) => p.name_note).filter(Boolean));
+		const letters = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)).filter((l) => !used.has(l));
+		for (const p of [...same].sort((a, b) => order(a).localeCompare(order(b)))) {
+			if (!p.name_note) { p.name_note = letters.shift() ?? null; }
+		}
+	}
+	nextNameNote(name: string): string | null {
+		const same = this.d.people.filter((p) => p.name === name.trim());
+		if (!same.length) return null;
+		const used = new Set(same.map((p) => p.name_note).filter(Boolean));
+		// 지금 글자가 없는 기존 교인들이 먼저 글자를 받고, 새로 등록하는 사람은 그 다음 글자
+		const free = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)).filter((l) => !used.has(l));
+		return free[same.filter((p) => !p.name_note).length] ?? null;
+	}
+
 	addFaith(e: Omit<T.FaithEvent, 'id'>) {
 		this.d.faithEvents.push({ ...e, id: uid() });
 		this.change(e.person_id, '신급 이력', `${e.kind} ${e.event_date ?? '(날짜 미상)'}`);
@@ -278,7 +410,7 @@ class Registry {
 		this.log('수정', this.person(e.person_id)?.name ?? '');
 	}
 	addNote(person_id: string, body: string) {
-		this.d.notes.unshift({ id: uid(), person_id, body, author: WHO, created_at: today() });
+		this.d.notes.unshift({ id: uid(), person_id, body, author: this.who, created_at: today() });
 		this.change(person_id, '담당자 메모', body.slice(0, 30));
 		this.save();
 	}
@@ -399,7 +531,7 @@ class Registry {
 			if (cur) this.d.personGroups = this.d.personGroups.filter((g) => g.person_id !== person_id);
 		} else if (cur) { cur.community = community; cur.small_group = small_group; }
 		else this.d.personGroups.push({ person_id, community, small_group });
-		this.d.changeLog.unshift({ id: uid(), person_id, at: now(), by: WHO, field: '소그룹', before, after: community && small_group ? `${community} › ${small_group}` : null });
+		this.d.changeLog.unshift({ id: uid(), person_id, at: now(), by: this.who, field: '소그룹', before, after: community && small_group ? `${community} › ${small_group}` : null });
 		this.save();
 	}
 
@@ -410,7 +542,8 @@ class Registry {
 		this.d.statusEvents.push({ id: uid(), person_id: id, kind: '등록', event_date: regDate, reason: '새가족', church: null });
 		for (const kind of consents)
 			this.d.consents.push({ id: uid(), person_id: id, kind, policy_version: '2026-01', consent_date: today(), method, guardian_name: null, revoked_on: null });
-		this.change(id, '교적 카드', '새가족 등록');
+		this.change(id, '교적 카드', '교인 등록');
+		this.assignNameNotes(p.name);
 		this.log('수정', p.name);
 		return id;
 	}

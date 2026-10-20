@@ -413,7 +413,8 @@ export function generate(reservedNames: string[] = []) {
 	// 같은 이름 구분 (A, B, C ...)
 	const byName = new Map<string, T.Person[]>();
 	for (const p of people) byName.set(p.name, [...(byName.get(p.name) ?? []), p]);
-	for (const list of byName.values()) if (list.length > 1) list.forEach((p, i) => (p.name_note = String.fromCharCode(65 + (i % 26))));
+	const regOf = (p: T.Person) => statusEvents.find((e) => e.person_id === p.id)?.event_date ?? '9999';
+	for (const list of byName.values()) if (list.length > 1) [...list].sort((a, b) => regOf(a).localeCompare(regOf(b))).forEach((p, i) => (p.name_note = String.fromCharCode(65 + (i % 26))));
 
 	// ---- 소그룹 편성표 (인도자) ----
 	const grouped = people.filter((p) => personGroups.some((g) => g.person_id === p.id && g.small_group !== '로뎀나무숲') && ageAt(birthOf(p)) >= 30);

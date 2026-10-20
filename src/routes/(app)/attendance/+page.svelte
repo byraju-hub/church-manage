@@ -38,7 +38,7 @@
 
 <h1>주일 출석 등록</h1>
 {#if !registry.perms.edit}
-	<div class="warn">수정 권한이 꺼져 있어 출석을 등록할 수 없습니다. (상단 '권한 시험'에서 켜 보세요)</div>
+	<div class="warn">수정 권한이 꺼져 있어 출석을 등록할 수 없습니다. (최고관리자에게 수정 권한을 받아야 합니다)</div>
 {/if}
 <p class="muted" style="margin-top:-.6rem">실제로는 기존 출석부에서 인도자가 직접 체크합니다. 여기서는 그 화면이 어떤 모양일지 시험해 봅니다.</p>
 
@@ -60,7 +60,7 @@
 
 <div class="card" style="padding:0;overflow-x:auto">
 	<table class="sm">
-		<thead><tr><th style="width:4.5rem">출석</th><th>이름</th><th>호칭</th><th>휴대폰</th><th>특이사항 · 사유</th><th></th></tr></thead>
+		<thead><tr><th style="width:4.5rem">출석</th><th>이름</th><th>직분</th><th>휴대폰</th><th>특이사항 · 사유</th><th></th></tr></thead>
 		<tbody>
 			{#each rows as { p, s } (p.id)}
 				{@const ok = registry.attended(p.id, date, weeksFromEnd)}

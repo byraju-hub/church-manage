@@ -108,7 +108,7 @@
 				{#if s.memberCert}<span class="tag now">앱 교인 인증 켜짐</span>{/if}
 			</h1>
 		</div>
-		<a class="btn ghost" href="/members">← 목록</a>
+		<div class="row">{#if registry.perms.export}<a class="btn ghost" href="/documents?doc=교적부&person={p.id}">교적부 출력</a>{/if}<a class="btn ghost" href="/members">← 목록</a></div>
 	</div>
 	<p class="muted" style="margin-top:.4rem">
 		{s.category || '교인구분 없음'} · 등록일 {s.registered ?? '미상'} · {s.community ? `${s.community} › ${s.smallGroup}` : '소그룹 없음'} · 교번 {p.reg_no ?? '미배정'}
@@ -197,7 +197,7 @@
 			{/if}
 		</div>
 		<div class="card">
-			<h2>직분 이력 {#if s.office}<span class="tag now">지금 호칭: {s.title}</span>{/if}</h2>
+			<h2>직분 이력 {#if s.office}<span class="tag now">지금 직분: {s.title}</span>{/if}</h2>
 			<table class="sm"><thead><tr><th>직분</th><th>신분</th><th>임직(시작)</th><th>끝</th><th>임직교회</th><th>비고</th></tr></thead><tbody>
 				{#each byDate(registry.officesOf(p.id)) as t}<tr><td>{t.office}</td><td>{t.rank_status}</td><td>{t.start_date ?? '미상'}</td><td>{t.end_date ?? '(지금)'}</td><td>{t.church ?? '본 교회'}</td><td>{v(t.note)}</td></tr>
 				{:else}<tr><td colspan="6" class="muted">직분 이력 없음 (성도)</td></tr>{/each}
@@ -209,7 +209,7 @@
 					<label>{ORDAINED.includes(ofPos.office!) ? '임직일' : '시작일'}<input type="date" bind:value={of.start} /></label>
 					<label>종료일<input type="date" bind:value={of.end} /></label>
 					{#if ORDAINED.includes(ofPos.office!)}<label>임직교회<input bind:value={of.church} placeholder="비우면 본 교회 (타교 임직이면 교회 이름)" /></label>{/if}
-					<div class="wide"><button type="submit">직분 기록 추가</button> <span class="muted">호칭 미리보기: {officeTitle({ office: ofPos.office!, rank_status: of.rank })}</span></div>
+					<div class="wide"><button type="submit">직분 기록 추가</button> <span class="muted">표시 미리보기: {officeTitle({ office: ofPos.office!, rank_status: of.rank })}</span></div>
 				</form>
 			{/if}
 		</div>
@@ -246,8 +246,10 @@
 					<div class="wide"><button type="submit" class="ghost">소속 바꾸기</button></div>
 				</form>
 			{/if}
+			{#if registry.perms.visit}
 			<h2 style="margin-top:1.2rem">인도자 특이사항 <span class="tag">출석부 자료</span></h2>
 			{#each gnotes as n (n.id)}<div style="margin-bottom:.4rem"><b>{n.date}</b> · {n.author} ({n.small_group}) — {n.body}</div>{:else}<p class="muted">적힌 특이사항이 없습니다.</p>{/each}
+			{/if}
 		</div>
 		<div class="card">
 			<h2>전도회</h2>
@@ -316,7 +318,7 @@
 					</form>
 				{/if}
 			{:else}
-				<div class="warn">심방 권한이 꺼져 있어 볼 수 없습니다. (상단 '권한 시험'에서 '심방'을 켜 보세요)</div>
+				<div class="warn">심방 권한이 꺼져 있어 볼 수 없습니다. (최고관리자가 '관리자 › 사용자 · 권한'에서 심방 권한을 준 사용자만 볼 수 있습니다)</div>
 			{/if}
 		</div>
 

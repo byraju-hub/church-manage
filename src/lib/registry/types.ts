@@ -295,10 +295,39 @@ export interface Affiliation {
 	end_date: string | null;
 }
 
-// 교적 권한: 기본(열람) + 아래 항목을 켜고 끔
+// 교적 권한: 승인된 사용자는 기본(열람) + 아래 항목을 최고관리자가 켜고 끔
 export interface Perms {
-	edit: boolean;
-	export: boolean;
-	visit: boolean;
-	admin: boolean;
+	edit: boolean; // 교적 수정·등록
+	export: boolean; // 내려받기·문서 출력
+	visit: boolean; // 심방(열람·등록·녹음 분석), 디모데 메모, 인도자 특이사항
+	admin: boolean; // 사이트 관리자: 설정(교인구분·소그룹·조직표)
+}
+
+// 교적 프로그램 회원: 카카오로 회원가입 → 최고관리자가 회원 목록에서 승인하고 등급(1~3)을 정함 → 사용
+// [실제 시스템] Supabase Auth 의 카카오 로그인(signInWithOAuth({ provider: 'kakao' }))을 씁니다.
+//              처음 로그인하면 auth.users 에 사람이 생기고, 트리거로 registry.app_users 에 '승인 대기' 회원을 만듭니다.
+//              등급·권한 확인은 화면이 아니라 DB 접근 규칙(RLS)과 서버에서 해야 합니다.
+export type UserStatus = '승인 대기' | '사용' | '정지';
+export type Grade = 1 | 2 | 3;
+// 등급마다 할 수 있는 일 (최고관리자가 '관리자 › 회원 · 권한 › 등급 설정'에서 바꿈)
+export interface GradeDef {
+	grade: Grade;
+	name: string;
+	perms: Perms;
+}
+export interface AppUser {
+	id: string;
+	name: string;
+	provider: '카카오';
+	kakao_nickname: string | null; // 카카오 프로필 이름
+	email: string | null; // 카카오 계정 이메일 (동의한 경우)
+	phone: string | null;
+	person_id: string | null; // 교적의 교인과 연결 (교역자 등)
+	status: UserStatus;
+	grade: Grade | null; // 승인 전에는 없음
+	is_super: boolean; // 최고관리자: 회원 승인·등급 지정·등급 설정 (모든 권한)
+	requested_at: string;
+	decided_at: string | null;
+	decided_by: string | null;
+	note: string | null;
 }

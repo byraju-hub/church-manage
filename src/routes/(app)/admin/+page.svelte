@@ -1,34 +1,135 @@
 <script lang="ts">
 	import { registry } from '#lib/registry/store.svelte.ts';
+	import PersonPicker from '#lib/components/PersonPicker.svelte';
+	import type { Grade, Perms } from '#lib/registry/types.ts';
 
-	let msg = $state('');
-	const staff = [
-		{ name: '교적 담당 간사', perms: '열람 · 수정' },
-		{ name: '담임목사', perms: '열람 · 심방' },
-		{ name: '교역자 A', perms: '열람 · 심방' },
-		{ name: '소그룹 리더 (예: 홍도령)', perms: '교적 권한 없음' }
+	// 회원 · 권한: 카카오로 가입한 회원을 최고관리자가 승인하고 등급(1~3)을 정합니다.
+	// [실제 시스템] app_users 표의 status·grade·is_super 를 바꾸는 일은 서버 함수에서 최고관리자인지 다시 확인한 뒤 처리합니다.
+	const tabs = ['회원 목록', '가입 신청', '등급 설정', '접속기록'];
+	let tab = $state('회원 목록');
+	const pending = $derived(registry.d.users.filter((u) => u.status === '승인 대기'));
+	const active = $derived(registry.d.users.filter((u) => u.status !== '승인 대기'));
+	const GRADES: Grade[] = [1, 2, 3];
+	const PERMS: { key: keyof Perms; label: string; hint: string }[] = [
+		{ key: 'edit', label: '수정', hint: '교적 등록·수정, 출석 등록, 새가족 정착 처리' },
+		{ key: 'export', label: '내려받기·출력', hint: '목록 내려받기, 교적부·증명서·요람 출력(PDF)' },
+		{ key: 'visit', label: '심방', hint: '심방 열람·등록·녹음 분석, 디모데 메모, 인도자 특이사항' },
+		{ key: 'admin', label: '사이트 관리자', hint: '관리자 › 설정 (교인구분·소그룹·조직표)' }
 	];
+	const nameOf = (id: string | null) => (id ? registry.person(id)?.name ?? '' : '');
+	let approveGrade = $state<Record<string, Grade>>({});
+	let q = $state('');
+	const shown = $derived(active.filter((u) => !q || `${u.name} ${u.kakao_nickname ?? ''} ${u.email ?? ''} ${u.note ?? ''}`.includes(q)));
+	let logQ = $state('');
+	const logs = $derived(registry.d.accessLog.filter((l) => !logQ || `${l.who} ${l.action} ${l.target}`.includes(logQ)).slice(0, 200));
+	const count = (g: Grade) => registry.d.users.filter((u) => u.status === '사용' && u.grade === g && !u.is_super).length;
 </script>
 
-<h1>권한·기록 <span class="tag">사이트 관리자</span></h1>
-{#if !registry.perms.admin}
-	<div class="warn">사이트 관리자 권한이 필요합니다. (위 '내 교적 권한'에서 '사이트 관리자'를 켜 보세요)</div>
-{:else}
-	{#if msg}<div class="ok">{msg}</div>{/if}
-	<div class="card">
-		<h2>교적 권한</h2>
-		<p class="muted">정한 방침: 교적 담당 간사는 수정까지, 교역자는 열람과 심방. 디모데 자료를 정리하는 동안에는 교역자도 수정 권한. 소그룹 리더와 일반 교인은 교적 권한이 없습니다. (가상 예시)</p>
-		<table class="sm"><thead><tr><th>사람</th><th>권한</th><th></th></tr></thead><tbody>
-			{#each staff as s}<tr><td>{s.name}</td><td>{s.perms}</td>
-				<td class="row"><button class="ghost" onclick={() => (msg = `${s.name}: 권한 변경 (데모)`)}>권한 주기/빼기</button><button class="ghost" onclick={() => (msg = `${s.name}: 교적 비밀번호 초기화 (데모)`)}>비밀번호 초기화</button></td></tr>{/each}
-		</tbody></table>
-		<p class="muted">공동체별로 나눠 맡기는 칸은 준비돼 있지만 쓰지 않습니다 (지금은 전체 교인을 보는 권한만).</p>
+<h1>회원 · 권한 <span class="tag">관리자</span></h1>
+<p class="muted" style="margin-top:-.6rem">교적 관리는 <b>카카오로 회원가입</b>한 뒤 <b>최고관리자</b>가 승인하고 <b>등급</b>을 정해 준 사람만 씁니다. 등급마다 할 수 있는 일은 '등급 설정'에서 정합니다.</p>
+
+{#if !registry.isSuper}
+	<div class="warn">회원 승인과 등급 지정은 <b>최고관리자</b>만 할 수 있습니다. 지금은 보기만 됩니다.</div>
+{/if}
+
+<div class="tabs">
+	{#each tabs as t}<button class:on={tab === t} onclick={() => (tab = t)}>{t}{t === '가입 신청' && pending.length ? ` (${pending.length})` : ''}</button>{/each}
+</div>
+
+{#if tab === '회원 목록'}
+	<div class="kpis" style="margin-bottom:1rem">
+		{#each GRADES as g}<div class="kpi"><div><b>{count(g)}</b><span>{registry.gradeDef(g)?.name}</span></div></div>{/each}
+		<div class="kpi"><div><b>{registry.d.users.filter((u) => u.is_super).length}</b><span>최고관리자</span></div></div>
 	</div>
 	<div class="card">
-		<h2>접속기록 <span class="muted" style="font-weight:400">— 검색·열람·수정·내려받기·출력 (3년 보관)</span></h2>
+		<div class="toolbar" style="margin:0"><input type="search" placeholder="이름 · 카카오 이름 · 이메일 검색" bind:value={q} /></div>
+	</div>
+	<div class="card" style="padding:0;overflow-x:auto">
+		<table class="sm">
+			<thead><tr><th>회원</th><th>카카오</th><th>가입일</th><th>연결된 교인</th><th>상태</th><th>등급</th><th style="text-align:center">최고관리자</th><th></th></tr></thead>
+			<tbody>
+				{#each shown as u (u.id)}
+					<tr>
+						<td><b>{u.name}</b>{#if u.id === registry.me?.id}<span class="tag now">나</span>{/if}<br /><span class="muted" style="font-size:.78rem">{u.note ?? ''}</span></td>
+						<td><span class="kk">K</span> {u.kakao_nickname ?? '-'}<br /><span class="muted" style="font-size:.78rem">{u.email ?? ''}</span></td>
+						<td style="white-space:nowrap">{u.requested_at}</td>
+						<td style="min-width:170px">{#if registry.isSuper}<PersonPicker value={u.person_id ?? ''} placeholder="교인 검색" onpick={(id) => registry.linkUserPerson(u.id, id)} />{:else}{nameOf(u.person_id) || '-'}{/if}</td>
+						<td>
+							{#if registry.isSuper && u.id !== registry.me?.id}
+								<select value={u.status} onchange={(e) => registry.setUserStatus(u.id, e.currentTarget.value as '사용' | '정지')} style="width:auto"><option>사용</option><option>정지</option></select>
+							{:else}<span class="badge" class:inactive={u.status !== '사용'}>{u.status}</span>{/if}
+						</td>
+						<td>
+							{#if u.is_super}<span class="badge">모든 권한</span>
+							{:else if registry.isSuper}
+								<select value={u.grade ?? 1} onchange={(e) => registry.setUserGrade(u.id, +e.currentTarget.value as Grade)} style="width:auto">
+									{#each GRADES as g}<option value={g}>{registry.gradeDef(g)?.name}</option>{/each}
+								</select>
+							{:else}{registry.gradeDef(u.grade)?.name ?? '-'}{/if}
+						</td>
+						<td style="text-align:center"><input type="checkbox" checked={u.is_super} disabled={!registry.isSuper || u.id === registry.me?.id} onchange={(e) => registry.setUserSuper(u.id, e.currentTarget.checked)} aria-label="{u.name} 최고관리자" /></td>
+						<td>{#if registry.isSuper && u.id !== registry.me?.id}<button class="ghost sm" onclick={() => { if (confirm(`${u.name} 회원을 지웁니다.`)) registry.removeUser(u.id); }}>삭제</button>{/if}</td>
+					</tr>
+				{:else}<tr><td colspan="8" class="muted">회원이 없습니다.</td></tr>{/each}
+			</tbody>
+		</table>
+	</div>
+{:else if tab === '가입 신청'}
+	<div class="card">
+		{#each pending as u (u.id)}
+			<div class="li">
+				<span class="avatar warm">{u.name.slice(0, 1)}</span>
+				<div class="grow"><b>{u.name} <small class="muted" style="font-weight:500">· 카카오 {u.kakao_nickname ?? ''}</small></b><small>신청 {u.requested_at}{u.email ? ` · ${u.email}` : ''}{u.phone ? ` · ${u.phone}` : ''}{u.note ? ` · ${u.note}` : ''}</small></div>
+				{#if registry.isSuper}
+					<select value={approveGrade[u.id] ?? 1} onchange={(e) => (approveGrade[u.id] = +e.currentTarget.value as Grade)} style="width:auto">
+						{#each GRADES as g}<option value={g}>{registry.gradeDef(g)?.name}</option>{/each}
+					</select>
+					<button class="sm" onclick={() => registry.approveUser(u.id, approveGrade[u.id] ?? 1)}>승인</button>
+					<button class="ghost sm" onclick={() => { if (confirm(`${u.name}님의 가입 신청을 거절합니다.`)) registry.removeUser(u.id); }}>거절</button>
+				{/if}
+			</div>
+		{:else}<p class="empty">가입 신청이 없습니다.</p>{/each}
+		<p class="muted" style="font-size:.82rem">교인이 아니거나 누구인지 확인되지 않는 신청은 거절하세요. 승인할 때 등급을 고르고, 나중에 회원 목록에서 바꿀 수 있습니다.</p>
+	</div>
+{:else if tab === '등급 설정'}
+	<div class="card" style="padding:0;overflow-x:auto">
+		<div class="card-head" style="padding:1.1rem 1.3rem 0"><h2>등급마다 할 수 있는 일</h2><span class="sub">모든 등급은 기본으로 교적 열람 가능 · 최고관리자는 모든 권한</span></div>
+		<table class="sm">
+			<thead><tr><th>등급</th><th>이름</th>{#each PERMS as p}<th style="text-align:center" title={p.hint}>{p.label}</th>{/each}<th>회원</th></tr></thead>
+			<tbody>
+				{#each GRADES as g}
+					{@const d = registry.gradeDef(g)!}
+					<tr>
+						<td><b>{g}등급</b></td>
+						<td style="min-width:180px">{#if registry.isSuper}<input value={d.name} onchange={(e) => registry.renameGrade(g, e.currentTarget.value)} />{:else}{d.name}{/if}</td>
+						{#each PERMS as p}<td style="text-align:center"><input type="checkbox" checked={d.perms[p.key]} disabled={!registry.isSuper} onchange={(e) => registry.setGradePerm(g, p.key, e.currentTarget.checked)} aria-label="{d.name} {p.label}" /></td>{/each}
+						<td>{count(g)}명</td>
+					</tr>
+				{/each}
+				<tr><td><b>최고관리자</b></td><td>지정된 회원</td>{#each PERMS as _p}<td style="text-align:center">✓</td>{/each}<td>{registry.d.users.filter((u) => u.is_super).length}명</td></tr>
+			</tbody>
+		</table>
+	</div>
+	<div class="card">
+		<h2>권한 설명</h2>
+		<table class="sm"><tbody>
+			<tr><td><b>열람 (모든 등급)</b></td><td>교인 목록·교적 카드·공동체·조직·통계</td></tr>
+			{#each PERMS as p}<tr><td><b>{p.label}</b></td><td>{p.hint}</td></tr>{/each}
+			<tr><td><b>최고관리자</b></td><td>모든 권한 + 가입 승인, 등급 지정, 등급 설정, 사용 정지</td></tr>
+		</tbody></table>
+		<p class="muted" style="font-size:.82rem">기본값: 1등급 열람 / 2등급 교적 담당(수정·출력) / 3등급 교역자(수정·출력·심방). 심방은 전임 교역자에게만 주는 것을 원칙으로 합니다.</p>
+	</div>
+{:else}
+	<div class="card">
+		<div class="toolbar"><input type="search" placeholder="회원 · 행동 · 대상 검색" bind:value={logQ} /></div>
+		<p class="muted" style="margin:0 0 .6rem">로그인 · 검색 · 열람 · 수정 · 내려받기 · 출력 · 심방 · 회원·등급 변경을 남깁니다. (3년 보관)</p>
 		<table class="sm"><thead><tr><th>시각</th><th>누가</th><th>무엇을</th><th>대상</th></tr></thead><tbody>
-			{#each registry.d.accessLog.slice(0, 50) as l (l.id)}<tr><td>{l.at}</td><td>{l.who}</td><td>{l.action}</td><td>{l.target}</td></tr>
-			{:else}<tr><td colspan="4" class="muted">아직 기록이 없습니다. 교적 카드를 열거나 수정해 보세요.</td></tr>{/each}
+			{#each logs as l (l.id)}<tr><td style="white-space:nowrap">{l.at}</td><td>{l.who}</td><td>{l.action}</td><td>{l.target}</td></tr>
+			{:else}<tr><td colspan="4" class="muted">아직 기록이 없습니다.</td></tr>{/each}
 		</tbody></table>
 	</div>
 {/if}
+
+<style>
+	.kk { display: inline-grid; place-items: center; width: 1.1rem; height: 1.1rem; border-radius: 4px; background: #fee500; color: #191919; font-size: 0.65rem; font-weight: 800; }
+</style>

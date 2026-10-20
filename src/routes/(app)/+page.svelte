@@ -74,6 +74,7 @@
 	);
 
 	// ---- 생일·결혼기념일 ----
+	// [실제 시스템] 음력 생일은 그해 양력 날짜로 바꿔서 계산해야 합니다. (store.svelte.ts 의 캘린더 주석 참고)
 	let range = $state<'week' | 'month'>('week');
 	const occurrences = $derived.by(() => {
 		const out: { id: string; name: string; kind: '생일' | '결혼기념일'; md: string; d: number; n: number; lunar: boolean; group: string }[] = [];
@@ -112,6 +113,10 @@
 	const visits30 = $derived(registry.d.visits.filter((v) => (+t0 - +new Date(v.visit_date)) / 864e5 <= 30 && new Date(v.visit_date) <= t0).length);
 	const planned = $derived(registry.d.visits.filter((v) => new Date(v.visit_date) > t0).length);
 	const nameOf = (id: string) => registry.person(id)?.name ?? '';
+	// 장기 결석자 → 심방 계획: 이미 앞으로 잡힌 심방이 있으면 그 날짜를 보여 줌
+	const todayIso = `${t0.getFullYear()}-${String(t0.getMonth() + 1).padStart(2, '0')}-${String(t0.getDate()).padStart(2, '0')}`;
+	const nextWeek = (() => { const d = new Date(t0); d.setDate(d.getDate() + 7); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+	const planOf = (pid: string) => registry.d.visits.filter((v) => v.person_id === pid && v.visit_date > todayIso).map((v) => v.visit_date).sort()[0];
 </script>
 
 {#snippet icon(name: string)}
@@ -281,6 +286,7 @@
 					<small>{a.s.smallGroup || '소그룹 없음'} · {a.s.title || a.s.faith}</small>
 				</div>
 				<span class="dday today">{a.streak}주 연속</span>
+				{#if registry.perms.visit}{#if planOf(a.p.id)}<a class="tag now" href="/visits?tab=list&q={encodeURIComponent(a.p.name)}">심방 예정 {planOf(a.p.id)?.slice(5)}</a>{:else}<a class="btn ghost sm" href="/visits?person={a.p.id}&date={nextWeek}&kind=일반">심방 계획</a>{/if}{/if}
 			</div>
 		{:else}
 			<p class="empty">연속 결석 중인 교인이 없습니다.</p>
@@ -305,6 +311,8 @@
 		{:else}
 			<p class="empty">최근 60일 안에 등록한 새가족이 없습니다.</p>
 		{/each}
+		</div>
+		<p style="margin:.7rem 0 0"><a href="/newcomers">새가족 정착 현황 보기 →</a></p>
 	</section>
 
 	<section class="card">
@@ -322,7 +330,7 @@
 				<p class="empty">심방 기록이 없습니다.</p>
 			{/each}
 		{:else}
-			<p class="empty">심방 권한이 꺼져 있어 볼 수 없습니다.<br />(상단 '권한 시험'에서 켜 볼 수 있습니다)</p>
+			<p class="empty">심방 권한이 꺼져 있어 볼 수 없습니다.<br />(최고관리자가 심방 권한을 준 사용자만 볼 수 있습니다)</p>
 		{/if}
 	</section>
 </div>
