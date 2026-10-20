@@ -22,7 +22,7 @@
 html { -webkit-text-size-adjust: 100%; }
 body {
 	margin: 0;
-	font-family: 'Gowun Dodum', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
+	font-family: 'Noto Sans KR', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
 	font-size: 15px;
 	line-height: 1.6;
 	background: var(--bg);

@@ -40,7 +40,7 @@ SvelteKit + Cloudflare Pages로 만든 **교적 관리 프로그램 프로토타
 │   └─ 0001_registry.sql          교적 DB 구조 기준안 (회원·등급, 접근 규칙 예시 포함)
 ├─ static/                        로고 · 파비콘 · robots.txt (검색 엔진 차단)
 └─ src/
-   ├─ app.html                    HTML 틀 (휴대폰 확대 막기, 고운 도담 글꼴)
+   ├─ app.html                    HTML 틀 (휴대폰 확대 막기, Noto Sans KR 글꼴)
    ├─ env.ts                      서버 환경 변수 정의 (심방 분석 API 키)
    ├─ lib/
    │  ├─ registry/                데이터 계층
