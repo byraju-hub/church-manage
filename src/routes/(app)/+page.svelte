@@ -103,6 +103,24 @@
 		return out.sort((a, b) => a.d - b.d);
 	});
 	const weekCount = $derived(occurrences.filter((o) => o.d <= 6).length);
+	// 이번 주(일요일~토요일) 생일자 수 (결혼기념일 제외)
+	const weekBirthdays = $derived.by(() => {
+		const sun = new Date(t0); sun.setDate(t0.getDate() - t0.getDay());
+		const days = new Set(Array.from({ length: 7 }, (_, i) => { const d = new Date(sun); d.setDate(sun.getDate() + i); return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }));
+		return members.filter(({ p }) => p.birth_date && days.has(p.birth_date.slice(5))).length;
+	});
+	// 지난 주일의 소그룹·교육부서 출석
+	// [실제 시스템] 소그룹 출석과 교육부서 출석은 지금 홈페이지(출석부·교육부서 보고서)에서 운영 중입니다.
+	//   연동하면 그 주일의 출석 인원·재적 인원을 홈페이지에서 가져와 여기 숫자에 넣습니다. (지금은 가상 출석 샘플)
+	const pctOf = (x: { present: number; total: number }) => (x.total ? Math.round((x.present * 100) / x.total) : 0);
+	const attOf = (list: typeof members) => ({ total: list.length, present: list.filter(({ p }) => registry.attended(p.id, latest.date, 0)).length });
+	const groupAtt = $derived(attOf(members.filter(({ s }) => !!s.smallGroup)));
+	const eduAtt = $derived(attOf(members.filter(({ p }) => !!p.edu_dept)));
+	// 이번 분기(오늘이 속한 달의 분기) 새가족 등록
+	const quarter = Math.floor(today.getMonth() / 3) + 1;
+	const monthAgo = (() => { const d = new Date(t0); d.setDate(d.getDate() - 30); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+	const quarterStart = `${today.getFullYear()}-${String((quarter - 1) * 3 + 1).padStart(2, '0')}-01`;
+	const quarterNew = $derived(rows.filter(({ p, s }) => s.registered && s.registered >= quarterStart && registry.statusOf(p.id).some((e) => e.reason === '새가족')).length);
 	const shown = $derived(occurrences.filter((o) => o.d <= (range === 'week' ? 6 : 30)).slice(0, 8));
 	// 해당 기간에 아무도 없으면 가장 가까운 일정을 대신 보여줌
 	const upcoming = $derived(shown.length ? [] : occurrences.slice(0, 4));
@@ -134,6 +152,10 @@
 	<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 		{#if name === 'users'}<path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
 		{:else if name === 'check'}<circle cx="12" cy="12" r="9" /><path d="M8 12.5l3 3 5-6" />
+		{:else if name === 'group'}<circle cx="12" cy="7" r="3" /><circle cx="5" cy="10" r="2.5" /><circle cx="19" cy="10" r="2.5" /><path d="M7 21v-2a5 5 0 0110 0v2M1.5 19v-1a3.5 3.5 0 015-3.2M22.5 19v-1a3.5 3.5 0 00-5-3.2" />
+		{:else if name === 'book'}<path d="M4 4.5A2.5 2.5 0 016.5 2H20v17H6.5A2.5 2.5 0 004 21.5z" /><path d="M4 21.5A2.5 2.5 0 016.5 19H20v3H6.5" />
+		{:else if name === 'alert'}<path d="M12 3l10 18H2z" /><path d="M12 10v5M12 18v.01" />
+		{:else if name === 'visit'}<path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" />
 		{:else if name === 'gift'}<rect x="3" y="8" width="18" height="4" rx="1" /><path d="M12 8v13M5 12v8a1 1 0 001 1h12a1 1 0 001-1v-8" /><path d="M7.5 8a2.5 2.5 0 010-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 010 5" />
 		{:else}<path d="M12 21s-7-4.6-7-10a4 4 0 017-2.6A4 4 0 0119 11c0 5.4-7 10-7 10z" />{/if}
 	</svg>
@@ -154,33 +176,45 @@
 	</div>
 </section>
 
-<div class="kpis">
+<div class="kpis kpis-8">
 	<a class="kpi" href="/members">
 		<span class="ico">{@render icon('users')}</span>
 		<div><b>{joined}</b><span>재적 교인</span></div>
 	</a>
-	<div class="kpi">
+	<a class="kpi" href="/stats?tab=주일 출석">
 		<span class="ico green">{@render icon('check')}</span>
 		<div>
 			<b>{latest.n}<em class:up={delta > 0} class:down={delta < 0}>{delta === 0 ? '±0' : delta > 0 ? `▲${delta}` : `▼${-delta}`}</em></b>
-			<span>이번 주일 출석 · {rate}%</span>
+			<span>{md(latest.date)} 주일 출석 · {rate}%</span>
 		</div>
-	</div>
-	<a class="kpi" href="/reports">
-		<span class="ico amber">{@render icon('gift')}</span>
-		<div><b>{weekCount}</b><span>이번 주 생일·기념일</span></div>
 	</a>
-	<a class="kpi" href="/members?l2=새가족">
+	<a class="kpi" href="/stats?tab=소그룹 출석" title="홈페이지 출석부와 연동할 자리">
+		<span class="ico blue2">{@render icon('group')}</span>
+		<div><b>{groupAtt.present}<small class="of">/{groupAtt.total}</small></b><span>{md(latest.date)} 소그룹 출석 · {pctOf(groupAtt)}%</span></div>
+	</a>
+	<a class="kpi" href="/stats?tab=주일 출석#edu" title="홈페이지 교육부서 출석과 연동할 자리">
+		<span class="ico indigo">{@render icon('book')}</span>
+		<div><b>{eduAtt.present}<small class="of">/{eduAtt.total}</small></b><span>{md(latest.date)} 교육부서 출석 · {pctOf(eduAtt)}%</span></div>
+	</a>
+	<a class="kpi" href="/newcomers">
 		<span class="ico violet">{@render icon('heart')}</span>
-		<div><b>{newcomers.length}</b><span>새가족 (최근 60일)</span></div>
+		<div><b>{quarterNew}</b><span>새가족 ({quarter}/4분기)</span></div>
 	</a>
-	<div class="kpi">
+	{#if registry.perms.visit}
+		<a class="kpi" href="/visits?from={monthAgo}">
+			<span class="ico teal">{@render icon('visit')}</span>
+			<div><b>{visits30}</b><span>최근 한 달 심방</span></div>
+		</a>
+	{:else}
+		<div class="kpi"><span class="ico teal">{@render icon('visit')}</span><div><b>-</b><span>최근 한 달 심방 (권한 필요)</span></div></div>
+	{/if}
+	<a class="kpi" href="#absent">
 		<span class="ico rose">{@render icon('alert')}</span>
 		<div><b>{absent.length}</b><span>장기 결석자 (2달 이상)</span></div>
-	</div>
-	<a class="kpi" href="/visits">
-		<span class="ico teal">{@render icon('visit')}</span>
-		<div><b>{registry.perms.visit ? visits30 : '-'}</b><span>{registry.perms.visit ? `최근 30일 심방 · 예정 ${planned}건` : '심방 권한 필요'}</span></div>
+	</a>
+	<a class="kpi" href="/documents?doc=생일 명단">
+		<span class="ico amber">{@render icon('gift')}</span>
+		<div><b>{weekBirthdays}</b><span>이번 주 생일자</span></div>
 	</a>
 </div>
 
@@ -286,7 +320,7 @@
 		</div>
 	</section>
 
-	<section class="card">
+	<section class="card" id="absent">
 		<div class="card-head"><h2>장기 결석 알림</h2><span class="sub">예배출석·가끔출석 교인 중 2달 이상 결석 · {absent.length}명</span></div>
 		<div style="max-height:430px;overflow:auto;padding-right:.45rem">
 		{#each absent as a (a.p.id)}

@@ -1,11 +1,12 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { recentSundays } from '#lib/registry/attendance.mock.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import { EDU_DEPTS, FAITH_KINDS, OFFICE_NAMES, OFFICE_STATUSES } from '#lib/registry/types.ts';
 
 	const tabs = ['주일 출석', '소그룹 출석', '임직', '세례'];
-	let tab = $state('주일 출석');
+	let tab = $state(page.url.searchParams.get('tab') ?? '주일 출석');
 	const WEEKS = recentSundays(8);
 	const md = (iso: string) => `${+iso.slice(5, 7)}/${+iso.slice(8, 10)}`;
 	const members = $derived(registry.d.people.map((p) => ({ p, s: registry.summary(p) })).filter((x) => x.s.memberCert));
@@ -61,7 +62,7 @@
 			</div>
 		</section>
 		<section class="card">
-			<div class="card-head"><div><h2>교육부서 이번 주일 출석률</h2><span class="sub">교육부서 보고서와 이어 붙일 자리 (지금은 가상 샘플)</span></div></div>
+			<div class="card-head" id="edu"><div><h2>교육부서 이번 주일 출석률</h2><span class="sub">교육부서 보고서와 이어 붙일 자리 (지금은 가상 샘플)</span></div></div>
 			{#each depts as d}
 				<div class="hbar"><span class="nm">{d.name}</span><div class="track"><i style="width:{pct(d.weekly[7], d.total)}%"></i></div><span class="v">{d.weekly[7]}/{d.total}명</span></div>
 			{/each}

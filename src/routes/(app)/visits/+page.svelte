@@ -12,7 +12,7 @@
 	let q = $state(page.url.searchParams.get('q') ?? '');
 	let kind = $state('');
 	let pastor = $state('');
-	let from = $state('');
+	let from = $state(page.url.searchParams.get('from') ?? '');
 	let to = $state('');
 
 	const pastors = $derived([...new Set(registry.d.visits.map((v) => v.pastor))].sort((a, b) => a.localeCompare(b, 'ko')));
