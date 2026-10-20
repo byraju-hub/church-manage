@@ -9,7 +9,7 @@
 
 <header>
 	<div class="bar">
-		<a class="brand" href="/registry">
+		<a class="brand" href="/">
 			<span class="logo">
 				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 3v18M6 9h12" /></svg>
 			</span>

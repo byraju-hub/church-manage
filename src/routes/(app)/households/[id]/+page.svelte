@@ -21,13 +21,13 @@
 	function split() {
 		const nh = registry.split(checked);
 		checked = [];
-		goto(`/registry/households/${nh.id}`);
+		goto(`/households/${nh.id}`);
 	}
 </script>
 
 {#if h}
 	<div class="row" style="justify-content:space-between">
-		<h1>세대 {h.no}</h1><a class="btn ghost" href="/registry/households">← 세대 목록</a>
+		<h1>세대 {h.no}</h1><a class="btn ghost" href="/households">← 세대 목록</a>
 	</div>
 	<div class="card">
 		<p class="muted">{h.zip ?? ''} {h.address ?? '주소 없음'} {h.home_phone ? `· 집전화 ${h.home_phone}` : ''}</p>
@@ -38,7 +38,7 @@
 				{#each members as m (m.id)}
 					<tr>
 						<td>{#if can}<input type="checkbox" style="width:auto" value={m.id} bind:group={checked} />{/if}</td>
-						<td>{#if m.person_id}<a href="/registry/{m.person_id}">{nameOf(m)}</a>{:else}{m.name}{m.birth_year ? ` (${m.birth_year}년생)` : ''}{/if}</td>
+						<td>{#if m.person_id}<a href="/{m.person_id}">{nameOf(m)}</a>{:else}{m.name}{m.birth_year ? ` (${m.birth_year}년생)` : ''}{/if}</td>
 						<td>
 							{#if can}
 								<select value={m.relation} onchange={(e) => registry.setRelation(m.id, e.currentTarget.value)} style="width:auto">{#each RELATIONS as r}<option>{r}</option>{/each}</select>
@@ -73,5 +73,5 @@
 		<p class="muted">세대 수정은 '수정' 권한이 필요합니다.</p>
 	{/if}
 {:else}
-	<p>세대를 찾을 수 없습니다. <a href="/registry/households">목록으로</a></p>
+	<p>세대를 찾을 수 없습니다. <a href="/households">목록으로</a></p>
 {/if}

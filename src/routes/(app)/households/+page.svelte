@@ -18,7 +18,7 @@
 
 	function create() {
 		const h = registry.createHousehold(null);
-		goto(`/registry/households/${h.id}`);
+		goto(`/households/${h.id}`);
 	}
 </script>
 
@@ -33,7 +33,7 @@
 		<tbody>
 			{#each rows as h (h.id)}
 				<tr>
-					<td><a href="/registry/households/{h.id}">{h.no}</a></td>
+					<td><a href="/households/{h.id}">{h.no}</a></td>
 					<td>{head(h.id)}</td>
 					<td>{registry.membersOfHousehold(h.id).length}명</td>
 					<td>{h.address ?? '-'}</td>
@@ -46,6 +46,6 @@
 	<div class="card">
 		<h2>아직 세대가 없는 교인 ({noHousehold.length}명)</h2>
 		<p class="muted">디모데 가져오기와 담당자 입력으로 채우는 중이라 세대가 없는 사람이 많을 수 있습니다.</p>
-		{#each noHousehold as p}<a href="/registry/{p.id}" style="margin-right:.8rem">{p.name}</a>{/each}
+		{#each noHousehold as p}<a href="/{p.id}" style="margin-right:.8rem">{p.name}</a>{/each}
 	</div>
 {/if}

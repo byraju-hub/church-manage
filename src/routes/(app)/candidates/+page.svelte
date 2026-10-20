@@ -25,7 +25,7 @@
 			{#each list as c (c.id)}
 				<tr>
 					<td>{c.name}</td><td>{c.phone}</td><td>{c.reason}</td>
-					<td>{#if c.match}<a href="/registry/{c.match}">{registry.person(c.match)?.name} 교적 보기</a>{:else}-{/if}</td>
+					<td>{#if c.match}<a href="/{c.match}">{registry.person(c.match)?.name} 교적 보기</a>{:else}-{/if}</td>
 					<td class="row">
 						{#if c.match}<button onclick={() => resolve(c, '기존 교적에 합침')}>합치기</button>{:else}<button onclick={() => resolve(c, '새 교적으로 올림')}>새 교적 만들기</button>{/if}
 						<button class="ghost" onclick={() => resolve(c, '건너뜀')}>건너뛰기</button>

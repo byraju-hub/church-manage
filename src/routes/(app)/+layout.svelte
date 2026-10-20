@@ -53,16 +53,16 @@
 	}
 
 	const nav = [
-		{ href: '/registry', label: '교인 목록' },
-		{ href: '/registry/new', label: '새가족 등록' },
-		{ href: '/registry/households', label: '세대' },
-		{ href: '/registry/reports', label: '명단·통계' },
-		{ href: '/registry/candidates', label: '확인 목록' },
-		{ href: '/registry/import', label: '디모데 가져오기' },
-		{ href: '/registry/admin', label: '권한·기록' },
-		{ href: '/registry/ideas', label: '기능 아이디어' }
+		{ href: '/', label: '교인 목록' },
+		{ href: '/new', label: '새가족 등록' },
+		{ href: '/households', label: '세대' },
+		{ href: '/reports', label: '명단·통계' },
+		{ href: '/candidates', label: '확인 목록' },
+		{ href: '/import', label: '디모데 가져오기' },
+		{ href: '/admin', label: '권한·기록' },
+		{ href: '/ideas', label: '기능 아이디어' }
 	];
-	const active = (h: string) => (h === '/registry' ? page.url.pathname === '/registry' : page.url.pathname.startsWith(h));
+	const active = (h: string) => (h === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(h));
 </script>
 
 {#if locked}

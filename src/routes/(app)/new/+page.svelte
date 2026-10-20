@@ -30,7 +30,7 @@
 			sms_opt_out: false, faith_checked_on: nn(f.faith_checked_on), note: nn(f.note), purged_on: null
 		};
 		const id = registry.createPerson(person, nn(regDate), consents, method);
-		goto(`/registry/${id}`);
+		goto(`/${id}`);
 	}
 </script>
 
@@ -46,7 +46,7 @@
 		{#if dups.length}
 			<div class="wide warn">
 				<b>같은 이름 또는 전화번호의 교인이 이미 있습니다.</b>
-				<ul>{#each dups as d}<li><a href="/registry/{d.id}" target="_blank">{d.name}</a>{d.name_note ? ` (${d.name_note})` : ''} · {d.phone ?? '전화 없음'}</li>{/each}</ul>
+				<ul>{#each dups as d}<li><a href="/{d.id}" target="_blank">{d.name}</a>{d.name_note ? ` (${d.name_note})` : ''} · {d.phone ?? '전화 없음'}</li>{/each}</ul>
 				<label style="flex-direction:row;gap:.4rem"><input type="checkbox" style="width:auto" bind:checked={ignoreDup} />다른 사람입니다. 계속 등록 (동명이인이면 아래 '동명이인 구분'을 적어 주세요)</label>
 			</div>
 		{/if}
@@ -79,6 +79,6 @@
 			<label>방법<select bind:value={method} style="width:auto">{#each ['서면', '앱', '구두'] as m}<option>{m}</option>{/each}</select></label>
 		</div>
 
-		<div class="wide row"><button type="submit" disabled={!f.name.trim() || blocked}>등록</button><a class="btn ghost" href="/registry">취소</a></div>
+		<div class="wide row"><button type="submit" disabled={!f.name.trim() || blocked}>등록</button><a class="btn ghost" href="/">취소</a></div>
 	</form>
 {/if}

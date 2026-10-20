@@ -67,7 +67,7 @@
 
 <div class="row" style="justify-content:space-between">
 	<h1>교인 목록 <small class="muted">({rows.length}명)</small></h1>
-	{#if registry.perms.edit}<a class="btn" href="/registry/new">+ 새가족 등록</a>{/if}
+	{#if registry.perms.edit}<a class="btn" href="/new">+ 새가족 등록</a>{/if}
 </div>
 
 <div class="card">
@@ -95,7 +95,7 @@
 		<tbody>
 			{#each rows as { p, s } (p.id)}
 				<tr>
-					<td><a href="/registry/{p.id}">{p.name}</a>{#if p.name_note}<span class="muted"> ({p.name_note})</span>{/if}</td>
+					<td><a href="/{p.id}">{p.name}</a>{#if p.name_note}<span class="muted"> ({p.name_note})</span>{/if}</td>
 					<td>{s.title || '-'}</td>
 					<td><span class="badge {s.status === '재적' ? '' : s.status === '보류' ? 'inactive' : 'transferred'}">{s.status}</span></td>
 					<td>{s.faith}</td>

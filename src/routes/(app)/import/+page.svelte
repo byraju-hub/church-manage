@@ -25,7 +25,7 @@
 			{#each rows as r (r.id)}
 				<tr>
 					<td>{r.name}</td><td>{r.phone || '-'}</td><td>{r.birth}</td><td>{r.addr}</td>
-					<td>{#if r.match}<a href="/registry/{r.match}">{registry.person(r.match)?.name} (같은 사람 후보)</a>{:else}일치하는 교인 없음{/if}</td>
+					<td>{#if r.match}<a href="/{r.match}">{registry.person(r.match)?.name} (같은 사람 후보)</a>{:else}일치하는 교인 없음{/if}</td>
 					<td class="row">
 						{#if r.match}<button onclick={() => act(r, '기존 교적에 연결, 빈 칸만 채움')}>연결·빈 칸 채우기</button>{:else}<button onclick={() => act(r, '새 교적 만들기')}>새 교적</button>{/if}
 						<button class="ghost" onclick={() => act(r, '건너뜀')}>건너뛰기</button>

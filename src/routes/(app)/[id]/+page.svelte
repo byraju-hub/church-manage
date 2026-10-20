@@ -77,7 +77,7 @@
 			<span class="badge">{s.faith}</span>
 			{#if s.memberCert}<span class="tag now">앱 교인 인증 켜짐</span>{/if}
 		</h1>
-		<a class="btn ghost" href="/registry">← 목록</a>
+		<a class="btn ghost" href="/">← 목록</a>
 	</div>
 	<p class="muted" style="margin-top:-.6rem">
 		등록일 {s.registered ?? '미상'} · {s.community ? `${s.community} › ${s.smallGroup}` : '소그룹 없음'} · 교번 {p.reg_no ?? '미배정'}
@@ -105,7 +105,7 @@
 					<dt>직업·직장</dt><dd>{v(p.occupation)} {p.workplace ? `/ ${p.workplace}` : ''}</dd>
 					<dt>결혼</dt><dd>{v(p.marital_status)}{p.wedding_date ? ` · 결혼기념일 ${p.wedding_date}` : ''}</dd>
 					<dt>이전 교회</dt><dd>{v(p.previous_church)}</dd>
-					<dt>인도자</dt><dd>{#if p.guide_person_id}<a href="/registry/{p.guide_person_id}">{registry.person(p.guide_person_id)?.name}</a>{:else}{v(p.guide_name)}{/if}</dd>
+					<dt>인도자</dt><dd>{#if p.guide_person_id}<a href="/{p.guide_person_id}">{registry.person(p.guide_person_id)?.name}</a>{:else}{v(p.guide_name)}{/if}</dd>
 					<dt>신급 확인일</dt><dd>{v(p.faith_checked_on)}</dd>
 					<dt>문자 수신 거부</dt><dd>{p.sms_opt_out ? '예' : '아니오'} <span class="tag part">칸만 있음</span></dd>
 					<dt>비고</dt><dd>{v(p.note)}</dd>
@@ -146,11 +146,11 @@
 				<table class="sm"><thead><tr><th>관계(세대주 기준)</th><th>이름</th><th>교적 연결</th></tr></thead><tbody>
 					{#each family as m}
 						<tr><td>{m.relation}</td>
-							<td>{#if m.person_id}<a href="/registry/{m.person_id}">{registry.person(m.person_id)?.name}</a>{:else}{m.name}{m.birth_year ? ` (${m.birth_year}년생)` : ''}{/if}</td>
+							<td>{#if m.person_id}<a href="/{m.person_id}">{registry.person(m.person_id)?.name}</a>{:else}{m.name}{m.birth_year ? ` (${m.birth_year}년생)` : ''}{/if}</td>
 							<td>{m.person_id ? '교인' : '교인 아님 (이름·출생연도만)'}</td></tr>
 					{/each}
 				</tbody></table>
-				<p><a href="/registry/households/{hh.id}">세대 화면에서 세대원 추가·이동·분가 →</a></p>
+				<p><a href="/households/{hh.id}">세대 화면에서 세대원 추가·이동·분가 →</a></p>
 			{:else}
 				<p class="muted">아직 세대가 없습니다. 디모데 가져오기와 담당자 입력으로 채우는 중입니다.</p>
 			{/if}
@@ -313,5 +313,5 @@
 		</div>
 	{/if}
 {:else}
-	<p>교적을 찾을 수 없습니다. <a href="/registry">목록으로</a></p>
+	<p>교적을 찾을 수 없습니다. <a href="/">목록으로</a></p>
 {/if}

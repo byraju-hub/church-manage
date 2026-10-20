@@ -58,14 +58,14 @@
 	<div class="card">
 		<div class="row"><button class:ghost={mode !== 'week'} onclick={() => (mode = 'week')}>이번 주</button><button class:ghost={mode !== 'month'} onclick={() => (mode = 'month')}>이번 달(31일)</button></div>
 		<table class="sm"><thead><tr><th>이름</th><th>구분</th><th>날짜</th><th>며칠 뒤</th></tr></thead><tbody>
-			{#each upcoming as u}<tr><td><a href="/registry/{u.id}">{u.name}</a></td><td>{u.kind}</td><td>{u.date}{u.lunar ? ' (음력)' : ''}</td><td>{u.d === 0 ? '오늘' : `${u.d}일`}</td></tr>{:else}<tr><td colspan="4" class="muted">해당 없음</td></tr>{/each}
+			{#each upcoming as u}<tr><td><a href="/{u.id}">{u.name}</a></td><td>{u.kind}</td><td>{u.date}{u.lunar ? ' (음력)' : ''}</td><td>{u.d === 0 ? '오늘' : `${u.d}일`}</td></tr>{:else}<tr><td colspan="4" class="muted">해당 없음</td></tr>{/each}
 		</tbody></table>
 		<p class="muted">더 필요한 것: 음력 생일은 그해 양력으로 바꿔 보여야 함 (지금 화면은 음력 표시만).</p>
 	</div>
 {:else if tab === '직분자 명단'}
 	<div class="card">
 		<table class="sm"><thead><tr><th>직분</th><th>신분</th><th>이름</th><th>시작일</th></tr></thead><tbody>
-			{#each officers as { p, t }}<tr><td>{t.office}</td><td>{t.rank_status}</td><td><a href="/registry/{p.id}">{p.name}</a></td><td>{t.start_date ?? '미상'}</td></tr>{/each}
+			{#each officers as { p, t }}<tr><td>{t.office}</td><td>{t.rank_status}</td><td><a href="/{p.id}">{p.name}</a></td><td>{t.start_date ?? '미상'}</td></tr>{/each}
 		</tbody></table>
 		<p class="muted">더 필요한 것: 임직일이 비어 있는 사람이 많을 수 있음.</p>
 	</div>
@@ -73,14 +73,14 @@
 	<div class="card">
 		<p class="muted">재적 교인 중 만 14세 이상이면서 세례 기록이 없는 사람 (미확인·원입·학습).</p>
 		<table class="sm"><thead><tr><th>이름</th><th>나이</th><th>신급</th><th>등록일</th></tr></thead><tbody>
-			{#each targets as { p, s }}<tr><td><a href="/registry/{p.id}">{p.name}</a></td><td>{ageOf(p.birth_date) ?? '-'}</td><td>{s.faith}</td><td>{s.registered ?? '미상'}</td></tr>{:else}<tr><td colspan="4" class="muted">해당 없음</td></tr>{/each}
+			{#each targets as { p, s }}<tr><td><a href="/{p.id}">{p.name}</a></td><td>{ageOf(p.birth_date) ?? '-'}</td><td>{s.faith}</td><td>{s.registered ?? '미상'}</td></tr>{:else}<tr><td colspan="4" class="muted">해당 없음</td></tr>{/each}
 		</tbody></table>
 		<p class="muted">더 필요한 것: 신급 '미확인'을 먼저 확인해야 정확함.</p>
 	</div>
 {:else if tab === '공동체·소그룹별 명단'}
 	{#each byGroup as [k, xs]}
 		<div class="card"><h2>{k} <span class="muted">({xs.length}명)</span></h2>
-			{#each xs as { p, s }}<a href="/registry/{p.id}" style="margin-right:.8rem">{p.name}{s.title ? ` ${s.title}` : ''}</a>{/each}
+			{#each xs as { p, s }}<a href="/{p.id}" style="margin-right:.8rem">{p.name}{s.title ? ` ${s.title}` : ''}</a>{/each}
 		</div>
 	{/each}
 {:else}
