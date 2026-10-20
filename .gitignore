@@ -27,3 +27,10 @@ vite.config.ts.timestamp-*
 .env.*
 !.env.example
 .wrangler
+
+# 실제 교인 정보가 들어 있을 수 있는 자료는 저장소에 올리지 않음
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+/private-data/
