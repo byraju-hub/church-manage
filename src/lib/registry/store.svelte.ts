@@ -6,7 +6,7 @@ import { wasPresent } from './attendance.mock.ts';
 import { isoDate, type CalItem } from './calendar.ts';
 import { MAX_CATEGORY_DEPTH } from './types.ts';
 
-const KEY = 'church-registry-proto-v4';
+const KEY = 'church-registry-proto-v5';
 const PERM_KEY = 'church-registry-perms-v1';
 const WHO = '데모 사용자';
 const hasLS = typeof localStorage !== 'undefined';
@@ -187,7 +187,7 @@ class Registry {
 	}
 
 	// ---- 캘린더 (달 단위) ----
-	calendarItems(year: number, month: number, kinds: Set<string>, doneVisits = false): CalItem[] {
+	calendarItems(year: number, month: number, kinds: Set<string>): CalItem[] {
 		const out: CalItem[] = [];
 		const mm = String(month).padStart(2, '0');
 		const last = new Date(year, month, 0).getDate();
@@ -222,9 +222,9 @@ class Registry {
 		}
 		if (kinds.has('심방 계획') && this.perms.visit) {
 			for (const v of this.d.visits) {
-				if ((v.state !== '계획' && !doneVisits) || v.visit_date < monthStart || v.visit_date > monthEnd) continue;
+				if (v.visit_date < monthStart || v.visit_date > monthEnd) continue;
 				const g = this.groupOf(v.person_id);
-				out.push({ date: v.visit_date, kind: '심방 계획', title: `${nameOf(v.person_id)} ${v.kind} 심방`, sub: `${v.state === '완료' ? '완료 · ' : ''}${v.pastor}${g ? ' · ' + g.community : ''}`, person_id: v.person_id, href: `/${v.person_id}` });
+				out.push({ date: v.visit_date, kind: '심방 계획', title: `${nameOf(v.person_id)} ${v.kind} 심방`, sub: `${v.method} · ${v.pastor}${g ? ' · ' + g.community : ''}`, person_id: v.person_id, href: `/${v.person_id}` });
 			}
 		}
 		return out;
@@ -297,11 +297,7 @@ class Registry {
 	}
 	addVisit(v: Omit<T.Visit, 'id'>) {
 		this.d.visits.unshift({ ...v, id: uid() });
-		this.log(v.state === '계획' ? '심방 계획' : '심방 기록', this.person(v.person_id)?.name ?? '');
-	}
-	completeVisit(id: string, patch: Partial<T.Visit> = {}) {
-		const v = this.d.visits.find((x) => x.id === id);
-		if (v) { Object.assign(v, patch, { state: '완료' as const }); this.log('심방 기록', this.person(v.person_id)?.name ?? ''); }
+		this.log('심방 기록', this.person(v.person_id)?.name ?? '');
 	}
 	removeVisit(id: string) {
 		this.d.visits = this.d.visits.filter((x) => x.id !== id);

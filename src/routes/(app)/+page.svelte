@@ -108,9 +108,9 @@
 	);
 
 	// ---- 최근 심방 (심방 권한자만) ----
-	const recentVisits = $derived(registry.d.visits.filter((v) => v.state === '완료').sort((a, b) => b.visit_date.localeCompare(a.visit_date)).slice(0, 4));
-	const visits30 = $derived(registry.d.visits.filter((v) => v.state === '완료' && (+t0 - +new Date(v.visit_date)) / 864e5 <= 30 && new Date(v.visit_date) <= t0).length);
-	const planned = $derived(registry.d.visits.filter((v) => v.state === '계획').length);
+	const recentVisits = $derived(registry.d.visits.filter((v) => new Date(v.visit_date) <= t0).sort((a, b) => b.visit_date.localeCompare(a.visit_date)).slice(0, 4));
+	const visits30 = $derived(registry.d.visits.filter((v) => (+t0 - +new Date(v.visit_date)) / 864e5 <= 30 && new Date(v.visit_date) <= t0).length);
+	const planned = $derived(registry.d.visits.filter((v) => new Date(v.visit_date) > t0).length);
 	const nameOf = (id: string) => registry.person(id)?.name ?? '';
 </script>
 

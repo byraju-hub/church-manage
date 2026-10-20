@@ -11,8 +11,7 @@ export type EduDept = '청년부' | '중고등부' | '유초등부' | '유치부
 export type MaritalStatus = '미혼' | '기혼' | '이혼' | '사별' | '기타';
 export type ConsentKind = '교적 등록' | '민감정보' | '요람 공개' | '보호자 동의';
 export type ConsentMethod = '서면' | '앱' | '구두';
-export type VisitMethod = '방문' | '전화';
-export type VisitState = '계획' | '완료';
+export type VisitMethod = '대면' | '전화';
 
 export const STATUS_KINDS: StatusKind[] = ['등록', '전입', '복적', '보류', '보관', '전출', '별세', '제적'];
 export const FAITH_KINDS: FaithKind[] = ['학습', '세례', '유아세례', '입교'];
@@ -233,7 +232,6 @@ export interface Visit {
 	id: string;
 	person_id: string;
 	visit_date: string;
-	state: VisitState; // 계획 → 완료
 	kind: string; // 심방 구분 (VISIT_KINDS)
 	method: VisitMethod;
 	pastor: string; // 담당 교역자

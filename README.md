@@ -36,3 +36,10 @@ Cloudflare Pages에 이 GitHub 저장소를 직접 연결해 둡니다. `main` �
 - Build command: `npm run build`
 - Build output directory: `.svelte-kit/cloudflare`
 - Environment variable: `NODE_VERSION` = `22`
+
+## 심방 녹음·문서 분석 (선택 기능)
+심방 등록 화면의 '녹음·문서로 채우기'는 `/api/visit-analyze` (서버 기능)를 부릅니다.
+- 녹음 → `OPENAI_API_KEY`로 받아쓰기 → `ANTHROPIC_API_KEY`(Claude API)로 요약해 내용·말씀·찬송·구분·후속 조치·동행자를 채움
+- PDF·텍스트 → 바로 요약
+- 키가 없으면 시연용 예시를 보여 줍니다. `.env.example` 참고. 키는 Cloudflare Pages 환경 변수에 넣습니다.
+- 심방 내용은 민감한 정보라 외부 서비스로 전송됩니다. 실제 도입 전에 동의·보관 방침을 정해야 합니다.

@@ -3,7 +3,7 @@
 	import { EVENT_KINDS, type EventKind } from '#lib/registry/types.ts';
 	import { KIND_COLOR, isoDate, type CalItem } from '#lib/registry/calendar.ts';
 
-	let { only = null, doneVisits = false }: { only?: EventKind[] | null; doneVisits?: boolean } = $props();
+	let { only = null }: { only?: EventKind[] | null } = $props();
 	const now = new Date();
 	let y = $state(now.getFullYear());
 	let m = $state(now.getMonth() + 1);
@@ -11,7 +11,7 @@
 	const kinds = $derived(only ?? EVENT_KINDS);
 	let sel = $state<string | null>(isoDate(now));
 
-	const items = $derived(registry.calendarItems(y, m, new Set(on), doneVisits));
+	const items = $derived(registry.calendarItems(y, m, new Set(on)));
 	const order = (k: EventKind) => (k === '생일' ? 99 : EVENT_KINDS.indexOf(k));
 
 	// 날짜별로 묶기 (여러 날에 걸친 일정은 해당 달 안의 모든 날에 표시)

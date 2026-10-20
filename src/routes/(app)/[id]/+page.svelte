@@ -2,11 +2,13 @@
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonFields from '#lib/components/PersonFields.svelte';
+	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
+	import VisitAnalyzer, { type Analysis } from '#lib/components/VisitAnalyzer.svelte';
 	import { ageOf, officeTitle } from '#lib/registry/derive.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import {
 		STATUS_KINDS, FAITH_KINDS, POSITIONS, OFFICE_STATUS_OPTIONS, ORDAINED, CONSENT_KINDS, VISIT_KINDS, FULL_TIME_CLERGY,
-		type StatusKind, type FaithKind, type OfficeName, type OfficeStatus, type ConsentKind, type VisitMethod, type VisitState
+		type StatusKind, type FaithKind, type OfficeName, type OfficeStatus, type ConsentKind, type VisitMethod
 	} from '#lib/registry/types.ts';
 
 	const p = $derived(registry.person(page.params.id!));
@@ -58,7 +60,16 @@
 	const ofPos = $derived(POSITIONS.find((x) => x.label === of.pos)!);
 	let noteBody = $state('');
 	let cs = $state<{ kind: ConsentKind; method: '서면' | '앱' | '구두'; guardian: string }>({ kind: '교적 등록', method: '서면', guardian: '' });
-	let vs = $state({ date: today, state: '완료' as VisitState, kind: '일반', method: '방문' as VisitMethod, pastor: '', companions: '', scripture: '', hymn: '', content: '', follow: '' });
+	let vs = $state({ date: today, kind: '일반', method: '대면' as VisitMethod, pastor: '', scripture: '', hymn: '', content: '', follow: '' });
+	let vsCompanions = $state<Chip[]>([]);
+	function applyAnalysis(r: Analysis) {
+		if (r.kind) vs.kind = r.kind;
+		if (r.content) vs.content = r.content;
+		if (r.scripture) vs.scripture = r.scripture;
+		if (r.hymn) vs.hymn = r.hymn;
+		if (r.follow_up) vs.follow = r.follow_up;
+		if (r.companions?.length) vsCompanions = r.companions.map((n) => { const m = registry.d.people.filter((x) => x.name === n); return { id: m.length === 1 ? m[0].id : null, name: n }; });
+	}
 	let af = $state({ org: '', role: '', start: '' });
 	let grp = $state({ community: '', small_group: '' });
 	let ed = $state({ course: 'ec1', start: today, instructor: '' });
@@ -286,20 +297,20 @@
 			<p class="muted">심방 기록은 전임 교역자까지만 볼 수 있습니다. (심방 권한)</p>
 			{#if registry.perms.visit}
 				{#each byDate(visits.map((x) => ({ ...x, event_date: x.visit_date }))) as x (x.id)}
-					<div style="margin-bottom:.7rem"><b>{x.visit_date}</b> <span class="badge" class:inactive={x.state === '계획'}>{x.state}</span> · {x.kind} · {x.method} · {x.pastor}{x.companions ? ` (동행 ${x.companions})` : ''}
+					<div style="margin-bottom:.7rem"><b>{x.visit_date}</b> · {x.kind} · {x.method} · {x.pastor}{x.companions ? ` (동행 ${x.companions})` : ''}
 						<br />{x.content}{x.scripture ? ` · ${x.scripture}` : ''}{x.hymn ? ` · ${x.hymn}` : ''}{#if x.follow_up}<br /><span class="muted">후속 조치: {x.follow_up}</span>{/if}</div>
 				{:else}<p class="muted">심방 기록이 없습니다.</p>{/each}
 				{#if can}
-					<form class="form" onsubmit={(e) => { e.preventDefault(); registry.addVisit({ person_id: p.id, visit_date: vs.date, state: vs.state, kind: vs.kind, method: vs.method, pastor: vs.pastor || clergy[0]?.name || '담당 교역자', companions: nn(vs.companions), scripture: nn(vs.scripture), hymn: nn(vs.hymn), content: vs.content || '심방 예정', follow_up: nn(vs.follow) }); vs.content = ''; vs.follow = ''; vs.scripture = ''; vs.hymn = ''; vs.companions = ''; }}>
+					<form class="form" onsubmit={(e) => { e.preventDefault(); registry.addVisit({ person_id: p.id, visit_date: vs.date, kind: vs.kind, method: vs.method, pastor: vs.pastor || clergy[0]?.name || '담당 교역자', companions: vsCompanions.length ? vsCompanions.map((c) => c.name).join(', ') : null, scripture: nn(vs.scripture), hymn: nn(vs.hymn), content: vs.content, follow_up: nn(vs.follow) }); vs.content = ''; vs.follow = ''; vs.scripture = ''; vs.hymn = ''; vsCompanions = []; }}>
 						<label>날짜<input type="date" bind:value={vs.date} required /></label>
-						<label>상태<select bind:value={vs.state}><option>완료</option><option>계획</option></select></label>
 						<label>구분<select bind:value={vs.kind}>{#each VISIT_KINDS as k}<option>{k}</option>{/each}</select></label>
-						<label>방법<select bind:value={vs.method}><option>방문</option><option>전화</option></select></label>
+						<label>방법<select bind:value={vs.method}><option>대면</option><option>전화</option></select></label>
 						<label>담당 교역자<select bind:value={vs.pastor}><option value="">(선택)</option>{#each clergy as c}<option>{c.name}</option>{/each}</select></label>
-						<label>동행자<input bind:value={vs.companions} /></label>
+						<label class="wide">동행자 <span class="muted" style="font-weight:400">(이름을 쓰고 쉼표)</span><NameChips bind:chips={vsCompanions} allowFree placeholder="예: 김영수, 이순희" /></label>
+						<div class="wide"><VisitAnalyzer onresult={applyAnalysis} /></div>
 						<label>말씀<input bind:value={vs.scripture} /></label>
 						<label>찬송<input bind:value={vs.hymn} /></label>
-						<label class="wide">내용<textarea rows="2" bind:value={vs.content} required={vs.state === '완료'}></textarea></label>
+						<label class="wide">심방 내용<textarea rows="4" bind:value={vs.content} required></textarea></label>
 						<label class="wide">후속 조치<input bind:value={vs.follow} /></label>
 						<div class="wide"><button type="submit">심방 기록 추가</button></div>
 					</form>

@@ -459,13 +459,13 @@ export function generate(reservedNames: string[] = []) {
 	const KINDS = ['일반', '일반', '새신자', '병문안', '대심방', '이사', '출산', '결혼'];
 	const SCRIP = ['시편 23편', '로마서 8:28', '빌립보서 4:6-7', '이사야 41:10', null, null];
 	const HYMN = ['찬 305장', '찬 430장', '찬 364장', null, null];
-	const visitOf = (p: T.Person, date: string, state: T.VisitState): T.Visit => ({
-		id: eid('vi'), person_id: p.id, visit_date: date, state, kind: pick(KINDS), method: chance(0.25) ? '전화' : '방문', pastor: pick(PASTORS),
+	const visitOf = (p: T.Person, date: string): T.Visit => ({
+		id: eid('vi'), person_id: p.id, visit_date: date, kind: pick(KINDS), method: chance(0.25) ? '전화' : '대면', pastor: pick(PASTORS),
 		companions: chance(0.3) ? pick(grouped).name : null, scripture: pick(SCRIP), hymn: pick(HYMN),
-		content: state === '완료' ? pick(VISIT) : '심방 예정', follow_up: state === '완료' ? pick(FOLLOW) : null
+		content: date <= TODAY ? pick(VISIT) : '심방 예정', follow_up: date <= TODAY ? pick(FOLLOW) : null
 	});
-	for (let i = 0; i < 70; i++) visits.push(visitOf(pick(activeIds), daysAgo(ri(3, 360)), '완료'));
-	for (let i = 0; i < 26; i++) visits.push(visitOf(pick(activeIds), addDay(TODAY, ri(1, 40)), '계획'));
+	for (let i = 0; i < 70; i++) visits.push(visitOf(pick(activeIds), daysAgo(ri(3, 360))));
+	for (let i = 0; i < 26; i++) visits.push(visitOf(pick(activeIds), addDay(TODAY, ri(1, 40))));
 	visits.sort((a, b) => b.visit_date.localeCompare(a.visit_date));
 
 	const NOTE = ['전화 연결 안 됨. 소그룹 인도자가 안부 확인 예정.', '주소 변경 안내 받음. 세대 주소 확인 필요.', '앱 가입 안내 완료.', '요람 공개 여부 재확인 필요.', '새가족 교육 안내 완료.'];

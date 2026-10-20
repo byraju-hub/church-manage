@@ -130,8 +130,8 @@ export const changeLog: T.ChangeLogEntry[] = [
 export const accessLog: T.AccessLogEntry[] = [];
 
 export const visits: T.Visit[] = [
-	{ id: 'vi1', person_id: 'p10', visit_date: '2026-10-08', state: '완료', kind: '병문안', method: '방문', pastor: '정담임', companions: '이순희', scripture: '시편 23편', hymn: '찬 305장', content: '자택 방문. 건강 상태 확인, 회복을 위해 기도.', follow_up: '2주 뒤 재방문, 병원 동행 여부 확인' },
-	{ id: 'vi2', person_id: 'p9', visit_date: '2026-10-04', state: '완료', kind: '새신자', method: '방문', pastor: '정담임', companions: null, scripture: null, hymn: null, content: '교회 소개 및 새가족 교육 안내.', follow_up: null }
+	{ id: 'vi1', person_id: 'p10', visit_date: '2026-10-08', kind: '병문안', method: '대면', pastor: '정담임', companions: '이순희', scripture: '시편 23편', hymn: '찬 305장', content: '자택 방문. 건강 상태 확인, 회복을 위해 기도.', follow_up: '2주 뒤 재방문, 병원 동행 여부 확인' },
+	{ id: 'vi2', person_id: 'p9', visit_date: '2026-10-04', kind: '새신자', method: '대면', pastor: '정담임', companions: null, scripture: null, hymn: null, content: '교회 소개 및 새가족 교육 안내.', follow_up: null }
 ];
 export const educationCourses: T.EducationCourse[] = [{ id: 'ec1', name: '새가족 교육' }];
 export const educationRecords: T.EducationRecord[] = [

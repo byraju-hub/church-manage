@@ -3,10 +3,12 @@
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { ageOf } from '#lib/registry/derive.ts';
 	import { EDU_DEPTS, MISSION_SOCIETIES } from '#lib/registry/types.ts';
+	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
 
 	// 검색 방식: 기본(한 줄) / 복수(여러 명을 한꺼번에) / 항목별(칸을 골라서)
 	let mode = $state<'basic' | 'multi' | 'fields'>('basic');
 	const FIELDS = ['이름', '전화', '주소', '직업·직장', '메모', '인도자', '이전 교회'];
+	let chips = $state<Chip[]>([]);
 	let fieldsPicked = $state<string[]>(['이름', '전화']);
 	let q = $state(page.url.searchParams.get('q') ?? '');
 	let c1 = $state('');
@@ -31,11 +33,11 @@
 
 	const digits = (x: string) => x.replace(/\D/g, '');
 	// 복수 검색: 쉼표·줄바꿈으로 여러 사람을 한꺼번에
-	const multiTerms = $derived(q.split(/[,\n]/).map((t) => t.trim()).filter(Boolean));
+	const chipIds = $derived(new Set(chips.filter((c) => c.id).map((c) => c.id!)));
 	function matchText(p: any): boolean {
+		if (mode === 'multi') return !chips.length || chipIds.has(p.id);
 		const t = q.trim();
 		if (!t) return true;
-		if (mode === 'multi') return multiTerms.some((x) => p.name === x || p.name.includes(x) || (digits(x).length >= 4 && digits(p.phone ?? '').includes(digits(x))));
 		if (mode === 'fields') {
 			const hh = registry.householdOf(p.id);
 			const hay: Record<string, string> = {
@@ -47,7 +49,6 @@
 		}
 		return p.name.includes(t) || (digits(t).length >= 4 && digits(p.phone ?? '').includes(digits(t)));
 	}
-	const notFound = $derived(mode === 'multi' ? multiTerms.filter((x) => !registry.d.people.some((p) => p.name === x)) : []);
 	const l1opts = $derived(registry.childrenOf(null));
 	const l2opts = $derived([...new Set(registry.d.categories.filter((c) => c.parent_id && registry.d.categories.find((x) => x.id === c.parent_id)?.parent_id === null && (!c1 || registry.d.categories.find((x) => x.id === c.parent_id)?.name === c1)).map((c) => c.name))]);
 	const l3opts = $derived([...new Set(registry.d.categories.filter((c) => c.parent_id && registry.d.categories.find((x) => x.id === c.parent_id)?.parent_id).map((c) => c.name))]);
@@ -75,7 +76,7 @@
 	const selSummary = $derived(sel ? registry.summary(sel) : null);
 	const selFamily = $derived.by(() => { const h = sel ? registry.householdOf(sel.id) : undefined; return h ? registry.membersOfHousehold(h.id) : []; });
 	const selNotes = $derived(sel ? registry.d.notes.filter((n) => n.person_id === sel.id).slice(0, 3) : []);
-	const selVisits = $derived(sel ? registry.d.visits.filter((v) => v.person_id === sel.id && v.state === '완료').sort((a, b) => b.visit_date.localeCompare(a.visit_date)).slice(0, 2) : []);
+	const selVisits = $derived(sel ? registry.d.visits.filter((v) => v.person_id === sel.id && v.visit_date <= new Date().toISOString().slice(0, 10)).sort((a, b) => b.visit_date.localeCompare(a.visit_date)).slice(0, 2) : []);
 	// 조건이 바뀌면 목록을 처음 200명으로 되돌림
 	$effect(() => { rows.length; shown = 200; });
 
@@ -118,7 +119,31 @@
 
 <div class="card">
 	<div class="toolbar">
-		<input type="search" placeholder="이름·전화번호 검색 (쉼표로 여러 명 동시)" bind:value={q} onchange={runSearch} />
+		<div class="seg" role="tablist" aria-label="검색 방식">
+			<button type="button" class:on={mode === 'basic'} onclick={() => (mode = 'basic')}>기본 검색</button>
+			<button type="button" class:on={mode === 'multi'} onclick={() => (mode = 'multi')}>복수 검색</button>
+			<button type="button" class:on={mode === 'fields'} onclick={() => (mode = 'fields')}>항목별 검색</button>
+		</div>
+	</div>
+	<div class="toolbar">
+		{#if mode === 'multi'}
+			<div style="flex:1">
+				<NameChips bind:chips placeholder="이름을 쓰고 쉼표(,) — 예: 김영수, 이순희" />
+				<p class="muted" style="margin:.3rem 0 0;font-size:.8rem">교적에 있는 이름이 그대로 쓰입니다. 같은 이름이 한 명이면 바로 들어가고, 여러 명이면 목록에서 고릅니다. 이름 목록을 붙여 넣어도 됩니다.</p>
+			</div>
+		{:else}
+			<input type="search" placeholder={mode === 'fields' ? '아래에서 고른 항목 안에서 찾습니다 (공백으로 여러 단어)' : '이름 · 전화번호 검색'} bind:value={q} onchange={runSearch} />
+		{/if}
+	</div>
+	{#if mode === 'fields'}
+		<div class="toolbar"><span class="muted">검색할 항목</span><div class="cols">{#each FIELDS as f}<label><input type="checkbox" value={f} bind:group={fieldsPicked} />{f}</label>{/each}</div></div>
+	{/if}
+	<div class="toolbar">
+		<select bind:value={c1} onchange={() => { c2 = ''; c3 = ''; }}><option value="">교인구분 전체</option>{#each l1opts as o}<option>{o.name}</option>{/each}</select>
+		<select bind:value={c2}><option value="">2단계 전체</option>{#each l2opts as o}<option>{o}</option>{/each}</select>
+		<select bind:value={c3}><option value="">3단계 전체</option>{#each l3opts as o}<option>{o}</option>{/each}</select>
+		<select bind:value={eduDept}><option value="">교육부서 전체</option>{#each EDU_DEPTS as o}<option>{o}</option>{/each}</select>
+		<select bind:value={society}><option value="">전도회 전체</option>{#each MISSION_SOCIETIES as o}<option>{o}</option>{/each}</select>
 	</div>
 	<div class="toolbar">
 		<select bind:value={status}><option value="">재적상태 전체</option>{#each ['재적', '보류', '보관', '전출', '별세', '제적', '미등록'] as v}<option>{v}</option>{/each}</select>
