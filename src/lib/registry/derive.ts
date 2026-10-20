@@ -65,6 +65,13 @@ export function officeTitle(t: { office: OfficeName; rank_status: OfficeStatus }
 	return t.rank_status === '시무' ? base : `${t.rank_status}${base}`;
 }
 
+// 이름 옆에 붙이는 직분 표시: 직분 (어떤 직분인지). 예) 권사 (시무), 권사 (은퇴), 집사 (서리), 목사 (담임)
+export function officeWithKind(t: { office: OfficeName; rank_status: OfficeStatus }, clergy?: string | null): string {
+	const base = t.office === '시무집사' || t.office === '서리집사' ? '집사' : t.office;
+	const kind = clergy && (t.office === '목사' || t.office === '전도사') ? clergy.replace(t.office, '') : t.rank_status;
+	return `${base} (${kind})`;
+}
+
 // 교인구분(카테고리)의 경로: ['교인', '장년', '예배출석']
 export function categoryPath(cats: Category[], id: string | null): Category[] {
 	const out: Category[] = [];

@@ -2,7 +2,7 @@
 	// 교인 목록: 검색(기본·복수·항목별)과 필터, 왼쪽 목록 · 오른쪽 상세, 내려받기
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
-	import { ageOf } from '#lib/registry/derive.ts';
+	import { ageOf, officeWithKind } from '#lib/registry/derive.ts';
 	import { MISSION_SOCIETIES } from '#lib/registry/types.ts';
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
 
@@ -195,25 +195,28 @@
 			<div class="row" style="flex-wrap:nowrap;gap:.9rem;margin-bottom:.8rem">
 				{#if p.photo}<img class="mugshot2" src={p.photo} alt="{p.name} 사진" />{:else}<span class="avatar" style="width:64px;height:64px;font-size:1.5rem;border-radius:16px">{p.name.slice(0, 1)}</span>{/if}
 				<div>
-					<h2 style="margin:0">{p.name}{#if p.name_note}<small class="muted"> ({p.name_note})</small>{/if} <small class="muted">{s.title}</small></h2>
+					<h2 style="margin:0">{p.name}{#if p.name_note}<small class="muted"> ({p.name_note})</small>{/if} {#if s.office}<small class="office-k">{officeWithKind(s.office, p.clergy_title)}</small>{/if}</h2>
 					<span class="badge {s.status === '재적' ? '' : s.status === '보류' ? 'inactive' : 'transferred'}">{s.status}</span>
-					<span class="badge">{s.faith}</span>{#if p.clergy_title}<span class="tag now">{p.clergy_title}</span>{/if}
+					
 				</div>
 			</div>
 			<dl class="compact">
 				<dt>교인구분</dt><dd>{s.category || '-'}</dd>
 				<dt>생년월일</dt><dd>{p.birth_date ?? '-'}{p.birth_lunar ? ' (음력)' : ''} · 만 {ageOf(p.birth_date) ?? '-'}세 · {p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : '-'}</dd>
 				<dt>휴대폰</dt><dd>{p.phone ?? '-'}{p.sms_opt_out ? ' (문자 수신 거부)' : ''}</dd>
+				<dt>집전화</dt><dd>{hh?.home_phone ?? '-'}</dd>
 				<dt>주소</dt><dd>{[p.address1, p.address2].filter(Boolean).join(' ') || hh?.address || '-'}</dd>
-				<dt>직업 / 직장</dt><dd>{[p.occupation, p.workplace].filter(Boolean).join(' / ') || '-'}</dd>
-				<dt>결혼</dt><dd>{p.marital_status ?? '-'}{p.wedding_date ? ` · ${p.wedding_date}` : ''}</dd>
 				<dt>소그룹</dt><dd>{s.community ? `${s.community} › ${s.smallGroup}` : '-'}</dd>
 				<dt>전도회</dt><dd>{p.mission_society ?? '-'}</dd>
+				<dt>직분</dt><dd>{s.office ? officeWithKind(s.office, p.clergy_title) : '성도'}</dd>
+				<dt>신급</dt><dd>{s.faith}</dd>
 				<dt>등록일</dt><dd>{s.registered ?? '미상'}{p.reg_no ? ` · 교번 ${p.reg_no}` : ''}</dd>
 				<dt>인도자</dt><dd>{#if p.guide_person_id}{registry.person(p.guide_person_id)?.name}{:else}-{/if}</dd>
+				<dt>결혼</dt><dd>{p.marital_status ?? '-'}{p.wedding_date ? ` · ${p.wedding_date}` : ''}</dd>
+				<dt>직업 / 직장</dt><dd>{[p.occupation, p.workplace].filter(Boolean).join(' / ') || '-'}</dd>
 			</dl>
 			{#if selFamily.length}
-				<h3 class="mini-h">세대 {hh?.no}</h3>
+				<h3 class="mini-h">세대 구성 · {hh?.no}</h3>
 				<table class="fam">
 					<thead><tr><th>관계</th><th>이름</th><th>나이</th><th>직분 · 신급</th></tr></thead>
 					<tbody>

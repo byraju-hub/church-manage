@@ -147,7 +147,7 @@ export const affiliations: T.Affiliation[] = [
 
 // ---- 실제 규모(재적 723명)의 가상 교인을 위 시험용 인물 뒤에 덧붙임 ----
 // 재적 교인을 723명으로 맞춤: 위 시험용 인물 중 재적인 사람을 빼고 나머지를 생성기가 채움
-// (주일 출석 약 430명, 소그룹 출석 약 170명, 교육부서 출석 약 110명이 되도록 출석률·소그룹 비율을 맞춤)
+// (장년은 거의 모두 소그룹에 배정. 주일 출석 약 430명, 교육부서 출석 약 110명이 되도록 출석률을 맞춤)
 const TARGET_ACTIVE = 723;
 const handActive = people.filter((p) => {
 	const ev = statusEvents.filter((e) => e.person_id === p.id);

@@ -21,7 +21,7 @@ type L3 = 'a' | 's' | 'n' | 'l';
 
 // opts.targetActive: 생성기가 만드는 재적 교인 수(시험용 인물 제외). opts.groupP: 공동체별(뿌리·줄기·열매) 소그룹 소속 비율
 export function generate(reservedNames: string[] = [], opts: { targetActive?: number; groupP?: [number, number, number] } = {}) {
-	const GROUP_P = opts.groupP ?? [0.62, 0.55, 0.5];
+	const GROUP_P = opts.groupP ?? [0.96, 0.96, 0.96]; // 장년은 거의 모두 소그룹에 배정
 	const rnd = mulberry32(20261020);
 	const ri = (a: number, b: number) => a + Math.floor(rnd() * (b - a + 1));
 	const chance = (p: number) => rnd() < p;
@@ -215,7 +215,7 @@ export function generate(reservedNames: string[] = [], opts: { targetActive?: nu
 	}
 	function l3Of(grouped: boolean): L3 {
 		const r = rnd();
-		return grouped ? (r < 0.78 ? 'a' : r < 0.97 ? 's' : 'n') : r < 0.45 ? 'a' : r < 0.78 ? 's' : 'n';
+		return grouped ? (r < 0.66 ? 'a' : r < 0.93 ? 's' : 'n') : r < 0.45 ? 'a' : r < 0.78 ? 's' : 'n';
 	}
 
 	function assignGroup(p: T.Person, birth: number, forceGroup?: GroupDef) {
@@ -379,7 +379,11 @@ export function generate(reservedNames: string[] = [], opts: { targetActive?: nu
 	for (let i = 0; i < 30; i++) {
 		const p = pick(activeAdults);
 		if (statusEvents.some((e) => e.person_id === p.id && e.kind === '보류')) continue;
-		addStatus(p.id, '보류', daysAgo(ri(40, 900)), pick(['장기 결석', '연락 두절', '해외 체류']));
+		// 보류일은 등록일보다 뒤여야 함 (이력은 날짜순으로 계산하므로)
+		const reg = statusEvents.find((e) => e.person_id === p.id)?.event_date ?? daysAgo(900);
+		const from = reg > daysAgo(900) ? addDay(reg, 30) : daysAgo(900);
+		if (from >= daysAgo(40)) continue;
+		addStatus(p.id, '보류', dateBetween(from, daysAgo(40)), pick(['장기 결석', '연락 두절', '해외 체류']));
 		const gi = personGroups.findIndex((g) => g.person_id === p.id);
 		if (gi >= 0) personGroups.splice(gi, 1);
 		p.category_id = p.category_id!.replace(/\.[asnl]$/, '.n');
@@ -393,8 +397,10 @@ export function generate(reservedNames: string[] = [], opts: { targetActive?: nu
 			const p = mkPerson({ surname: pick(SUR), gender: chance(0.5) ? 'M' : 'F', birth: hb, marital: kind === '별세' ? '사별' : null });
 			const reg = dateBetween(`${Math.max(1990, hb + 25)}-01-01`, daysAgo(900));
 			addStatus(p.id, '등록', reg);
-			if (kind === '제적') addStatus(p.id, '보류', dateBetween(reg, daysAgo(500)), '장기 결석');
-			const at = dateBetween(daysAgo(kind === '별세' ? 1500 : 1000), daysAgo(20));
+			const held = kind === '제적' ? dateBetween(reg, daysAgo(500)) : reg;
+			if (kind === '제적') addStatus(p.id, '보류', held, '장기 결석');
+			const start = daysAgo(kind === '별세' ? 1500 : 1000);
+			const at = dateBetween(held > start ? addDay(held, 30) : start, daysAgo(20));
 			addStatus(p.id, kind, at, kind === '전출' ? pick(['이사', '직장 이동', '교회 이전']) : kind === '별세' ? null : kind === '보관' ? '삭제할 수 없는 교적' : '장기 소식 두절', kind === '전출' ? `가상교회${ri(1, 9)}` : null);
 			giveFaith(p, hb, reg, false);
 			p.category_id = kind === '별세' ? 'dead' : kind === '전출' ? 'move' : 'keep';

@@ -5,7 +5,7 @@
 	import PersonFields from '#lib/components/PersonFields.svelte';
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
 	import VisitAnalyzer, { type Analysis } from '#lib/components/VisitAnalyzer.svelte';
-	import { ageOf, officeTitle } from '#lib/registry/derive.ts';
+	import { ageOf, officeTitle, officeWithKind } from '#lib/registry/derive.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import {
 		STATUS_KINDS, FAITH_KINDS, POSITIONS, OFFICE_STATUS_OPTIONS, ORDAINED, CONSENT_KINDS, VISIT_KINDS, FULL_TIME_CLERGY,
@@ -103,7 +103,7 @@
 		<div class="row" style="flex-wrap:nowrap;gap:1rem">
 			{#if p.photo}<img class="mugshot" src={p.photo} alt="{p.name} 사진" />{:else}<span class="avatar" style="width:56px;height:56px;font-size:1.3rem">{p.name.slice(0, 1)}</span>{/if}
 			<h1 style="margin:0">
-				{p.name}{#if s.title}<small class="muted"> {s.title}</small>{/if}{#if p.clergy_title}<span class="tag now">{p.clergy_title}</span>{/if}
+				{p.name}{#if s.office}<small class="office-k"> {officeWithKind(s.office, p.clergy_title)}</small>{/if}
 				<span class="badge {s.status === '재적' ? '' : s.status === '보류' ? 'inactive' : 'transferred'}">{s.status}</span>
 				<span class="badge">{s.faith}</span>
 				{#if s.memberCert}<span class="tag now">앱 교인 인증 켜짐</span>{/if}
@@ -126,26 +126,23 @@
 				{#if can && !editing}<button class="ghost" onclick={startEdit}>수정</button>{/if}
 			</div>
 			{#if !editing}
-				<dl>
-					<dt>이름</dt><dd>{p.name}{p.name_note ? ` (${p.name_note})` : ''} <span class="tag">앱 프로필</span></dd>
-					<dt>생년월일</dt><dd>{v(p.birth_date)}{p.birth_lunar ? ' (음력)' : ' (양력)'} · 만 {ageOf(p.birth_date) ?? '-'}세</dd>
-					<dt>성별</dt><dd>{p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : '-'} <span class="tag">앱 프로필</span></dd>
-					<dt>휴대폰</dt><dd>{v(p.phone)}{p.sms_opt_out ? ' (문자 수신 거부)' : ''} <span class="tag">앱 프로필</span></dd>
-					<dt>집전화</dt><dd>{v(hh?.home_phone)} <span class="tag">세대</span></dd>
-					<dt>이메일</dt><dd>{v(p.email)} <span class="tag">앱 프로필</span></dd>
-					<dt>앱 가입</dt><dd>{p.has_account ? '가입' : '미가입'} <span class="tag">계산</span></dd>
-					<dt>주소</dt><dd>{[p.address_zip, p.address1, p.address2].filter(Boolean).join(' ') || (hh?.address ? `${hh.address} (세대 주소)` : '-')}</dd>
-					<dt>직업 / 직장</dt><dd>{[p.occupation, p.workplace].filter(Boolean).join(' / ') || '-'}</dd>
-					<dt>결혼</dt><dd>{v(p.marital_status)}{p.wedding_date ? ` · 결혼기념일 ${p.wedding_date}` : ''}</dd>
-					<dt>이전 출석 교회</dt><dd>{v(p.previous_church)}</dd>
-					<dt>인도자</dt><dd>{#if p.guide_person_id}<a href="/{p.guide_person_id}">{registry.person(p.guide_person_id)?.name}</a>{:else}{v(p.guide_name)}{/if}</dd>
-					<dt>대가족</dt><dd>{#if bigHead}세대주 <a href="/{bigHead.id}">{bigHead.name}</a> · {v(p.big_family_relation)}{:else}-{/if}</dd>
-					<dt>교인구분</dt><dd>{s.category || '-'}</dd>
-					<dt>전도회</dt><dd>{v(p.mission_society)}</dd>
-					{#if p.clergy_title}<dt>교역자 직책</dt><dd>{p.clergy_title}</dd>{/if}
-					<dt>신급 확인일</dt><dd>{v(p.faith_checked_on)}</dd>
-					<dt>비고</dt><dd>{v(p.note)}</dd>
-				</dl>
+				<table class="info">
+					<tbody>
+						<tr><th>교인구분</th><td>{s.category || '-'}</td><th>교번</th><td>{v(p.reg_no)}</td></tr>
+						<tr><th>이름</th><td>{p.name}{p.name_note ? ` (${p.name_note})` : ''}</td><th>성별</th><td>{p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : '-'}</td></tr>
+						<tr><th>생년월일</th><td>{v(p.birth_date)} ({p.birth_lunar ? '음력' : '양력'}) · 만 {ageOf(p.birth_date) ?? '-'}세</td><th>앱 가입</th><td>{p.has_account ? '가입' : '미가입'}</td></tr>
+						<tr><th>휴대폰</th><td>{v(p.phone)}{p.sms_opt_out ? ' (문자 수신 거부)' : ''}</td><th>집전화</th><td>{v(hh?.home_phone)}</td></tr>
+						<tr><th>주소</th><td colspan="3">{[p.address_zip, p.address1, p.address2].filter(Boolean).join(' ') || (hh?.address ? `${hh.address} (세대 주소)` : '-')}</td></tr>
+						<tr><th>소그룹</th><td>{s.community ? `${s.community} › ${s.smallGroup}` : '-'}</td><th>전도회</th><td>{v(p.mission_society)}</td></tr>
+						<tr><th>직분</th><td>{s.office ? officeWithKind(s.office, p.clergy_title) : '성도'}</td><th>신급</th><td>{s.faith}</td></tr>
+						<tr><th>등록일</th><td>{s.registered ?? '미상'}</td><th>인도자</th><td>{#if p.guide_person_id}<a href="/{p.guide_person_id}">{registry.person(p.guide_person_id)?.name}</a>{:else}{v(p.guide_name)}{/if}</td></tr>
+						<tr><th>결혼</th><td>{v(p.marital_status)}{p.wedding_date ? ` · 결혼기념일 ${p.wedding_date}` : ''}</td><th>직업 / 직장</th><td>{[p.occupation, p.workplace].filter(Boolean).join(' / ') || '-'}</td></tr>
+						<tr><th>이메일</th><td>{v(p.email)}</td><th>이전 출석 교회</th><td>{v(p.previous_church)}</td></tr>
+						<tr><th>대가족</th><td>{#if bigHead}세대주 <a href="/{bigHead.id}">{bigHead.name}</a> · {v(p.big_family_relation)}{:else}-{/if}</td><th>신급 확인일</th><td>{v(p.faith_checked_on)}</td></tr>
+						<tr><th>비고</th><td colspan="3">{v(p.note)}</td></tr>
+					</tbody>
+				</table>
+				<p class="muted" style="font-size:.78rem;margin:.5rem 0 0">이름 · 휴대폰 · 성별 · 생년월일 · 이메일은 앱 회원 프로필과 같은 자료입니다. 앱 가입 여부는 자동으로 계산합니다.</p>
 			{:else}
 				<form class="form" onsubmit={(e) => { e.preventDefault(); saveEdit(); }}>
 					<PersonFields bind:f={draft} />
