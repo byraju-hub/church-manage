@@ -103,7 +103,7 @@
 	</div>
 {:else if tab === '임직'}
 	<div class="card" style="padding:0;overflow-x:auto">
-		<div class="card-head" style="padding:1.1rem 1.3rem 0"><h2>임직자 현황 <span class="tag">지금 기준</span></h2><span class="sub">직분 × 신분</span></div>
+		<div class="card-head" style="padding:1.1rem 1.3rem 0"><h2>임직자 현황 <span class="tag">지금 기준</span></h2><span class="sub">직분 × 구분</span></div>
 		<table class="sm">
 			<thead><tr><th>직분</th>{#each OFFICE_STATUSES as s}<th style="text-align:right">{s}</th>{/each}<th style="text-align:right">합계</th></tr></thead>
 			<tbody>

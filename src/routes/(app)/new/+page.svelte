@@ -120,7 +120,7 @@
 				<label>집례자<input bind:value={faith.officiant} disabled={faith.kind === '해당사항 없음'} /></label>
 				<label><span class="lt">직분<b class="req">*</b></span><select bind:value={office.pos}>{#each POSITIONS as o}<option>{o.label}</option>{/each}</select></label>
 				{#if position.office}
-					<label>신분<select bind:value={office.status}>{#each statusOptions as s}<option>{s}</option>{/each}</select></label>
+					<label>구분<select bind:value={office.status}>{#each statusOptions as s}<option>{s}</option>{/each}</select></label>
 					{#if ORDAINED.includes(position.office)}
 						<label>임직일<input type="date" bind:value={office.date} /></label>
 						<label>임직교회<input bind:value={office.church} placeholder="비우면 본 교회" /></label>

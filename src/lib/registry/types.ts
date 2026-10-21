@@ -18,7 +18,7 @@ export const FAITH_KINDS: FaithKind[] = ['학습', '세례', '유아세례', '�
 // 직분 높은 순 (이 교회는 '안수집사' 대신 '시무집사')
 export const OFFICE_NAMES: OfficeName[] = ['목사', '전도사', '사모', '장로', '시무집사', '권사', '서리집사'];
 export const OFFICE_STATUSES: OfficeStatus[] = ['시무', '은퇴', '원로', '명예', '협동', '사임', '전입', '서리'];
-// 직분마다 고를 수 있는 신분 ('교적 프로그램 구조' 문서)
+// 직분마다 고를 수 있는 구분 ('교적 프로그램 구조' 문서)
 export const OFFICE_STATUS_OPTIONS: Record<OfficeName, OfficeStatus[]> = {
 	목사: ['시무', '은퇴', '원로', '명예', '협동', '사임'],
 	전도사: ['시무', '은퇴', '사임'],
@@ -33,13 +33,13 @@ export const ORDAINED: OfficeName[] = ['장로', '시무집사', '권사'];
 export const CLERGY_TITLES: ClergyTitle[] = ['담임목사', '부목사', '교육목사', '전임전도사', '교육전도사'];
 // 심방 기록은 전임 교역자까지만 볼 수 있음 (교육전도사 제외)
 export const FULL_TIME_CLERGY: ClergyTitle[] = ['담임목사', '부목사', '교육목사', '전임전도사'];
-// 직분 선택 목록 (목사·전도사는 하나로 고르고, 담임·부·교육 같은 직책은 신분에서 고름)
+// 직분 선택 목록 (목사·전도사는 하나로 고르고, 담임·부·교육 같은 직책은 구분에서 고름)
 export interface Position { label: string; office: OfficeName | null }
 export const POSITIONS: Position[] = [
 	{ label: '성도', office: null },
 	...OFFICE_NAMES.map((o) => ({ label: o, office: o }))
 ];
-// 목사·전도사의 신분 목록: 지금 맡은 직책(담임목사 등)이 '시무'를 대신함
+// 목사·전도사의 구분 목록: 지금 맡은 직책(담임목사 등)이 '시무'를 대신함
 const CLERGY_BY_OFFICE: Partial<Record<OfficeName, ClergyTitle[]>> = {
 	목사: ['담임목사', '부목사', '교육목사'],
 	전도사: ['전임전도사', '교육전도사']
@@ -48,7 +48,7 @@ export function rankChoices(o: OfficeName): string[] {
 	const c = CLERGY_BY_OFFICE[o];
 	return c ? [...c, ...OFFICE_STATUS_OPTIONS[o].filter((s) => s !== '시무')] : OFFICE_STATUS_OPTIONS[o];
 }
-// 고른 신분을 저장 값으로: 직책이면 신분 '시무' + 교역자 직책, 아니면 신분 그대로
+// 고른 구분을 저장 값으로: 직책이면 구분 '시무' + 교역자 직책, 아니면 구분 그대로
 export function parseRank(choice: string): { rank_status: OfficeStatus; clergy: ClergyTitle | null } {
 	return (CLERGY_TITLES as string[]).includes(choice)
 		? { rank_status: '시무', clergy: choice as ClergyTitle }
@@ -98,7 +98,7 @@ export interface Person {
 	purged_on: string | null;
 	photo: string | null; // 사진 (작은 이미지)
 	category_id: string | null; // 교인구분 (3단계 카테고리 중 하나)
-	clergy_title: ClergyTitle | null; // 교역자 직책 (신분과 별개)
+	clergy_title: ClergyTitle | null; // 교역자 직책 (구분과 별개)
 	edu_dept: EduDept | null; // 교육부서 (청년·교육부서인 경우)
 	mission_society: string | null; // 전도회 (예: 3남전도회, 5여전도회)
 	big_family_head_id: string | null; // 대가족 세대주

@@ -150,7 +150,7 @@
 					</div>
 					<div>
 						<h4>직분 이력</h4>
-						<table class="dt list"><thead><tr><th>직분</th><th>신분</th><th>임직(시작)</th><th>끝</th></tr></thead><tbody>
+						<table class="dt list"><thead><tr><th>직분</th><th>구분</th><th>임직(시작)</th><th>끝</th></tr></thead><tbody>
 							{#each sortD(registry.officesOf(p.id)) as t}<tr><td>{t.office}</td><td>{t.rank_status}</td><td>{ymd(t.start_date)}</td><td>{ymd(t.end_date)}</td></tr>
 							{:else}<tr><td colspan="4" class="c">성도</td></tr>{/each}
 						</tbody></table>
@@ -222,7 +222,7 @@
 
 			{:else if doc === '직분자 명단'}
 				<div class="doc-head"><span>{CHURCH}</span><h2>직분자 명단</h2><span>{officers.length}명</span></div>
-				<table class="dt list zebra"><thead><tr><th>직분</th><th>신분</th><th>이름</th><th>표시</th><th>임직일</th><th>임직교회</th><th>소그룹</th></tr></thead><tbody>
+				<table class="dt list zebra"><thead><tr><th>직분</th><th>구분</th><th>이름</th><th>표시</th><th>임직일</th><th>임직교회</th><th>소그룹</th></tr></thead><tbody>
 					{#each officers as { t, p: x } (t.id)}<tr><td>{t.office}</td><td class="c">{t.rank_status}</td><td><b>{x.name}</b></td><td>{officeTitle(t)}</td><td class="c">{ymd(t.start_date)}</td><td>{t.church ?? '본 교회'}</td><td>{registry.summary(x).smallGroup}</td></tr>{/each}
 				</tbody></table>
 			{/if}

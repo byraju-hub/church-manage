@@ -196,14 +196,14 @@
 		</div>
 		<div class="card">
 			<h2>직분 이력 {#if s.office}<span class="tag now">지금 직분: {s.title}</span>{/if}</h2>
-			<table class="sm"><thead><tr><th>직분</th><th>신분</th><th>임직(시작)</th><th>끝</th><th>임직교회</th><th>비고</th></tr></thead><tbody>
+			<table class="sm"><thead><tr><th>직분</th><th>구분</th><th>임직(시작)</th><th>끝</th><th>임직교회</th><th>비고</th></tr></thead><tbody>
 				{#each byDate(registry.officesOf(p.id)) as t}<tr><td>{t.office}</td><td>{t.rank_status}</td><td>{t.start_date ?? '미상'}</td><td>{t.end_date ?? '(지금)'}</td><td>{t.church ?? '본 교회'}</td><td>{v(t.note)}</td></tr>
 				{:else}<tr><td colspan="6" class="muted">직분 이력 없음 (성도)</td></tr>{/each}
 			</tbody></table>
 			{#if can}
 				<form class="form" style="margin-top:.7rem" onsubmit={(e) => { e.preventDefault(); registry.addOffice({ person_id: p.id, office: ofPos.office!, rank_status: parseRank(of.rank).rank_status, start_date: nn(of.start), end_date: nn(of.end), church: ORDAINED.includes(ofPos.office!) ? nn(of.church) : null, note: null }); if (parseRank(of.rank).clergy) registry.updatePerson(p.id, { clergy_title: parseRank(of.rank).clergy }); of.start = ''; of.end = ''; of.church = ''; }}>
 					<label>직분<select bind:value={of.pos}>{#each POSITIONS.filter((x) => x.office) as o}<option>{o.label}</option>{/each}</select></label>
-					<label>신분<select bind:value={of.rank}>{#each statusOpts as o}<option>{o}</option>{/each}</select></label>
+					<label>구분<select bind:value={of.rank}>{#each statusOpts as o}<option>{o}</option>{/each}</select></label>
 					<label>{ORDAINED.includes(ofPos.office!) ? '임직일' : '시작일'}<input type="date" bind:value={of.start} /></label>
 					<label>종료일<input type="date" bind:value={of.end} /></label>
 					{#if ORDAINED.includes(ofPos.office!)}<label>임직교회<input bind:value={of.church} placeholder="비우면 본 교회 (타교 임직이면 교회 이름)" /></label>{/if}

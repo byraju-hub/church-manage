@@ -58,7 +58,7 @@ export function currentOffice(terms: OfficeTerm[]): OfficeTerm | null {
 	return live[0] ?? null;
 }
 
-// 호칭: 시무는 직분 그대로, 나머지는 신분을 앞에 붙임 (서리집사는 '집사', 시무집사 은퇴는 '은퇴집사')
+// 호칭: 시무는 직분 그대로, 나머지는 구분을 앞에 붙임 (서리집사는 '집사', 시무집사 은퇴는 '은퇴집사')
 export function officeTitle(t: { office: OfficeName; rank_status: OfficeStatus }): string {
 	if (t.office === '서리집사') return t.rank_status === '명예' ? '명예집사' : '집사';
 	const base = t.office === '시무집사' && t.rank_status !== '시무' ? '집사' : t.office;

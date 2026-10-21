@@ -51,8 +51,8 @@
 	{@const rest = others(office)}
 	{#if rest.length}
 		<div class="card">
-			<h2>그 밖의 신분 <span class="muted" style="font-weight:400">(은퇴 · 원로 · 명예 · 협동 · 전입)</span></h2>
-			<table class="sm"><thead><tr><th>이름</th><th>신분</th><th>시작</th><th>임직교회</th></tr></thead><tbody>
+			<h2>그 밖의 구분 <span class="muted" style="font-weight:400">(은퇴 · 원로 · 명예 · 협동 · 전입)</span></h2>
+			<table class="sm"><thead><tr><th>이름</th><th>구분</th><th>시작</th><th>임직교회</th></tr></thead><tbody>
 				{#each rest as { t, p } (t.id)}<tr><td><a href="/{p.id}">{p.name}</a></td><td>{t.rank_status}{office}</td><td>{t.start_date ?? '미상'}</td><td>{t.church ?? '본 교회'}</td></tr>{/each}
 			</tbody></table>
 		</div>

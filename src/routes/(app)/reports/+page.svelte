@@ -2,6 +2,8 @@
 	// 명단: 생일·결혼기념일, 직분자, 학습·세례 대상자, 공동체·소그룹별 명단, 교세 통계
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { ageOf } from '#lib/registry/derive.ts';
+	import { recentSundays } from '#lib/registry/attendance.mock.ts';
+	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 
 	const tabs = ['생일·결혼기념일', '직분자 명단', '학습·세례 대상자', '공동체·소그룹별 명단', '교세 통계'];
 	let tab = $state(tabs[0]);
@@ -39,13 +41,35 @@
 		all.filter(({ s, p }) => s.memberCert && ['미확인', '원입교인', '학습교인'].includes(s.faith) && (ageOf(p.birth_date) ?? 99) >= 14)
 	);
 
+	// 공동체·소그룹별 명단: 2026년 편성표 순서(뿌리 → 줄기 → 열매, 소그룹도 편성표 순서), 마지막에 미지정자.
+	// 각 명단은 가나다순, 올해(1월 1일 ~ 지난 주일) 출석률로 색 구분 (80% 이상 / 50~79% / 50% 미만)
+	// 올해 등록한 사람은 등록일 이후 주일만 셈
+	const YEAR = new Date().getFullYear();
+	const WEEKS = recentSundays(60).filter((d) => d.startsWith(`${YEAR}-`));
+	const rateOf = (id: string, registered: string | null) => {
+		const ws = WEEKS.map((d, i) => ({ d, back: WEEKS.length - 1 - i })).filter((w) => !registered || w.d >= registered);
+		if (!ws.length) return 0;
+		return Math.round((ws.filter((w) => registry.attended(id, w.d, w.back)).length * 100) / ws.length);
+	};
+	const band = (r: number) => (r >= 80 ? 'hi' : r >= 50 ? 'mid' : 'lo');
+	type Row = (typeof active)[number] & { rate: number };
+	const leaders = $derived(new Set(registry.d.smallGroups.map((g) => g.leader_id).filter((x): x is string => !!x)));
 	const byGroup = $derived.by(() => {
-		const m = new Map<string, typeof active>();
-		for (const x of active) {
-			const k = x.s.community ? `${x.s.community} › ${x.s.smallGroup}` : '소속 없음';
-			m.set(k, [...(m.get(k) ?? []), x]);
+		const rows: Row[] = active.map((x) => ({ ...x, rate: rateOf(x.p.id, x.s.registered ?? null) }));
+		const byName = (a: Row, b: Row) => a.p.name.localeCompare(b.p.name, 'ko');
+		const out: { community: string; groups: { name: string; xs: Row[]; rate: number }[] }[] = [];
+		const used = new Set<Row>();
+		const grp = (name: string, xs: Row[]) => {
+			xs.forEach((x) => used.add(x));
+			return { name, xs: xs.sort(byName), rate: xs.length ? Math.round(xs.reduce((s, x) => s + x.rate, 0) / xs.length) : 0 };
+		};
+		for (const c of COMMUNITY_DEFS) {
+			const groups = c.groups.map((g) => grp(g.name, rows.filter((x) => x.s.community === c.name && x.s.smallGroup === g.name))).filter((g) => g.xs.length);
+			if (groups.length) out.push({ community: c.name, groups });
 		}
-		return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0], 'ko'));
+		const rest = rows.filter((x) => !used.has(x));
+		if (rest.length) out.push({ community: '미지정', groups: [grp('소그룹 미지정자', rest)] });
+		return out;
 	});
 
 	const count = (fn: (x: (typeof all)[number]) => boolean) => all.filter(fn).length;
@@ -65,7 +89,7 @@
 	</div>
 {:else if tab === '직분자 명단'}
 	<div class="card">
-		<table class="sm"><thead><tr><th>직분</th><th>신분</th><th>이름</th><th>시작일</th></tr></thead><tbody>
+		<table class="sm"><thead><tr><th>직분</th><th>구분</th><th>이름</th><th>시작일</th></tr></thead><tbody>
 			{#each officers as { p, t }}<tr><td>{t.office}</td><td>{t.rank_status}</td><td><a href="/{p.id}">{p.name}</a></td><td>{t.start_date ?? '미상'}</td></tr>{/each}
 		</tbody></table>
 		<p class="muted">더 필요한 것: 임직일이 비어 있는 사람이 많을 수 있음.</p>
@@ -79,10 +103,18 @@
 		<p class="muted">더 필요한 것: 신급 '미확인'을 먼저 확인해야 정확함.</p>
 	</div>
 {:else if tab === '공동체·소그룹별 명단'}
-	{#each byGroup as [k, xs]}
-		<div class="card"><h2>{k} <span class="muted">({xs.length}명)</span></h2>
-			{#each xs as { p, s }}<a href="/{p.id}" style="margin-right:.8rem">{p.name}{s.title ? ` ${s.title}` : ''}</a>{/each}
-		</div>
+	<p class="legend-att muted">{YEAR}년 출석률 (1월 1일 ~ {WEEKS.at(-1)?.slice(5).replace('-', '/')}, 주일 {WEEKS.length}회) ·
+		<span class="hi">● 80% 이상</span> <span class="mid">● 50~79%</span> <span class="lo">● 50% 미만</span> <span class="lead">● 인도자</span>
+		<span>(이름 옆 숫자는 개인 출석률)</span></p>
+	{#each byGroup as c}
+		<h2 style="margin:1.2rem 0 .5rem">{c.community}</h2>
+		{#each c.groups as g}
+			<div class="card"><h3 style="margin:0 0 .5rem">{g.name} <span class="muted">({g.xs.length}명)</span> <small class="{band(g.rate)}">평균 출석률 {g.rate}%</small></h3>
+				<div class="names">
+					{#each g.xs as { p, s, rate }}{@const lead = leaders.has(p.id)}<a href="/{p.id}" class="nm {lead ? 'lead' : band(rate)}" title="{lead ? '인도자 · ' : ''}올해 출석률 {rate}%">{p.name}{s.title ? ` ${s.title}` : ''}<small>{lead ? '인도자 · ' : ''}{rate}%</small></a>{/each}
+				</div>
+			</div>
+		{/each}
 	{/each}
 {:else}
 	<div class="grid">
@@ -101,3 +133,14 @@
 		</tbody></table></div>
 	<p class="muted">더 필요한 것: 노회(합동) 보고 서식. 기본 통계 화면은 실제 시스템에 아직 없습니다.</p>
 {/if}
+
+<style>
+	/* 출석률 색: 80% 이상 초록 / 50~79% 연한 주황 / 50% 미만 연한 회색 (--c 바탕색, --t 글자색) */
+	.hi { --c: #2f9e44; --t: #2f9e44; } .mid { --c: #ffa94d; --t: #fd7e14; } .lo { --c: #ced4da; --t: #9aa1a9; }
+	.lead { --c: #1c7ed6; --t: #1c7ed6; } /* 인도자는 출석률과 상관없이 파랑 */
+	small.hi, small.mid, small.lo, .legend-att span[class] { color: var(--t); font-weight: 700; }
+	.legend-att { display: flex; flex-wrap: wrap; gap: 0.3rem 0.8rem; align-items: center; }
+	.names { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+	.nm { display: inline-flex; align-items: baseline; gap: 0.25rem; padding: 0.2rem 0.55rem; border-radius: 8px; font-weight: 600; color: var(--t); background: color-mix(in srgb, var(--c) 12%, #fff); border: 1px solid color-mix(in srgb, var(--c) 40%, #fff); text-decoration: none; }
+	.nm small { font-size: 0.72rem; font-weight: 500; opacity: 0.85; }
+</style>

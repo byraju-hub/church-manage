@@ -31,7 +31,7 @@ export const people: T.Person[] = [
 	P({ id: 'p11', name: '강수진', gender: 'F', birth_date: '1980-06-30', phone: '010-0000-0011', reg_no: '0011', marital_status: '기혼', previous_church: '가상교회', category_id: 'move' }),
 	P({ id: 'p12', name: '한나리', gender: 'F', birth_date: '1985-08-17', phone: '010-0000-0012', has_account: true, marital_status: '미혼', note: '디모데에서 가져온 자료, 등록일 미상', category_id: 'm.a.s' }),
 	P({ id: 'p13', name: '김영수', name_note: 'B', gender: 'M', birth_date: '1975-12-24', phone: '010-0000-0013', reg_no: '0013', occupation: '회사원', marital_status: '기혼', category_id: 'm.a.a', mission_society: '5남전도회' }),
-	// 교역자: 직책(clergy_title)은 신분·직분과 별개. 심방 기록은 전임 교역자까지만 볼 수 있음
+	// 교역자: 직책(clergy_title)은 구분·직분과 별개. 심방 기록은 전임 교역자까지만 볼 수 있음
 	P({ id: 'p14', name: '정담임', gender: 'M', birth_date: '1972-02-10', phone: '010-0000-0014', has_account: true, reg_no: '0014', marital_status: '기혼', wedding_date: '2000-05-20', clergy_title: '담임목사', category_id: 'm.a.a' }),
 	P({ id: 'p15', name: '송보관', gender: 'F', birth_date: '1950-03-03', reg_no: '0015', marital_status: '사별', note: '헌금·직분 이력이 있어 삭제하지 않고 보관', category_id: 'keep' }),
 	P({ id: 'p16', name: '이교육', gender: 'F', birth_date: '1998-09-09', phone: '010-0000-0016', has_account: true, reg_no: '0016', marital_status: '미혼', clergy_title: '교육전도사', category_id: 'm.y.a', edu_dept: '청년부' }),
@@ -96,11 +96,11 @@ export const officeTerms: T.OfficeTerm[] = [
 	O('p4', '장로', '시무', '1995-01-01', '2013-12-31'), O('p4', '장로', '원로', '2014-01-05'),
 	O('p5', '권사', '시무', '1998-01-01', '2020-12-31'), O('p5', '권사', '은퇴', '2021-01-03'),
 	O('p6', '서리집사', '서리', '2022-01-02'), O('p10', '서리집사', '서리', '2005-01-02', '2024-08-31'), O('p10', '서리집사', '사임', '2024-09-01'),
-	// 타교 임직은 신분이 아니라 '임직교회' 칸으로 표시
+	// 타교 임직은 구분이 아니라 '임직교회' 칸으로 표시
 	O('p13', '서리집사', '서리', null, null, '가상교회'),
 	O('p14', '목사', '시무', '2020-03-01'), O('p18', '목사', '시무', '2022-03-06'), O('p16', '전도사', '시무', '2024-03-03'), O('p19', '전도사', '시무', '2025-03-02'),
 	O('p20', '사모', '시무', '2020-03-01'),
-	// 휴직·무임은 신분을 늘리지 않고 비고에 적음
+	// 휴직·무임은 구분을 늘리지 않고 비고에 적음
 	O('p15', '권사', '시무', '1999-01-03', '2018-12-31'), O('p15', '권사', '명예', '2019-01-06', null, null, '휴직 후 명예 전환')
 ];
 export const personGroups: T.PersonGroup[] = [
