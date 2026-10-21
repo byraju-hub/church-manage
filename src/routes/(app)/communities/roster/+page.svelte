@@ -231,7 +231,7 @@
 	.grp-head { margin: 5mm 0 1.5mm; font-size: 11pt; break-after: avoid; }
 	.grp-head span { float: right; font-size: 9.5pt; color: #333; }
 	.rt { width: 100%; border-collapse: collapse; table-layout: fixed; }
-	.rt th, .rt td { border: 1px solid #888; padding: 1.6mm 2mm; text-align: center; font-size: 9.5pt; }
+	.rt th, .rt td { border: 1px solid #000; padding: 1.6mm 2mm; text-align: center; font-size: 9.5pt; }
 	.rt th { background: #f1f3f5; font-weight: 700; text-align: center; }
 	.rt td.c { text-align: center; }
 	/* 이름·직분만 고르면: 소그룹마다 상자 안에 이름을 가나다순으로 */

@@ -280,8 +280,8 @@
 	.doc-head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2.5px solid #111; padding-bottom: 6px; margin-bottom: 10px; font-size: 9pt; color: #444; }
 	.doc-head h2 { margin: 0; font-size: 18pt; letter-spacing: 0.3em; color: #111; }
 	h4 { margin: 14px 0 5px; font-size: 10.5pt; padding-left: 7px; border-left: 4px solid #2a50c8; }
-	.dt { width: 100%; border-collapse: collapse; border: 1.5px solid #222; }
-	.dt th, .dt td { border: 1px solid #8a8f9c; padding: 5px 7px; font-size: 9.5pt; text-align: left; vertical-align: middle; background: #fff; color: #111; }
+	.dt { width: 100%; border-collapse: collapse; border: 1px solid #000; }
+	.dt th, .dt td { border: 1px solid #000; padding: 5px 7px; font-size: 9.5pt; text-align: left; vertical-align: middle; background: #fff; color: #111; }
 	.dt th { background: #eef1f7; font-weight: 700; white-space: nowrap; width: 1%; }
 	.dt.list th { width: auto; text-align: center; background: #e4e9f4; }
 	.dt.zebra tbody tr:nth-child(even) td { background: #f6f8fc; }
