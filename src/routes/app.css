@@ -40,25 +40,29 @@ ul { padding-left: 1.2rem; }
 /* ===== 헤더 / 푸터 ===== */
 .site { min-height: 100vh; display: flex; flex-direction: column; }
 .site > main { flex: 1; width: 100%; max-width: 1200px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
-/* 상단바: 맨 위에서는 크게(--hb-h 92px), 스크롤하면 .compact 로 지금 크기(68px)까지 부드럽게 줄어듦 */
+/* 상단바: 스크롤한 정도(--hb-p: 0 맨 위 → 1 다 줄어듦)를 따라 크기가 연속으로 줄어듦.
+   맨 위 92px · 로고 50px → 다 줄면 지금 크기 68px · 로고 38px (최소). 짧은 전환으로 마우스 휠 단계도 부드럽게 */
 .site-header {
-	--hb-h: 92px; --hb-logo: 50px; --hb-title: 1.28rem; --hb-nav: 1.02rem;
+	--p: var(--hb-p, 0);
+	--hb-h: calc(92px - 24px * var(--p)); --hb-logo: calc(50px - 12px * var(--p));
+	--hb-title: calc(1.28rem - 0.2rem * var(--p)); --hb-nav: calc(1.02rem - 0.06rem * var(--p));
+	--hb-ease: 0.18s cubic-bezier(0.25, 0.8, 0.3, 1);
 	position: sticky; top: 0; z-index: 30;
-	background: rgba(255, 255, 255, 0.94); backdrop-filter: saturate(160%) blur(10px);
+	background: rgba(255, 255, 255, calc(0.94 + 0.03 * var(--p))); backdrop-filter: saturate(160%) blur(10px);
 	border-bottom: 1px solid var(--line);
-	transition: box-shadow 0.3s var(--ease), background 0.3s;
+	box-shadow: 0 6px 18px rgba(27, 36, 51, calc(0.08 * var(--p)));
+	transition: box-shadow var(--hb-ease), background var(--hb-ease);
 }
-.site-header.compact { --hb-h: 68px; --hb-logo: 38px; --hb-title: 1.08rem; --hb-nav: 0.96rem; background: rgba(255, 255, 255, 0.97); box-shadow: 0 6px 18px rgba(27, 36, 51, 0.08); }
-.site-header .bar { max-width: 1200px; margin: 0 auto; padding: 0 1.25rem; min-height: var(--hb-h); display: flex; align-items: center; gap: 1.2rem; transition: min-height 0.32s var(--ease); }
+.site-header .bar { max-width: 1200px; margin: 0 auto; padding: 0 1.25rem; min-height: var(--hb-h); display: flex; align-items: center; gap: 1.2rem; transition: min-height var(--hb-ease); }
 .brand { display: flex; align-items: center; gap: 0.7rem; color: var(--text); flex: none; }
 .brand:hover { text-decoration: none; color: var(--text); }
 .brand .logo {
 	width: var(--hb-logo); height: var(--hb-logo); border-radius: 11px; display: block; object-fit: cover;
 	box-shadow: 0 4px 12px rgba(30, 60, 140, 0.28);
-	transition: transform 0.25s var(--ease), width 0.32s var(--ease), height 0.32s var(--ease);
+	transition: transform 0.25s var(--ease), width var(--hb-ease), height var(--hb-ease);
 }
 .brand:hover .logo { transform: rotate(-6deg) scale(1.06); }
-.brand b { display: block; font-size: var(--hb-title); line-height: 1.2; letter-spacing: -0.02em; transition: font-size 0.32s var(--ease); }
+.brand b { display: block; font-size: var(--hb-title); line-height: 1.2; letter-spacing: -0.02em; transition: font-size var(--hb-ease); }
 .brand small { display: block; font-size: 0.72rem; color: var(--muted); line-height: 1.2; }
 
 /* 상단 메뉴 */
@@ -66,7 +70,7 @@ ul { padding-left: 1.2rem; }
 .main-nav > a, .main-nav .dd-btn {
 	position: relative; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0 0.85rem;
 	color: var(--text); font-weight: 600; font-size: var(--hb-nav); background: none; border: 0; border-radius: 0;
-	box-shadow: none; cursor: pointer; transform: none; filter: none; transition: color 0.15s, font-size 0.32s var(--ease);
+	box-shadow: none; cursor: pointer; transform: none; filter: none; transition: color 0.15s, font-size var(--hb-ease);
 }
 .main-nav > a::after, .main-nav .dd-btn::after {
 	content: ''; position: absolute; left: 0.85rem; right: 0.85rem; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0;
@@ -471,8 +475,7 @@ table.info tbody tr:hover { background: none; }
 	.dash-grid, .dash-grid.even { grid-template-columns: 1fr; }
 	.burger { display: flex; }
 	/* 휴대폰·태블릿: 맨 위 72px → 스크롤하면 지금 크기(60px). 펼침 메뉴 글씨는 그대로 */
-	.site-header { --hb-h: 72px; --hb-logo: 42px; --hb-title: 1.12rem; --hb-nav: 0.96rem; }
-	.site-header.compact { --hb-h: 60px; --hb-logo: 38px; --hb-title: 1.08rem; }
+	.site-header { --hb-h: calc(72px - 12px * var(--p)); --hb-logo: calc(42px - 4px * var(--p)); --hb-title: calc(1.12rem - 0.04rem * var(--p)); --hb-nav: 0.96rem; }
 	.site-header .bar { gap: 1rem; }
 	.main-nav {
 	display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch; gap: 0; align-self: auto;
