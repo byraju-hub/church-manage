@@ -7,6 +7,7 @@
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import { ageOf } from '#lib/registry/derive.ts';
 	import { tick } from 'svelte';
+	import { withPdfStyle } from '#lib/pdf-style.ts';
 	import ExportButtons from '#lib/components/ExportButtons.svelte';
 
 	const active = $derived(registry.d.people.map((p) => ({ p, s: registry.summary(p) })).filter(({ s }) => s.memberCert));
@@ -118,7 +119,8 @@
 			const html2pdf = (await import('html2pdf.js')).default;
 			// 문서처럼 보이도록 상하좌우 여백을 넉넉히 (mm: 위, 왼쪽, 아래, 오른쪽)
 			const opts = { margin: [20, 18, 20, 18], filename: fileName, image: { type: 'jpeg', quality: 0.96 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.grp-head', '.keep'] } };
-			await html2pdf().set(opts as unknown as Record<string, never>).from(sheet).save();
+			const el = sheet;
+			await withPdfStyle(el, () => html2pdf().set(opts as unknown as Record<string, never>).from(el).save());
 			registry.log('출력', `소그룹별 명단 PDF · ${scope} · ${tableCols.join('·')}`);
 		} finally {
 			busy = false;

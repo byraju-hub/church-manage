@@ -5,6 +5,7 @@
 	import ExportButtons from '#lib/components/ExportButtons.svelte';
 	import { ageOf, fullAddress, officeTitle } from '#lib/registry/derive.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
+	import { withPdfStyle } from '#lib/pdf-style.ts';
 
 	// 문서 출력: 화면에서 미리 보고 → 인쇄 또는 PDF 내려받기. 출력할 때마다 접속기록(출력)과 발급번호를 남김
 	// [실제 시스템] 증명서 발급 대장을 따로 두고(발급번호·용도·발급자), 교회 직인 이미지를 넣습니다.
@@ -89,12 +90,13 @@
 		}
 		window.print();
 	}
+	const h2c = { scale: 2, useCORS: true };
 	// 한 장짜리 PDF: 문서 전체를 그림 한 장으로 만든 뒤 A4 한 쪽에 비율을 지켜 맞춤
 	async function pdfOnePage() {
 		if (!sheet) return;
 		const html2pdf = (await import('html2pdf.js')).default;
 		const { jsPDF } = await import('jspdf');
-		const canvas: HTMLCanvasElement = await html2pdf().set({ html2canvas: { scale: 2, useCORS: true } } as unknown as Record<string, never>).from(sheet).toCanvas().get('canvas');
+		const canvas: HTMLCanvasElement = await html2pdf().set({ html2canvas: h2c } as unknown as Record<string, never>).from(sheet).toCanvas().get('canvas');
 		const out = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 		const maxW = 210 - 16, maxH = 297 - 16; // 여백 8mm
 		const k = Math.min(maxW / canvas.width, maxH / canvas.height);
@@ -104,16 +106,19 @@
 	}
 	async function pdf() {
 		if (!sheet) return;
+		const el = sheet;
 		busy = true;
 		try {
-			if (onePage) { await pdfOnePage(); record(); return; }
-			const html2pdf = (await import('html2pdf.js')).default;
-			// pagebreak: 표의 줄이 페이지 사이에서 잘리지 않게 함 (타입 정의에는 없지만 html2pdf 가 지원하는 설정)
-			const opts = { margin: [10, 10, 12, 10], filename: fileName, image: { type: 'jpeg', quality: 0.96 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.keep'] } };
-			await html2pdf()
-				.set(opts as unknown as Record<string, never>)
-				.from(sheet)
-				.save();
+			await withPdfStyle(el, async () => {
+				if (onePage) return pdfOnePage();
+				const html2pdf = (await import('html2pdf.js')).default;
+				// pagebreak: 표의 줄이 페이지 사이에서 잘리지 않게 함 (타입 정의에는 없지만 html2pdf 가 지원하는 설정)
+				const opts = { margin: [10, 10, 12, 10], filename: fileName, image: { type: 'jpeg', quality: 0.96 }, html2canvas: h2c, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.keep'] } };
+				await html2pdf()
+					.set(opts as unknown as Record<string, never>)
+					.from(el)
+					.save();
+			});
 			record();
 		} finally {
 			busy = false;
@@ -248,9 +253,9 @@
 					{#each registry.d.meetings as m (m.meeting)}<tr><td class="c"><b>{m.meeting}</b></td><td class="c">{m.chair}</td><td class="c">{m.secretary}</td></tr>{/each}
 				</tbody></table>
 				<div class="org-cols">
-					{#each orgCols as col}<div class="org-col">{#each col as { c, ci } (c.id)}
+					{#each orgCols as col}<div class="org-col">{#each col as { c } (c.id)}
 						<table class="dt list keep">
-							<thead><tr><th colspan="3" class="cm-th">{ci + 1}. {c.name} <span>위원장 {c.leader_id ? `${pname(c.leader_id)} 장로` : ''}</span></th></tr>
+							<thead><tr><th colspan="3" class="cm-th">{c.name} <span>위원장 {c.leader_id ? `${pname(c.leader_id)} 장로` : ''}</span></th></tr>
 								<tr><th>부서</th><th>부서장</th><th>담당자</th></tr></thead>
 							<tbody>{#each deptsOf(c.id) as d}<tr><td>{d.name}</td><td class="c">{pname(d.leader_id)}</td><td class="c">{d.staff_ids.map(pname).join(', ')}</td></tr>{/each}</tbody>
 						</table>
