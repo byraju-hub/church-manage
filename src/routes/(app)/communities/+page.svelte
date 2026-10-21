@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
 	// 공동체 편성표: 공동체별 소그룹 · 인도자 · 모임 장소 · 이번 주 출석
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { recentSundays } from '#lib/registry/attendance.mock.ts';
@@ -22,34 +22,40 @@
 	});
 	const groups = $derived(registry.d.smallGroups);
 	const nameOf = (id: string | null) => (id ? registry.person(id)?.name ?? '' : '');
-	const sum = (c: string) => {
+	// 공동체 재적·출석 합계 (care=true 면 자녀돌봄만 따로)
+	const sum = (c: string, care = false) => {
 		let t = 0, p = 0;
-		for (const g of groups.filter((x) => x.community === c)) { t += stat.get(g.name)?.total ?? 0; p += stat.get(g.name)?.present ?? 0; }
+		for (const g of groups.filter((x) => x.community === c && x.care === care)) { t += stat.get(g.name)?.total ?? 0; p += stat.get(g.name)?.present ?? 0; }
 		return { t, p };
 	};
+	const pct = (x: { t: number; p: number }) => (x.t ? Math.round((x.p * 100) / x.t) : 0);
 </script>
 
 <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:.6rem;margin-bottom:.6rem">
-	<h1 style="margin:0">공동체 편성표 <small class="muted">3개 공동체 · 소그룹 {groups.filter((g) => !g.care).length}개 + 자녀 돌봄</small></h1>
+	<h1 style="margin:0">공동체 편성표 <small class="muted">3개 공동체 · 소그룹 {groups.filter((g) => !g.care).length}개 + 자녀돌봄</small></h1>
 	<a class="btn" href="/attendance">주일 출석 등록</a>
 </div>
 <p class="muted" style="margin-top:0">공동체와 소그룹 편성, 출석부는 지금 운영 중인 출석부 자료를 그대로 가져와 보여 줍니다. (이 화면의 출석은 가상 샘플)</p>
 
 {#each COMMUNITY_DEFS as c}
 	{@const t = sum(c.name)}
+	{@const k = sum(c.name, true)}
 	<div class="card" style="padding:0">
 		<div class="card-head" style="padding:1.1rem 1.3rem 0">
 			<div><h2>{c.name} <span class="tag">{c.born}</span></h2>
-				<span class="sub">재적 {t.t}명 · {WEEKS[7].slice(5).replace('-', '/')} 출석 {t.p}명 ({t.t ? Math.round((t.p * 100) / t.t) : 0}%)</span></div>
+				<span class="sub">재적 {t.t}명 · <b class="att">{WEEKS[7].slice(5).replace('-', '/')} 출석 {t.p}명 ({pct(t)}%)</b>{#if k.t}<span class="muted"> &nbsp;|&nbsp; 자녀돌봄 {k.t}명 · <b class="att">출석 {k.p}명 ({pct(k)}%)</b></span>{/if}</span></div>
 		</div>
 		<div style="overflow-x:auto">
-			<table class="sm">
+			<!-- 공동체마다 칸 폭이 같도록 비율로 고정 (소그룹 6자 : 인도자 4자 : 모임 장소 9자 : 인원 4자 : 출석 4자) -->
+			<!-- 휴대폰에서는 글자를 조금 줄이고 이름·숫자가 한 줄에 들어가도록 비율을 살짝 조정 -->
+			<table class="sm comm">
+				<colgroup><col class="c-g" /><col class="c-l" /><col class="c-p" /><col class="c-n" /><col class="c-n" /></colgroup>
 				<thead><tr><th>소그룹</th><th>인도자</th><th>모임 장소</th><th>인원</th><th>출석</th></tr></thead>
 				<tbody>
 					{#each groups.filter((g) => g.community === c.name).sort((a, b) => a.sort_order - b.sort_order) as g (g.id)}
 						{@const s = stat.get(g.name)}
 						<tr>
-							<td><a href="/communities/{encodeURIComponent(g.name)}"><b>{g.name}</b></a>{#if g.care}<span class="tag part">자녀 돌봄</span>{/if}</td>
+							<td><a href="/communities/{encodeURIComponent(g.name)}"><b>{g.name}</b></a></td>
 							<td>{#if g.leader_id}<a href="/{g.leader_id}">{nameOf(g.leader_id)}</a>{:else}<span class="muted">-</span>{/if}</td>
 							<td>{g.place ?? '-'}</td>
 							<td style="white-space:nowrap">{s?.total ?? 0}명</td>
@@ -61,3 +67,14 @@
 		</div>
 	</div>
 {/each}
+
+<style>
+	.att { color: #e8590c; font-weight: 700; } /* 이번 주 출석: 주황색으로 눈에 띄게 */
+	.comm { table-layout: fixed; width: 100%; }
+	.c-g { width: 22%; } .c-l { width: 15%; } .c-p { width: 33%; } .c-n { width: 15%; }
+	.comm td:nth-child(2), .comm td:nth-child(4), .comm td:nth-child(5) { white-space: nowrap; }
+	@media (max-width: 720px) {
+		.c-g { width: 24%; } .c-l { width: 17%; } .c-p { width: 33%; } .c-n { width: 13%; }
+		.comm :is(th, td) { font-size: 0.8rem; padding: 0.5rem 0.35rem; }
+	}
+</style>

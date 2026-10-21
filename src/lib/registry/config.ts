@@ -1,4 +1,4 @@
-// 조직 구성 같은 '설정' 성격의 자료. 실제로는 관리자 화면에서 바꾸는 값입니다.
+﻿// 조직 구성 같은 '설정' 성격의 자료. 실제로는 관리자 화면에서 바꾸는 값입니다.
 import type { Category, MeetingOfficer, OrgUnit } from './types.ts';
 
 // ---- 교인구분 (3단계) : '교적 프로그램 구조' 문서 ----
@@ -25,7 +25,7 @@ export const CATEGORIES: Category[] = (() => {
 export type L2Code = 'a' | 'n' | 'y' | 'h' | 'e' | 'k' | 'b';
 export const catId = (l1: 'm' | 'o', l2: L2Code, l3: 'a' | 's' | 'n' | 'l') => `${l1}.${l2}.${l3}`;
 
-// ---- 공동체·소그룹 (2026년 편성표 구조: 공동체 3개, 소그룹 27개 + 로뎀나무숲) ----
+// ---- 공동체·소그룹 (2026년 편성표 구조: 공동체 3개, 소그룹 28개 + 자녀돌봄) ----
 export interface GroupDef { name: string; size: number; place: string; care?: boolean }
 export interface CommunityDef { name: string; born: string; from: number; to: number; groups: GroupDef[] }
 const G = (name: string, size: number, place: string, care = false): GroupDef => ({ name, size, place, care });
@@ -51,7 +51,7 @@ export const COMMUNITY_DEFS: CommunityDef[] = [
 		groups: [
 			G('훈남', 26, '다니엘관 203호'), G('광야', 25, '본관 B01'), G('누림', 14, '다니엘관 301호'), G('위러브', 15, '다니엘관 208호'),
 			G('기경', 16, '본관 302호'), G('푸풀', 16, '다니엘관 305호'), G('샬롬', 15, '다니엘관 202호'), G('디비디비딥', 16, '본당'),
-			G('로뎀나무숲', 24, '자녀 돌봄', true)
+			G('로뎀나무숲', 24, '로뎀나무숲'), G('자녀돌봄', 28, '로뎀나무숲', true)
 		]
 	}
 ];

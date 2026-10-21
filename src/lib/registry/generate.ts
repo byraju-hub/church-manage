@@ -218,6 +218,7 @@ export function generate(reservedNames: string[] = [], opts: { targetActive?: nu
 		return grouped ? (r < 0.66 ? 'a' : r < 0.93 ? 's' : 'n') : r < 0.45 ? 'a' : r < 0.78 ? 's' : 'n';
 	}
 
+	const careKids: T.Person[] = [];
 	function assignGroup(p: T.Person, birth: number, forceGroup?: GroupDef) {
 		const ci = commOf(birth);
 		const g = forceGroup ?? pickGroup(ci);
@@ -316,13 +317,10 @@ export function generate(reservedNames: string[] = [], opts: { targetActive?: nu
 			m.p.category_id = catId('m', l2, fresh ? (chance(0.85) ? 'a' : 's') : l3Of(grouped));
 			attendRate[m.p.id] = Math.min(0.99, 0.5 + rnd() * 0.5);
 		}
-		// 로뎀나무숲: 열매 공동체 부모의 어린 자녀
+		// 자녀돌봄 후보: 열매 공동체 부모의 어린 자녀 (나중에 정해진 인원만큼 편성)
 		for (const k of kids) {
 			const a = ageAt(k.birth);
-			if (a >= 3 && a <= 12 && [head, spouse].some((x) => x && commOf(birthOf(x)) === 2 && personGroups.some((g) => g.person_id === x.id)) && chance(0.7)) {
-				assignGroup(k.p, k.birth, COMMUNITY_DEFS[2].groups.find((g) => g.care)!);
-				personGroups[personGroups.length - 1].community = COMMUNITY_DEFS[2].name;
-			}
+			if (a >= 3 && a <= 12 && [head, spouse].some((x) => x && commOf(birthOf(x)) === 2 && personGroups.some((g) => g.person_id === x.id))) careKids.push(k.p);
 		}
 		return { head, members };
 	}
@@ -465,18 +463,28 @@ export function generate(reservedNames: string[] = [], opts: { targetActive?: nu
 	const regOf = (p: T.Person) => statusEvents.find((e) => e.person_id === p.id)?.event_date ?? '9999';
 	for (const list of byName.values()) if (list.length > 1) [...list].sort((a, b) => regOf(a).localeCompare(regOf(b))).forEach((p, i) => (p.name_note = String.fromCharCode(65 + (i % 26))));
 
+	// ---- 자녀돌봄: 후보 자녀 중 정해진 인원(편성표 인원)만 편성 ----
+	{
+		const careDef = COMMUNITY_DEFS[2].groups.find((g) => g.care)!;
+		const alivePeople = new Set(people);
+		const pool = careKids.filter((p) => alivePeople.has(p));
+		for (let i = 0; i < careDef.size && pool.length; i++) {
+			const p = pool.splice(Math.floor(rnd() * pool.length), 1)[0];
+			personGroups.push({ person_id: p.id, community: COMMUNITY_DEFS[2].name, small_group: careDef.name });
+		}
+	}
+
 	// ---- 소그룹 편성표 (인도자) ----
-	const grouped = people.filter((p) => personGroups.some((g) => g.person_id === p.id && g.small_group !== '로뎀나무숲') && ageAt(birthOf(p)) >= 30);
+	const careNames = new Set(COMMUNITY_DEFS.flatMap((c) => c.groups.filter((g) => g.care).map((g) => g.name)));
+	const grouped = people.filter((p) => personGroups.some((g) => g.person_id === p.id && !careNames.has(g.small_group)) && ageAt(birthOf(p)) >= 30);
 	const hasOffice = (id: string) => officeTerms.some((o) => o.person_id === id && !o.end_date);
 	const smallGroups: T.SmallGroup[] = [];
 	COMMUNITY_DEFS.forEach((c) => c.groups.forEach((g, i) => {
 		const mem = personGroups.filter((x) => x.community === c.name && x.small_group === g.name).map((x) => byId.get(x.person_id)!);
 		const cand = mem.filter((m) => ageAt(birthOf(m)) >= 35);
 		const lead = cand.filter((m) => hasOffice(m.id));
-		const women = g.care
-			? personGroups.filter((x) => x.community === c.name && !x.small_group.startsWith('로뎀')).map((x) => byId.get(x.person_id)!).filter((m) => m.gender === 'F' && ageAt(birthOf(m)) >= 30)
-			: cand.filter((m) => m.gender === 'F');
-		const leader = g.care ? (women.length ? pick(women) : null) : cand.length ? pick(lead.length ? lead : cand) : null;
+		// 자녀돌봄은 인도자 없음
+		const leader = g.care ? null : cand.length ? pick(lead.length ? lead : cand) : null;
 		smallGroups.push({ id: `sg-${c.name.slice(0, 1)}-${i + 1}`, community: c.name, name: g.name, place: g.place, leader_id: leader?.id ?? null, care: !!g.care, sort_order: i + 1 });
 	}));
 

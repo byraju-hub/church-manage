@@ -242,7 +242,7 @@
 				<b>부평동부교회 교적 관리 프로토타입</b>
 				<p>가상 샘플 데이터로 동작하며 실제 DB에 연결되어 있지 않습니다.</p>
 			</div>
-			<p class="muted">입력한 내용은 이 브라우저에만 저장됩니다.</p>
+			<p class="muted">ⓒ 2026 부평동부교회. All Rights Reserved.</p>
 		</div>
 	</footer>
 </div>

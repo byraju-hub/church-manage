@@ -1,4 +1,4 @@
-// 프로토타입 저장소: 브라우저 localStorage. 실제 개발 시 Supabase 호출로 교체.
+﻿// 프로토타입 저장소: 브라우저 localStorage. 실제 개발 시 Supabase 호출로 교체.
 //
 // [실제 시스템으로 옮길 때]
 //  - 이 클래스의 조회·기록 메서드를 Supabase 질의로 바꿉니다. 화면은 registry.* 만 부르므로 화면 코드는 거의 그대로 둡니다.
@@ -14,7 +14,7 @@ import { wasPresent } from './attendance.mock.ts';
 import { isoDate, type CalItem } from './calendar.ts';
 import { MAX_CATEGORY_DEPTH } from './types.ts';
 
-const KEY = 'church-registry-proto-v15';
+const KEY = 'church-registry-proto-v16';
 const USER_KEY = 'reg-user';
 const hasLS = typeof localStorage !== 'undefined';
 
@@ -283,9 +283,17 @@ class Registry {
 		const mm = String(month).padStart(2, '0');
 		const last = new Date(year, month, 0).getDate();
 		const nameOf = (id: string | null | undefined) => (id ? this.person(id)?.name ?? '' : '');
+		// [샘플 전용] 가상 데이터가 많아 달력이 빽빽하므로, 생일·결혼기념일·심방·가상 일정은 3분의 1만 보여 줍니다.
+		//   실제 시스템에서는 이 거르기(sample)를 빼세요. 직접 등록한 일정은 거르지 않습니다.
+		const sample = (key: string) => {
+			let h = 0;
+			for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) | 0;
+			return Math.abs(h) % 3 === 0;
+		};
 		if (kinds.has('생일') || kinds.has('성도 기념일')) {
 			const seenWedding = new Set<string>();
 			for (const p of this.d.people) {
+				if (!sample(p.id)) continue;
 				if (!this.statusOf(p.id).length) continue;
 				const s = this.summary(p);
 				if (!s.memberCert) continue;
@@ -308,12 +316,15 @@ class Registry {
 			if (!kinds.has(e.kind)) continue;
 			const end = e.end_date ?? e.date;
 			if (end < monthStart || e.date > monthEnd) continue;
+			// 가상으로 만든 반복 일정(대청소·기도회·당회 등)과 성도 기념일만 거름. 교회 절기·성례는 그대로
+			if (/^ev\d+$/.test(e.id) && (e.kind === '사역 일정' || e.kind === '성도 기념일') && !sample(e.id)) continue;
 			const who = nameOf(e.person_id);
 			out.push({ date: e.date, end_date: e.end_date, kind: e.kind, title: who ? `${who} ${e.title}` : e.title, sub: e.note ?? undefined, event_id: e.id, person_id: e.person_id, href: e.person_id ? `/${e.person_id}` : undefined });
 		}
 		if (kinds.has('심방 계획') && this.perms.visit) {
 			for (const v of this.d.visits) {
 				if (v.visit_date < monthStart || v.visit_date > monthEnd) continue;
+				if (!sample(v.id)) continue;
 				const g = this.groupOf(v.person_id);
 				out.push({ date: v.visit_date, kind: '심방 계획', title: `${nameOf(v.person_id)} ${v.kind} 심방`, sub: `${v.method} · ${v.pastor}${g ? ' · ' + g.community : ''}`, person_id: v.person_id, href: `/${v.person_id}` });
 			}
