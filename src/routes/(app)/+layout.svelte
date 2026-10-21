@@ -8,7 +8,7 @@
 
 	let { children } = $props();
 
-	// 로그인: 카카오로 회원가입·로그인 → 최고관리자가 회원 목록에서 승인하고 등급(1~3) 지정 → 사용
+	// 로그인: 카카오로 회원가입·로그인 → 최고관리자가 회원 목록에서 승인하고 등급(A·B·C) 지정 → 사용
 	// 30분 동안 쓰지 않으면 로그아웃
 	// [실제 시스템] 홈페이지와 같은 카카오 로그인을 씁니다. Supabase Auth 의 Kakao 공급자:
 	//   supabase.auth.signInWithOAuth({ provider: 'kakao', options: { redirectTo: `${location.origin}/auth/callback` } })

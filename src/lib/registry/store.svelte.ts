@@ -58,6 +58,16 @@ const now = () => new Date().toISOString().slice(0, 16).replace('T', ' ');
 const today = () => isoDate(new Date());
 const uid = () => crypto.randomUUID();
 
+// 예전에 저장한 데이터 고치기: 등급 1·2·3 → C·B·A (3등급 교역자 = A 전임 교역자, 2등급 = B 교적 관리, 1등급 = C 열람)
+function migrate(d: Data): Data {
+	const map: Record<number, T.Grade> = { 1: 'C', 2: 'B', 3: 'A' };
+	if (d.grades?.some((g) => typeof g.grade === 'number')) {
+		d.grades = structuredClone((seed as unknown as { grades: T.GradeDef[] }).grades);
+		for (const u of d.users ?? []) if (typeof u.grade === 'number') u.grade = map[u.grade as number] ?? 'C';
+	}
+	return d;
+}
+
 function load(): Data {
 	if (hasLS) {
 		// 데이터 구조가 바뀔 때마다 KEY 번호를 올리는데, 예전 번호의 데이터(한 벌에 약 1~2MB)가 남아 있으면
@@ -67,7 +77,7 @@ function load(): Data {
 		} catch {}
 		try {
 			const raw = localStorage.getItem(KEY);
-			if (raw) return JSON.parse(raw);
+			if (raw) return migrate(JSON.parse(raw));
 		} catch {}
 	}
 	return initial();
@@ -144,7 +154,7 @@ class Registry {
 		const u = this.d.users.find((x) => x.id === id);
 		if (!u || !this.isSuper || u.id === this.userId) return;
 		u.status = status; u.decided_at = today(); u.decided_by = this.who;
-		if (status === '사용' && !u.grade) u.grade = 1;
+		if (status === '사용' && !u.grade) u.grade = 'C';
 		this.log(`회원 ${status === '사용' ? '사용 재개' : status}`, u.name);
 	}
 	setGradePerm(grade: T.Grade, key: keyof T.Perms, value: boolean) {

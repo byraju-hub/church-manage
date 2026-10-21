@@ -185,9 +185,9 @@ export const smallGroups: T.SmallGroup[] = gen.smallGroups;
 
 // 회원 등급 (기본값). 최고관리자가 등급 이름과 권한을 바꿀 수 있음
 export const grades: T.GradeDef[] = [
-	{ grade: 1, name: '1등급 · 열람', perms: { edit: false, export: false, visit: false, admin: false } },
-	{ grade: 2, name: '2등급 · 교적 담당', perms: { edit: true, export: true, visit: false, admin: false } },
-	{ grade: 3, name: '3등급 · 교역자', perms: { edit: true, export: true, visit: true, admin: false } }
+	{ grade: 'A', name: 'A · 전임 교역자', perms: { edit: true, export: true, visit: true, admin: false } },
+	{ grade: 'B', name: 'B · 교적 관리', perms: { edit: true, export: true, visit: false, admin: false } },
+	{ grade: 'C', name: 'C · 열람', perms: { edit: false, export: false, visit: false, admin: false } }
 ];
 
 // 교적 프로그램 회원 (가상). 카카오로 가입 → 최고관리자가 승인하고 등급을 정함
@@ -196,11 +196,11 @@ const U = (id: string, name: string, person_id: string | null, status: T.UserSta
 	requested_at: '2026-10-01', decided_at: status === '승인 대기' ? null : '2026-10-02', decided_by: status === '승인 대기' ? null : '정담임', note: null, ...extra
 });
 export const users: T.AppUser[] = [
-	U('u1', '정담임', 'p14', '사용', 3, { is_super: true, note: '담임목사 · 최고관리자' }),
-	U('u2', '교적 담당 간사', null, '사용', 2, { kakao_nickname: '교적간사', note: '교적 입력·수정 담당' }),
-	U('u3', '김부목', 'p18', '사용', 3, { note: '부목사' }),
-	U('u4', '최전임', 'p19', '사용', 3, { note: '전임전도사' }),
-	U('u5', '이교육', 'p16', '사용', 1, { note: '교육전도사 · 열람만' }),
+	U('u1', '정담임', 'p14', '사용', 'A', { is_super: true, note: '담임목사 · 최고관리자' }),
+	U('u2', '교적 담당 간사', null, '사용', 'B', { kakao_nickname: '교적간사', note: '교적 입력·수정 담당' }),
+	U('u3', '김부목', 'p18', '사용', 'A', { note: '부목사' }),
+	U('u4', '최전임', 'p19', '사용', 'A', { note: '전임전도사' }),
+	U('u5', '이교육', 'p16', '사용', 'C', { note: '교육전도사 · 열람만' }),
 	U('u6', '홍도령', 'p3', '승인 대기', null, { kakao_nickname: '도령', requested_at: '2026-10-18', note: '소그룹 인도자' }),
 	U('u7', '박새롬', null, '승인 대기', null, { kakao_nickname: '새롬♡', email: 'saerom@example.com', requested_at: '2026-10-19' })
 ];

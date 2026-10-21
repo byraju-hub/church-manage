@@ -1,16 +1,15 @@
 <script lang="ts">
-	// 관리자 › 회원 · 권한: 카카오 가입 승인, 3단계 등급 지정·설정, 접속기록
+	// 관리자 › 회원 · 권한: 카카오 가입 승인, 등급(A·B·C) 지정·설정, 접속기록
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
-	import type { Grade, Perms } from '#lib/registry/types.ts';
+	import { GRADES, type Grade, type Perms } from '#lib/registry/types.ts';
 
-	// 회원 · 권한: 카카오로 가입한 회원을 최고관리자가 승인하고 등급(1~3)을 정합니다.
+	// 회원 · 권한: 카카오로 가입한 회원을 최고관리자가 승인하고 등급(A 전임 교역자 · B 교적 관리 · C 열람)을 정합니다.
 	// [실제 시스템] app_users 표의 status·grade·is_super 를 바꾸는 일은 서버 함수에서 최고관리자인지 다시 확인한 뒤 처리합니다.
 	const tabs = ['회원 목록', '가입 신청', '등급 설정', '접속기록'];
 	let tab = $state('회원 목록');
 	const pending = $derived(registry.d.users.filter((u) => u.status === '승인 대기'));
 	const active = $derived(registry.d.users.filter((u) => u.status !== '승인 대기'));
-	const GRADES: Grade[] = [1, 2, 3];
 	const PERMS: { key: keyof Perms; label: string; hint: string }[] = [
 		{ key: 'edit', label: '수정', hint: '교적 등록·수정, 출석 등록, 새가족 정착 처리' },
 		{ key: 'export', label: '내려받기·출력', hint: '목록 내려받기, 교적부·증명서·요람 출력(PDF)' },
@@ -63,7 +62,7 @@
 						<td>
 							{#if u.is_super}<span class="badge">모든 권한</span>
 							{:else if registry.isSuper}
-								<select value={u.grade ?? 1} onchange={(e) => registry.setUserGrade(u.id, +e.currentTarget.value as Grade)} style="width:auto">
+								<select value={u.grade ?? 'C'} onchange={(e) => registry.setUserGrade(u.id, e.currentTarget.value as Grade)} style="width:auto">
 									{#each GRADES as g}<option value={g}>{registry.gradeDef(g)?.name}</option>{/each}
 								</select>
 							{:else}{registry.gradeDef(u.grade)?.name ?? '-'}{/if}
@@ -82,10 +81,10 @@
 				<span class="avatar warm">{u.name.slice(0, 1)}</span>
 				<div class="grow"><b>{u.name} <small class="muted" style="font-weight:500">· 카카오 {u.kakao_nickname ?? ''}</small></b><small>신청 {u.requested_at}{u.email ? ` · ${u.email}` : ''}{u.phone ? ` · ${u.phone}` : ''}{u.note ? ` · ${u.note}` : ''}</small></div>
 				{#if registry.isSuper}
-					<select value={approveGrade[u.id] ?? 1} onchange={(e) => (approveGrade[u.id] = +e.currentTarget.value as Grade)} style="width:auto">
+					<select value={approveGrade[u.id] ?? 'C'} onchange={(e) => (approveGrade[u.id] = e.currentTarget.value as Grade)} style="width:auto">
 						{#each GRADES as g}<option value={g}>{registry.gradeDef(g)?.name}</option>{/each}
 					</select>
-					<button class="sm" onclick={() => registry.approveUser(u.id, approveGrade[u.id] ?? 1)}>승인</button>
+					<button class="sm" onclick={() => registry.approveUser(u.id, approveGrade[u.id] ?? 'C')}>승인</button>
 					<button class="ghost sm" onclick={() => { if (confirm(`${u.name}님의 가입 신청을 거절합니다.`)) registry.removeUser(u.id); }}>거절</button>
 				{/if}
 			</div>
@@ -101,7 +100,7 @@
 				{#each GRADES as g}
 					{@const d = registry.gradeDef(g)!}
 					<tr>
-						<td><b>{g}등급</b></td>
+						<td><b>{g}</b></td>
 						<td style="min-width:180px">{#if registry.isSuper}<input value={d.name} onchange={(e) => registry.renameGrade(g, e.currentTarget.value)} />{:else}{d.name}{/if}</td>
 						{#each PERMS as p}<td style="text-align:center"><input type="checkbox" checked={d.perms[p.key]} disabled={!registry.isSuper} onchange={(e) => registry.setGradePerm(g, p.key, e.currentTarget.checked)} aria-label="{d.name} {p.label}" /></td>{/each}
 						<td>{count(g)}명</td>
@@ -118,7 +117,7 @@
 			{#each PERMS as p}<tr><td><b>{p.label}</b></td><td>{p.hint}</td></tr>{/each}
 			<tr><td><b>최고관리자</b></td><td>모든 권한 + 가입 승인, 등급 지정, 등급 설정, 사용 정지</td></tr>
 		</tbody></table>
-		<p class="muted" style="font-size:.82rem">기본값: 1등급 열람 / 2등급 교적 담당(수정·출력) / 3등급 교역자(수정·출력·심방). 심방은 전임 교역자에게만 주는 것을 원칙으로 합니다.</p>
+		<p class="muted" style="font-size:.82rem">기본값: A 전임 교역자(수정·출력·심방) / B 교적 관리(수정·출력) / C 열람. 심방은 전임 교역자(A)에게만 주는 것을 원칙으로 합니다.</p>
 	</div>
 {:else}
 	<div class="card">

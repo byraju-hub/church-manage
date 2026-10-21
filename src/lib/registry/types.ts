@@ -318,12 +318,14 @@ export interface Perms {
 	admin: boolean; // 사이트 관리자: 설정(교인구분·소그룹·조직표)
 }
 
-// 교적 프로그램 회원: 카카오로 회원가입 → 최고관리자가 회원 목록에서 승인하고 등급(1~3)을 정함 → 사용
+// 교적 프로그램 회원: 카카오로 회원가입 → 최고관리자가 회원 목록에서 승인하고 등급(A·B·C)을 정함 → 사용
 // [실제 시스템] Supabase Auth 의 카카오 로그인(signInWithOAuth({ provider: 'kakao' }))을 씁니다.
 //              처음 로그인하면 auth.users 에 사람이 생기고, 트리거로 registry.app_users 에 '승인 대기' 회원을 만듭니다.
 //              등급·권한 확인은 화면이 아니라 DB 접근 규칙(RLS)과 서버에서 해야 합니다.
 export type UserStatus = '승인 대기' | '사용' | '정지';
-export type Grade = 1 | 2 | 3;
+// A 전임 교역자(수정·출력·심방) > B 교적 관리(수정·출력) > C 열람
+export type Grade = 'A' | 'B' | 'C';
+export const GRADES: Grade[] = ['A', 'B', 'C'];
 // 등급마다 할 수 있는 일 (최고관리자가 '관리자 › 회원 · 권한 › 등급 설정'에서 바꿈)
 export interface GradeDef {
 	grade: Grade;

@@ -10,12 +10,12 @@
 create schema if not exists registry;
 
 -- ============================================================================
--- 회원·권한: 카카오로 회원가입·로그인 → 최고관리자가 승인하고 등급(1~3) 지정 → 사용
+-- 회원·권한: 카카오로 회원가입·로그인 → 최고관리자가 승인하고 등급(A·B·C) 지정 → 사용
 --   Supabase Auth 의 Kakao 공급자를 씀 (홈페이지와 같은 카카오 로그인).
 --   auth.users 에 새 사람이 생기면 트리거로 app_users 에 '승인 대기' 회원을 만듦.
 -- ============================================================================
 create table registry.grades (                -- 등급마다 할 수 있는 일 (최고관리자가 바꿈)
-  grade int primary key check (grade between 1 and 3),
+  grade text primary key check (grade in ('A','B','C')),  -- A 전임 교역자 > B 교적 관리 > C 열람
   name text not null,
   can_edit boolean not null default false,    -- 교적 등록·수정, 출석 등록
   can_export boolean not null default false,  -- 내려받기, 문서 출력(교적부·증명서·요람)
@@ -23,9 +23,9 @@ create table registry.grades (                -- 등급마다 할 수 있는 일
   is_site_admin boolean not null default false -- 설정(교인구분·소그룹·조직표)
 );
 insert into registry.grades values
-  (1, '1등급 · 열람', false, false, false, false),
-  (2, '2등급 · 교적 담당', true, true, false, false),
-  (3, '3등급 · 교역자', true, true, true, false);
+  ('A', 'A · 전임 교역자', true, true, true, false),
+  ('B', 'B · 교적 관리', true, true, false, false),
+  ('C', 'C · 열람', false, false, false, false);
 
 create table registry.app_users (
   user_id uuid primary key,                   -- auth.users.id
@@ -34,7 +34,7 @@ create table registry.app_users (
   kakao_nickname text, email text, phone text,
   person_id uuid,                             -- 교적의 교인과 연결 (아래 people 생성 후 FK 추가)
   status text not null default '승인 대기' check (status in ('승인 대기','사용','정지')),
-  grade int references registry.grades(grade), -- 승인 전에는 null
+  grade text references registry.grades(grade), -- 승인 전에는 null
   is_super boolean not null default false,    -- 최고관리자: 가입 승인·등급 지정·등급 설정 (모든 권한)
   requested_at timestamptz not null default now(),
   decided_at timestamptz, decided_by uuid, note text
