@@ -8,7 +8,7 @@
 	import { ageOf, officeWithKind } from '#lib/registry/derive.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import {
-		STATUS_KINDS, FAITH_KINDS, POSITIONS, ORDAINED, parseRank, rankChoices, CONSENT_KINDS, VISIT_KINDS, FULL_TIME_CLERGY,
+		STATUS_KINDS, FAITH_KINDS, POSITIONS, ORDAINED, parseRank, rankChoices, rankLabel, CONSENT_KINDS, VISIT_KINDS, FULL_TIME_CLERGY,
 		type StatusKind, type FaithKind, type ConsentKind, type VisitMethod
 	} from '#lib/registry/types.ts';
 
@@ -214,7 +214,7 @@
 			{#if can}
 				<form class="form" style="margin-top:.7rem" onsubmit={(e) => { e.preventDefault(); registry.addOffice({ person_id: p.id, office: ofPos.office!, rank_status: parseRank(of.rank).rank_status, start_date: nn(of.start), end_date: nn(of.end), church: ORDAINED.includes(ofPos.office!) ? nn(of.church) : null, note: null }); if (parseRank(of.rank).clergy) registry.updatePerson(p.id, { clergy_title: parseRank(of.rank).clergy }); of.start = ''; of.end = ''; of.church = ''; }}>
 					<label>직분<select bind:value={of.pos}>{#each POSITIONS.filter((x) => x.office) as o}<option>{o.label}</option>{/each}</select></label>
-					<label>구분<select bind:value={of.rank}>{#each statusOpts as o}<option>{o}</option>{/each}</select></label>
+					<label>구분<select bind:value={of.rank}>{#each statusOpts as o}<option value={o}>{rankLabel(ofPos.office!, o)}</option>{/each}</select></label>
 					<label>{ORDAINED.includes(ofPos.office!) ? '임직일' : '시작일'}<input type="date" bind:value={of.start} /></label>
 					<label>종료일<input type="date" bind:value={of.end} /></label>
 					{#if ORDAINED.includes(ofPos.office!)}<label>임직교회<input bind:value={of.church} placeholder="비우면 본 교회 (타교 임직이면 교회 이름)" /></label>{/if}

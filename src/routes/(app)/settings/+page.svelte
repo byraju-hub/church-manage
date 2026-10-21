@@ -3,7 +3,7 @@
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
 	import NameChips from '#lib/components/NameChips.svelte';
-	import { CLERGY_TITLES, FULL_TIME_CLERGY, MAX_CATEGORY_DEPTH, MISSION_SOCIETIES, OFFICE_STATUS_OPTIONS, VISIT_KINDS } from '#lib/registry/types.ts';
+	import { CLERGY_TITLES, FULL_TIME_CLERGY, MAX_CATEGORY_DEPTH, MISSION_SOCIETIES, OFFICE_STATUS_OPTIONS, VISIT_KINDS, rankChoices, rankLabel, type OfficeName } from '#lib/registry/types.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 
 	const tabs = ['교인구분', '소그룹 편성', '교회 조직표', '코드표'];
@@ -216,7 +216,7 @@
 			<section class="card">
 				<h2>직분과 구분 <span class="tag">고정 코드표</span></h2>
 				<table class="sm"><thead><tr><th>직분</th><th>고를 수 있는 구분</th></tr></thead><tbody>
-					{#each Object.entries(OFFICE_STATUS_OPTIONS) as [o, st]}<tr><td><b>{o}</b></td><td>{st.join(' · ')}</td></tr>{/each}
+					{#each Object.entries(OFFICE_STATUS_OPTIONS) as [o, st]}<tr><td><b>{o}</b></td><td>{rankChoices(o as OfficeName).map((r) => rankLabel(o as OfficeName, r)).join(' · ')}</td></tr>{/each}
 				</tbody></table>
 				<p class="muted" style="font-size:.82rem">임직일과 임직교회는 장로·시무집사·권사에게 적습니다. 표시되는 직분 이름은 구분에서 자동으로 만들어집니다 (예: 시무 → 권사, 은퇴 → 은퇴권사).</p>
 			</section>

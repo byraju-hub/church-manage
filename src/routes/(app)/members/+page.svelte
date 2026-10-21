@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { ageOf, officeWithKind, officeKindTitle } from '#lib/registry/derive.ts';
-	import { MISSION_SOCIETIES, OFFICE_NAMES, rankChoices, type FaithKind, type OfficeName } from '#lib/registry/types.ts';
+	import { MISSION_SOCIETIES, OFFICE_NAMES, rankChoices, rankLabel, type FaithKind, type OfficeName } from '#lib/registry/types.ts';
 	import { categoryPath } from '#lib/registry/derive.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
@@ -259,7 +259,7 @@
 				<span class="muted" style="font-size:.8rem">같은 기록이 이미 있는 교인은 건너뜁니다.</span>
 			{:else if bk === 'office'}
 				<select bind:value={bOffice} aria-label="직분">{#each OFFICE_NAMES as o}<option>{o}</option>{/each}</select>
-				<select bind:value={bRank} aria-label="구분">{#each rankChoices(bOffice) as r}<option>{r}</option>{/each}</select>
+				<select bind:value={bRank} aria-label="구분">{#each rankChoices(bOffice) as r}<option value={r}>{rankLabel(bOffice, r)}</option>{/each}</select>
 				<span class="muted">임직(시작)일</span><input type="date" bind:value={bDate} />
 				<label class="row" style="gap:.3rem"><input type="checkbox" bind:checked={bEndOld} />지금 직분은 마침 처리</label>
 			{:else}

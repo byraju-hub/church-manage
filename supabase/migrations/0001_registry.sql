@@ -133,7 +133,7 @@ create table registry.office_terms (
   office text not null check (office in ('목사','전도사','사모','장로','시무집사','권사','서리집사')),
   -- 직분마다 고를 수 있는 구분이 다름: 장로(시무·은퇴·원로·협동), 시무집사(시무·은퇴·협동·전입),
   -- 권사(시무·은퇴·협동·전입·명예), 서리집사(서리·명예), 목사·전도사·사모(시무·은퇴 등)
-  rank_status text not null check (rank_status in ('시무','은퇴','원로','명예','협동','사임','전입','서리')),
+  rank_status text not null check (rank_status in ('시무','은퇴','원로','명예','협동','사임','전입','서리','휴직')), -- 휴직은 장로만
   start_date date,                            -- 임직일
   end_date date,
   church text,                                -- 임직교회 (장로·시무집사·권사, 비면 본 교회)

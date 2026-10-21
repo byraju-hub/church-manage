@@ -5,7 +5,7 @@
 export type StatusKind = '등록' | '전입' | '복적' | '보류' | '보관' | '전출' | '별세' | '제적';
 export type FaithKind = '학습' | '세례' | '유아세례' | '입교';
 export type OfficeName = '목사' | '전도사' | '사모' | '장로' | '시무집사' | '권사' | '서리집사';
-export type OfficeStatus = '시무' | '은퇴' | '원로' | '명예' | '협동' | '사임' | '전입' | '서리';
+export type OfficeStatus = '시무' | '은퇴' | '원로' | '명예' | '협동' | '사임' | '전입' | '서리' | '휴직';
 export type ClergyTitle = '담임목사' | '부목사' | '교육목사' | '전임전도사' | '교육전도사';
 export type EduDept = '청년부' | '중고등부' | '유초등부' | '유치부' | '영아부';
 export type MaritalStatus = '미혼' | '기혼' | '이혼' | '사별' | '기타';
@@ -17,13 +17,13 @@ export const STATUS_KINDS: StatusKind[] = ['등록', '전입', '복적', '보류
 export const FAITH_KINDS: FaithKind[] = ['학습', '세례', '유아세례', '입교'];
 // 직분 높은 순 (이 교회는 '안수집사' 대신 '시무집사')
 export const OFFICE_NAMES: OfficeName[] = ['목사', '전도사', '사모', '장로', '시무집사', '권사', '서리집사'];
-export const OFFICE_STATUSES: OfficeStatus[] = ['시무', '은퇴', '원로', '명예', '협동', '사임', '전입', '서리'];
+export const OFFICE_STATUSES: OfficeStatus[] = ['시무', '은퇴', '원로', '명예', '협동', '사임', '전입', '서리', '휴직'];
 // 직분마다 고를 수 있는 구분 ('교적 프로그램 구조' 문서)
 export const OFFICE_STATUS_OPTIONS: Record<OfficeName, OfficeStatus[]> = {
-	목사: ['시무', '은퇴', '원로', '명예', '협동', '사임'],
+	목사: ['시무', '원로', '은퇴', '협동', '사임'],
 	전도사: ['시무', '은퇴', '사임'],
 	사모: ['시무', '은퇴'],
-	장로: ['시무', '은퇴', '원로', '협동'],
+	장로: ['시무', '원로', '은퇴', '협동', '휴직'],
 	시무집사: ['시무', '은퇴', '협동', '전입'],
 	권사: ['시무', '은퇴', '협동', '전입', '명예'],
 	서리집사: ['서리', '명예']
@@ -47,6 +47,13 @@ const CLERGY_BY_OFFICE: Partial<Record<OfficeName, ClergyTitle[]>> = {
 export function rankChoices(o: OfficeName): string[] {
 	const c = CLERGY_BY_OFFICE[o];
 	return c ? [...c, ...OFFICE_STATUS_OPTIONS[o].filter((s) => s !== '시무')] : OFFICE_STATUS_OPTIONS[o];
+}
+// 구분 선택 칸에 보이는 이름: 직분까지 붙여서 (시무 → 시무장로, 서리 → 서리집사, 명예(서리집사) → 명예집사, 담임목사는 그대로)
+export function rankLabel(o: OfficeName, choice: string): string {
+	if ((CLERGY_TITLES as string[]).includes(choice)) return choice;
+	if (o === '사모') return choice === '시무' ? '사모' : `${choice}사모`; // 사모 · 은퇴사모
+	const base = o === '시무집사' || o === '서리집사' ? '집사' : o;
+	return `${choice}${base}`;
 }
 // 고른 구분을 저장 값으로: 직책이면 구분 '시무' + 교역자 직책, 아니면 구분 그대로
 export function parseRank(choice: string): { rank_status: OfficeStatus; clergy: ClergyTitle | null } {
@@ -161,7 +168,7 @@ export interface OfficeTerm {
 	start_date: string | null; // 임직일
 	end_date: string | null;
 	church: string | null; // 임직교회 (비면 본 교회, 타교 임직이면 그 교회 이름)
-	note: string | null; // 휴직·무임 등은 여기에 적음
+	note: string | null; // 무임 등은 여기에 적음 (장로 휴직은 구분 '휴직')
 }
 
 // 소그룹 편성: 공동체(뿌리·줄기·열매) 아래 소그룹. 출석부의 편성표 자료

@@ -41,7 +41,7 @@
 	{@const office = tab === '당회' ? '장로' : tab === '시무집사회' ? '시무집사' : '권사'}
 	{@const list = holders(office)}
 	<div class="card">
-		<div class="card-head"><h2>{tab} <span class="tag">{office} 시무 {list.length}명</span></h2><span class="sub">{office} 직분의 시무 중인 사람이 자동으로 모입니다</span></div>
+		<div class="card-head"><h2>{tab} <span class="tag">{office} 시무 {list.length}명</span></h2><span class="sub">{office === '장로' ? '장로 중 시무장로인 교인입니다.' : office === '시무집사' ? '집사 중 시무집사인 교인입니다.' : '권사 중 시무권사인 교인입니다.'}</span></div>
 		<div class="org-grid">
 			{#each list as { t, p } (t.id)}
 				<a class="org-card" href="/{p.id}" style="text-decoration:none"><b>{p.name} {office === '시무집사' ? '집사' : office}</b><span>임직 {t.start_date ?? '미상'}{t.church ? ` · ${t.church}` : ''}</span></a>
