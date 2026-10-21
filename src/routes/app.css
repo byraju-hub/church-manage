@@ -46,7 +46,7 @@ ul { padding-left: 1.2rem; }
 	--p: var(--hb-p, 0);
 	--hb-h: calc(92px - 24px * var(--p)); --hb-logo: calc(50px - 12px * var(--p));
 	--hb-title: calc(1.28rem - 0.2rem * var(--p)); --hb-nav: calc(1.02rem - 0.06rem * var(--p));
-	--hb-ease: 0.18s cubic-bezier(0.25, 0.8, 0.3, 1);
+	--hb-ease: 0.35s cubic-bezier(0.25, 0.8, 0.3, 1);
 	position: sticky; top: 0; z-index: 30;
 	background: rgba(255, 255, 255, calc(0.94 + 0.03 * var(--p))); backdrop-filter: saturate(160%) blur(10px);
 	border-bottom: 1px solid var(--line);

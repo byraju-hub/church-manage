@@ -22,9 +22,9 @@
 	let menuOpen = $state(false);
 	let userOpen = $state(false);
 	let scrollY = $state(0);
-	// 스크롤을 내리는 만큼 상단바가 조금씩 줄어듦 (맨 위 0 → 80px 내리면 1 = 지금 높이, 최소)
+	// 스크롤을 내리는 만큼 상단바가 조금씩 줄어듦 (맨 위 0 → 160px 내리면 1 = 지금 높이, 최소)
 	// 단계로 바뀌지 않고 스크롤 위치를 그대로 따라가서 자연스럽게 작아짐
-	const SHRINK_PX = 80;
+	const SHRINK_PX = 160;
 	const hbP = $derived(Math.round(Math.min(1, Math.max(0, scrollY / SHRINK_PX)) * 100) / 100);
 	const toTop = () => window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 	const me = $derived(registry.me);
