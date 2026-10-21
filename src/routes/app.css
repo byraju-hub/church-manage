@@ -263,7 +263,7 @@ a.kpi:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-
 .dash-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.1rem; align-items: stretch; }
 .dash-grid.even { grid-template-columns: 1fr 1fr; }
 .dash-grid > .card { margin-bottom: 0; }
-.dash-grid + .dash-grid { margin-top: 1.1rem; }
+.dash-grid:not(:last-child) { margin-bottom: 1.1rem; } /* 아래에 오는 표·카드와 간격 */
 .card-head { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; margin-bottom: 0.9rem; flex-wrap: wrap; }
 .card-head h2 { margin: 0; }
 .card-head .sub { color: var(--muted); font-size: 0.82rem; }
@@ -390,8 +390,9 @@ tr.pick:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px;
 .pane-back, .pane-close { display: none; }
 
 /* ===== 휴대폰 최적화 ===== */
-html { -webkit-tap-highlight-color: transparent; touch-action: manipulation; overflow-x: hidden; }
-body { overflow-x: hidden; overscroll-behavior-x: none; }
+/* 가로 넘침은 clip 으로 자름 (hidden 을 쓰면 상단 메뉴바의 sticky 고정이 풀림) */
+html { -webkit-tap-highlight-color: transparent; touch-action: manipulation; overflow-x: clip; }
+body { overflow-x: clip; overscroll-behavior-x: none; }
 .tabbar { display: none; }
 
 /* 목록 오른쪽의 작은 버튼 두 줄 */

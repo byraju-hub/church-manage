@@ -83,10 +83,6 @@
 		{ href: '/households', label: '세대', hint: '세대원 · 분가' },
 		{ href: '/candidates', label: '확인 목록', hint: '중복 · 미등록 확인' }
 	];
-	const commMenu: Item[] = [
-		{ href: '/communities', label: '공동체 편성표', hint: '인도자 · 소그룹 장소' },
-		{ href: '/attendance', label: '주일 출석 등록', hint: '공동체 · 소그룹별' }
-	];
 	const statMenu: Item[] = [
 		{ href: '/stats', label: '통계', hint: '출석 · 소그룹 · 임직 · 세례' },
 		{ href: '/reports', label: '명단', hint: '생일 · 직분자 · 세례 대상자' },
@@ -138,7 +134,8 @@
 						</div>
 					{/snippet}
 					{@render dd('교적', memberMenu, inMenu(memberMenu) || isCard)}
-					{@render dd('공동체', commMenu, inMenu(commMenu))}
+					<a href="/communities" class:active={path.startsWith('/communities')}>공동체</a>
+					<a href="/attendance" class:active={path.startsWith('/attendance')}>출석</a>
 					{#if registry.perms.visit}<a href="/visits" class:active={path.startsWith('/visits')}>심방</a>{/if}
 					<a href="/orgs" class:active={path.startsWith('/orgs')}>조직</a>
 					{@render dd('통계', statMenu, inMenu(statMenu))}

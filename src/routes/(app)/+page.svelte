@@ -387,7 +387,7 @@
 	<div class="quick">
 		<a href="/members">교인 목록<small>검색 · 필터 · 내려받기</small></a>
 		<a href="/communities">공동체 편성표<small>인도자 · 장소 · 출석</small></a>
-		<a href="/attendance">주일 출석 등록<small>공동체·소그룹별</small></a>
+		<a href="/attendance">출석<small>주일 전체 명단</small></a>
 		<a href="/visits">심방<small>등록 · 검색 · 달력</small></a>
 		<a href="/new">교인 등록<small>등록카드 순서로 입력</small></a>
 		<a href="/households">세대<small>세대원 · 분가</small></a>

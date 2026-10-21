@@ -33,7 +33,7 @@
 
 <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:.6rem;margin-bottom:.6rem">
 	<h1 style="margin:0">공동체 편성표 <small class="muted">3개 공동체 · 소그룹 {groups.filter((g) => !g.care).length}개 + 자녀돌봄</small></h1>
-	<a class="btn" href="/attendance">주일 출석 등록</a>
+	<a class="btn" href="/attendance">출석</a>
 </div>
 <p class="muted" style="margin-top:0">공동체와 소그룹 편성, 출석부는 지금 운영 중인 출석부 자료를 그대로 가져와 보여 줍니다. (이 화면의 출석은 가상 샘플)</p>
 
