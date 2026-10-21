@@ -47,6 +47,15 @@
 		draft.workplace = '';
 		editing = true;
 	}
+	// 교인 목록 상세의 '수정'으로 들어오면(?edit=1) 바로 기본 정보 수정 화면으로
+	let autoEdited = '';
+	$effect(() => {
+		if (p && can && page.url.searchParams.get('edit') === '1' && autoEdited !== p.id) {
+			autoEdited = p.id;
+			tab = '기본 정보';
+			startEdit();
+		}
+	});
 	function saveEdit() {
 		const patch: Record<string, any> = {};
 		for (const k of EDIT_KEYS) patch[k] = typeof draft[k] === 'string' ? nn(draft[k]) : draft[k];

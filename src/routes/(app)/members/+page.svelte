@@ -347,7 +347,7 @@
 			{#if p.note}<h3 class="mini-h">기타 메모</h3><p class="memo-box">{p.note}</p>{/if}
 			{#if selNotes.length}<h3 class="mini-h">담당자 메모</h3>{#each selNotes as n}<p class="muted" style="margin:.2rem 0">{n.created_at} · {n.body}</p>{/each}{/if}
 			{#if registry.perms.visit && selVisits.length}<h3 class="mini-h">최근 심방</h3>{#each selVisits as v}<p class="muted" style="margin:.2rem 0">{v.visit_date} · {v.kind} · {v.pastor} — {v.content}</p>{/each}{/if}
-			<div class="row" style="margin-top:1rem"><a class="btn" href="/{p.id}">교적 카드 열기</a>{#if registry.perms.edit}<a class="btn ghost" href="/{p.id}">수정</a>{/if}</div>
+			<div class="row" style="margin-top:1rem"><a class="btn" href="/{p.id}">교적 카드 열기</a>{#if registry.perms.edit}<a class="btn ghost" href="/{p.id}?edit=1">수정</a>{/if}</div>
 		{:else}
 			<p class="empty">왼쪽 목록에서 교인을 누르면<br />여기에 자세한 내용이 나옵니다.</p>
 		{/if}
