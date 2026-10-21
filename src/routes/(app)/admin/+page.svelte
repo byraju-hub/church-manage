@@ -13,7 +13,7 @@
 	const PERMS: { key: keyof Perms; label: string; hint: string }[] = [
 		{ key: 'edit', label: '수정', hint: '교적 등록·수정, 출석 등록, 새가족 정착 처리' },
 		{ key: 'export', label: '내려받기·출력', hint: '목록 내려받기, 교적부·증명서·요람 출력(PDF)' },
-		{ key: 'visit', label: '심방', hint: '심방 열람·등록·녹음 분석, 디모데 메모, 인도자 특이사항' },
+		{ key: 'visit', label: '심방', hint: 'A 등급만 (바꿀 수 없음): 심방 메뉴(목록·등록·녹음 분석·소그룹 특이사항), 교적 카드의 심방·디모데 메모, 대시보드 최근 심방' },
 		{ key: 'admin', label: '사이트 관리자', hint: '관리자 › 설정 (교인구분·소그룹·조직표)' }
 	];
 	const nameOf = (id: string | null) => (id ? registry.person(id)?.name ?? '' : '');
@@ -102,11 +102,11 @@
 					<tr>
 						<td><b>{g}</b></td>
 						<td style="min-width:180px">{#if registry.isSuper}<input value={d.name} onchange={(e) => registry.renameGrade(g, e.currentTarget.value)} />{:else}{d.name}{/if}</td>
-						{#each PERMS as p}<td style="text-align:center"><input type="checkbox" checked={d.perms[p.key]} disabled={!registry.isSuper} onchange={(e) => registry.setGradePerm(g, p.key, e.currentTarget.checked)} aria-label="{d.name} {p.label}" /></td>{/each}
+						{#each PERMS as p}<td style="text-align:center"><input type="checkbox" checked={p.key === 'visit' ? g === 'A' : d.perms[p.key]} disabled={!registry.isSuper || p.key === 'visit'} title={p.key === 'visit' ? '심방은 A 등급만 (고정)' : undefined} onchange={(e) => registry.setGradePerm(g, p.key, e.currentTarget.checked)} aria-label="{d.name} {p.label}" /></td>{/each}
 						<td>{count(g)}명</td>
 					</tr>
 				{/each}
-				<tr><td><b>최고관리자</b></td><td>지정된 회원</td>{#each PERMS as _p}<td style="text-align:center">✓</td>{/each}<td>{registry.d.users.filter((u) => u.is_super).length}명</td></tr>
+				<tr><td><b>최고관리자</b></td><td>지정된 회원</td>{#each PERMS as p}<td style="text-align:center">{p.key === 'visit' ? 'A 등급일 때만' : '✓'}</td>{/each}<td>{registry.d.users.filter((u) => u.is_super).length}명</td></tr>
 			</tbody>
 		</table>
 	</div>
@@ -117,7 +117,7 @@
 			{#each PERMS as p}<tr><td><b>{p.label}</b></td><td>{p.hint}</td></tr>{/each}
 			<tr><td><b>최고관리자</b></td><td>모든 권한 + 가입 승인, 등급 지정, 등급 설정, 사용 정지</td></tr>
 		</tbody></table>
-		<p class="muted" style="font-size:.82rem">기본값: A 전임 교역자(수정·출력·심방) / B 교적 관리(수정·출력) / C 열람. 심방은 전임 교역자(A)에게만 주는 것을 원칙으로 합니다.</p>
+		<p class="muted" style="font-size:.82rem">기본값: A 전임 교역자(수정·출력·심방) / B 교적 관리(수정·출력) / C 열람. 심방은 A 등급(전임 교역자)만 볼 수 있고 바꿀 수 없습니다. 달력의 심방 계획(이름·날짜)은 모든 회원에게 보입니다.</p>
 	</div>
 {:else}
 	<div class="card">

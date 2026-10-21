@@ -34,7 +34,7 @@
 		<div class="kpi"><div><b>{weekly[7].n}<small class="muted" style="font-size:.9rem"> / {members.length}</small></b><span>이번 주일 소그룹 모임 출석</span></div></div>
 	</div>
 
-	<div class="dash-grid even">
+	<div class="dash-grid even" style={registry.perms.visit ? undefined : 'grid-template-columns:1fr'}>
 		<section class="card">
 			<div class="card-head"><h2>소그룹 모임 출석 추이</h2><span class="sub">최근 8주 · 홈페이지 출석부(인도자 등록)</span></div>
 			<div class="spark">
@@ -43,9 +43,9 @@
 				{/each}
 			</div>
 		</section>
+		{#if registry.perms.visit}
 		<section class="card">
-			<div class="card-head"><h2>인도자 특이사항</h2><span class="sub">출석부에서 인도자가 적는 개별 메모</span></div>
-			{#if !registry.perms.visit}<p class="empty">건강 등 민감한 내용이 있어 심방 권한이 있는 사용자만 볼 수 있습니다.</p>{:else}
+			<div class="card-head"><h2>인도자 특이사항</h2><span class="sub">출석부에서 인도자가 적는 개별 메모 · A 등급만</span></div>
 			{#each notes.slice(0, 8) as n (n.id)}
 				<div class="li">
 					<span class="avatar warm">{nameOf(n.person_id).slice(0, 1)}</span>
@@ -58,8 +58,8 @@
 					<input bind:value={noteBody} placeholder="특이사항 입력" /><button type="submit">추가</button>
 				</form>
 			{/if}
-			{/if}
 		</section>
+		{/if}
 	</div>
 
 	<div class="card" style="padding:0;overflow-x:auto">

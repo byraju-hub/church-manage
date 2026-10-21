@@ -208,8 +208,6 @@
 			<span class="ico teal">{@render icon('visit')}</span>
 			<div><b>{visits30}</b><span>최근 한 달 심방</span></div>
 		</a>
-	{:else}
-		<div class="kpi"><span class="ico teal">{@render icon('visit')}</span><div><b>-</b><span>최근 한 달 심방 (권한 필요)</span></div></div>
 	{/if}
 	<a class="kpi" href="#absent">
 		<span class="ico rose">{@render icon('alert')}</span>
@@ -346,7 +344,7 @@
 	</section>
 </div>
 
-<div class="dash-grid even">
+<div class="dash-grid even" style={registry.perms.visit ? undefined : 'grid-template-columns:1fr'}>
 	<section class="card">
 		<div class="card-head"><h2>새가족</h2><span class="sub">등록 후 60일 이내 · {newcomers.length}명</span></div>
 		<div style="max-height:430px;overflow:auto;padding-right:.45rem">
@@ -366,9 +364,9 @@
 		<p style="margin:.7rem 0 0"><a href="/newcomers">새가족 정착 현황 보기 →</a></p>
 	</section>
 
+	{#if registry.perms.visit}
 	<section class="card">
-		<div class="card-head"><h2>최근 심방</h2><span class="sub">심방 권한이 있는 교역자만 볼 수 있음</span></div>
-		{#if registry.perms.visit}
+		<div class="card-head"><h2>최근 심방</h2><span class="sub">A 등급(전임 교역자)만 볼 수 있음</span></div>
 			{#each recentVisits as v (v.id)}
 				<div class="li">
 					<span class="avatar warm">{nameOf(v.person_id).slice(0, 1)}</span>
@@ -380,10 +378,8 @@
 			{:else}
 				<p class="empty">심방 기록이 없습니다.</p>
 			{/each}
-		{:else}
-			<p class="empty">심방 권한이 꺼져 있어 볼 수 없습니다.<br />(최고관리자가 심방 권한을 준 사용자만 볼 수 있습니다)</p>
-		{/if}
 	</section>
+	{/if}
 </div>
 
 <section class="card" style="margin-top:1.1rem">
@@ -393,7 +389,7 @@
 		<a href="/communities">공동체 편성표</a>
 		<a href="/communities/roster">공동체 명단</a>
 		<a href="/attendance">출석</a>
-		<a href="/visits">심방</a>
+		{#if registry.perms.visit}<a href="/visits">심방</a>{/if}
 		<a href="/households">세대</a>
 		<a href="/stats">통계</a>
 	</div>

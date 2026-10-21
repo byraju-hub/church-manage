@@ -111,8 +111,11 @@ class Registry {
 	gradeDef(g: T.Grade | null | undefined) { return this.d.grades.find((x) => x.grade === g); }
 	permsOf(u: T.AppUser | undefined): T.Perms {
 		if (!u || u.status !== '사용') return NO_PERMS;
-		if (u.is_super) return { edit: true, export: true, visit: true, admin: true };
-		return this.gradeDef(u.grade)?.perms ?? NO_PERMS;
+		// 심방(심방 메뉴·기록, 소그룹 특이사항, 디모데 메모)은 A 등급만. 등급 설정이나 최고관리자 여부와 관계없이 고정
+		const visit = u.grade === 'A';
+		if (u.is_super) return { edit: true, export: true, visit, admin: true };
+		const p = this.gradeDef(u.grade)?.perms ?? NO_PERMS;
+		return { ...p, visit };
 	}
 	get perms(): T.Perms { return this.permsOf(this.me); }
 	get isSuper(): boolean { return !!this.me?.is_super && this.me.status === '사용'; }
@@ -159,7 +162,7 @@ class Registry {
 	}
 	setGradePerm(grade: T.Grade, key: keyof T.Perms, value: boolean) {
 		const g = this.gradeDef(grade);
-		if (!g || !this.isSuper) return;
+		if (!g || !this.isSuper || key === 'visit') return;
 		g.perms[key] = value;
 		this.log(`등급 권한 ${value ? '부여' : '해제'}: ${({ edit: '수정', export: '내려받기·출력', visit: '심방', admin: '사이트 관리자' } as const)[key]}`, g.name);
 	}
@@ -371,7 +374,8 @@ class Registry {
 			const who = nameOf(e.person_id);
 			out.push({ date: e.date, end_date: e.end_date, kind: e.kind, title: who ? `${who} ${e.title}` : e.title, sub: e.note ?? undefined, event_id: e.id, person_id: e.person_id, href: e.person_id ? `/${e.person_id}` : undefined });
 		}
-		if (kinds.has('심방 계획') && this.perms.visit) {
+		// 달력의 심방 계획(이름·날짜)은 모든 회원에게 보임. 심방 내용은 A 등급만 (심방 메뉴·교적 카드)
+		if (kinds.has('심방 계획')) {
 			for (const v of this.d.visits) {
 				if (v.visit_date < monthStart || v.visit_date > monthEnd) continue;
 				if (!sample(v.id)) continue;

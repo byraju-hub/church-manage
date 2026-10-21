@@ -18,7 +18,8 @@
 	const can = $derived(registry.perms.edit);
 	const today = new Date().toISOString().slice(0, 10);
 
-	const tabs = ['기본 정보', '세대', '신급·직분', '재적 이력', '소속', '교육', '심방', '메모·동의', '변경 이력'];
+	// '심방' 탭은 A 등급만 보임
+	const tabs = $derived(['기본 정보', '세대', '신급·직분', '재적 이력', '소속', '교육', ...(registry.perms.visit ? ['심방'] : []), '메모·동의', '변경 이력']);
 	let tab = $state('기본 정보');
 	let editing = $state(false);
 	let draft = $state<Record<string, any>>({});
@@ -291,10 +292,10 @@
 			<p class="muted">지금은 새가족 교육만 운영하며, 수료 여부를 남기는 칸이 필요합니다. 과정은 나중에 늘릴 수 있게 만들었습니다.</p>
 		</div>
 
-	{:else if tab === '심방'}
+	{:else if tab === '심방' && registry.perms.visit}
 		<div class="card">
 			<div class="row" style="justify-content:space-between"><h2>심방 기록</h2><a class="btn ghost" href="/visits?person={p.id}">심방 화면에서 등록 →</a></div>
-			<p class="muted">심방 기록은 전임 교역자까지만 볼 수 있습니다. (심방 권한)</p>
+			<p class="muted">심방 기록은 A 등급(전임 교역자)만 볼 수 있습니다.</p>
 			{#if registry.perms.visit}
 				{#each byDate(visits.map((x) => ({ ...x, event_date: x.visit_date }))) as x (x.id)}
 					<div style="margin-bottom:.7rem"><b>{x.visit_date}</b> · {x.kind} · {x.method} · {x.pastor}{x.companions ? ` (동행 ${x.companions})` : ''}
@@ -316,7 +317,7 @@
 					</form>
 				{/if}
 			{:else}
-				<div class="warn">심방 권한이 꺼져 있어 볼 수 없습니다. (최고관리자가 '관리자 › 사용자 · 권한'에서 심방 권한을 준 사용자만 볼 수 있습니다)</div>
+				<div class="warn">심방 기록은 A 등급만 볼 수 있습니다.</div>
 			{/if}
 		</div>
 
@@ -330,11 +331,10 @@
 				</form>
 			{/if}
 		</div>
+		{#if registry.perms.visit}
 		<div class="card">
-			<h2>디모데 메모 <span class="tag">심방 권한자만 · 열 때마다 접속기록</span></h2>
-			{#if !registry.perms.visit}
-				<div class="warn">심방 권한이 필요합니다.</div>
-			{:else if memos.length === 0}
+			<h2>디모데 메모 <span class="tag">A 등급만 · 열 때마다 접속기록</span></h2>
+			{#if memos.length === 0}
 				<p class="muted">옛 디모데 메모 없음</p>
 			{:else if !showMemo}
 				<button class="ghost" onclick={openMemo}>열어 보기 (접속기록에 남음)</button>
@@ -342,6 +342,7 @@
 				{#each memos as m}<div>{m.body}</div>{/each}
 			{/if}
 		</div>
+		{/if}
 		<div class="card">
 			<h2>동의 기록</h2>
 			<table class="sm"><thead><tr><th>종류</th><th>처리방침 판</th><th>동의일</th><th>방법</th><th>보호자</th><th>철회일</th><th></th></tr></thead><tbody>

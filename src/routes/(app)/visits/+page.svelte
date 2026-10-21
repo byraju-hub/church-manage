@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 심방: 목록 검색 · 달력 · 등록 (심방 권한이 있는 회원만)
+	// 심방: 심방 목록 · 캘린더 보기 · 소그룹 특이사항 · 등록 (심방 권한이 있는 회원만)
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import Calendar from '#lib/components/Calendar.svelte';
@@ -7,9 +7,10 @@
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
 	import VisitAnalyzer, { type Analysis } from '#lib/components/VisitAnalyzer.svelte';
 	import { FULL_TIME_CLERGY, VISIT_KINDS, type VisitMethod } from '#lib/registry/types.ts';
+	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 
 	const today = new Date().toISOString().slice(0, 10);
-	let tab = $state<'list' | 'cal' | 'new'>('list');
+	let tab = $state<'list' | 'cal' | 'notes' | 'new'>('list');
 	let q = $state(page.url.searchParams.get('q') ?? '');
 	let kind = $state('');
 	let pastor = $state('');
@@ -42,6 +43,25 @@
 	}
 	$effect(() => { if (page.url.searchParams.get('person')) tab = 'new'; });
 
+	// 소그룹 특이사항: 홈페이지 출석부에서 소그룹 인도자가 적은 개별 메모를 한곳에 모아 봄
+	const commOf = (g: string) => COMMUNITY_DEFS.find((c) => c.groups.some((x) => x.name === g))?.name ?? '';
+	let nq = $state('');
+	let ncomm = $state('');
+	let ngroup = $state('');
+	let nfrom = $state('');
+	let nto = $state('');
+	$effect(() => { void ncomm; ngroup = ''; });
+	const ngroupOpts = $derived(COMMUNITY_DEFS.find((c) => c.name === ncomm)?.groups.map((g) => g.name) ?? []);
+	const noteRows = $derived(
+		registry.d.groupNotes
+			.filter((n) => {
+				const t = nq.trim().toLowerCase();
+				if (t && !`${nameOf(n.person_id)} ${n.body} ${n.author}`.toLowerCase().includes(t)) return false;
+				return (!ncomm || commOf(n.small_group) === ncomm) && (!ngroup || n.small_group === ngroup) && (!nfrom || n.date >= nfrom) && (!nto || n.date <= nto);
+			})
+			.sort((a, b) => b.date.localeCompare(a.date))
+	);
+
 	// 녹음·문서 분석 결과를 입력 칸에 채움
 	function applyAnalysis(r: Analysis) {
 		if (r.kind) f.kind = r.kind;
@@ -55,11 +75,12 @@
 
 <h1>심방</h1>
 {#if !registry.perms.visit}
-	<div class="warn">심방 권한이 꺼져 있어 볼 수 없습니다. 심방 기록은 전임 교역자까지만 볼 수 있습니다. (최고관리자가 '관리자 › 사용자 · 권한'에서 심방 권한을 준 사용자만 볼 수 있습니다)</div>
+	<div class="warn">심방 메뉴는 A 등급(전임 교역자)만 볼 수 있습니다.</div>
 {:else}
 	<div class="tabs">
-		<button class:on={tab === 'list'} onclick={() => (tab = 'list')}>목록으로 검색</button>
-		<button class:on={tab === 'cal'} onclick={() => (tab = 'cal')}>날짜별 (달력)</button>
+		<button class:on={tab === 'list'} onclick={() => (tab = 'list')}>심방 목록</button>
+		<button class:on={tab === 'cal'} onclick={() => (tab = 'cal')}>캘린더 보기</button>
+		<button class:on={tab === 'notes'} onclick={() => (tab = 'notes')}>소그룹 특이사항</button>
 		{#if registry.perms.edit}<button class:on={tab === 'new'} onclick={() => (tab = 'new')}>+ 심방 등록</button>{/if}
 	</div>
 
@@ -93,6 +114,33 @@
 	{:else if tab === 'cal'}
 		<div class="card"><Calendar only={['심방 계획']} /></div>
 		<p class="muted">달력에는 등록된 심방이 날짜별로 표시됩니다. 앞으로의 날짜로 등록하면 심방 계획으로 보입니다.</p>
+	{:else if tab === 'notes'}
+		<div class="card">
+			<div class="toolbar"><input type="search" placeholder="교인 이름 · 내용 · 인도자 검색" bind:value={nq} /></div>
+			<div class="toolbar">
+				<select bind:value={ncomm} aria-label="공동체 선택"><option value="">전체 공동체</option>{#each COMMUNITY_DEFS as c}<option value={c.name}>{c.name}</option>{/each}</select>
+				<select bind:value={ngroup} disabled={!ncomm} aria-label="소그룹 선택"><option value="">{ncomm ? '전체 소그룹' : '공동체를 먼저 고르세요'}</option>{#each ngroupOpts as g}<option value={g}>{g}</option>{/each}</select>
+				<span class="muted">날짜</span><input type="date" bind:value={nfrom} /> ~ <input type="date" bind:value={nto} />
+			</div>
+		</div>
+		<div class="card" style="padding:0;overflow-x:auto">
+			<table class="sm">
+				<thead><tr><th>날짜</th><th>공동체</th><th>소그룹</th><th>교인</th><th>작성 인도자</th><th>특이사항</th></tr></thead>
+				<tbody>
+					{#each noteRows.slice(0, 200) as n (n.id)}
+						<tr>
+							<td style="white-space:nowrap">{n.date}</td>
+							<td style="white-space:nowrap">{commOf(n.small_group) || '-'}</td>
+							<td style="white-space:nowrap"><a href="/communities/{encodeURIComponent(n.small_group)}">{n.small_group}</a></td>
+							<td style="white-space:nowrap"><a href="/{n.person_id}">{nameOf(n.person_id)}</a></td>
+							<td style="white-space:nowrap">{n.author}</td>
+							<td style="min-width:220px">{n.body}</td>
+						</tr>
+					{:else}<tr><td colspan="6" class="muted">조건에 맞는 특이사항이 없습니다.</td></tr>{/each}
+				</tbody>
+			</table>
+		</div>
+		<p class="muted">홈페이지 출석부에서 소그룹 인도자가 적은 특이사항을 모아 보여 줍니다. 건강 등 민감한 내용이 있어 A 등급만 볼 수 있습니다.{noteRows.length > 200 ? ` (${noteRows.length}건 중 200건만 표시)` : ''}</p>
 	{:else}
 		<form class="card form" onsubmit={submit}>
 			<h2 class="wide">심방 등록</h2>

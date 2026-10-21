@@ -112,9 +112,7 @@
 		<div class="legend">
 			<button type="button" class="chip" class:sel={on.length === kinds.length} onclick={all}>전체</button>
 			{#each kinds as k}
-				{#if k !== '심방 계획' || registry.perms.visit}
-					<button type="button" class="chip" class:off={!on.includes(k)} class:sel={solo === k} onclick={() => pick(k)} style="--c:{KIND_COLOR[k]}"><i></i>{k}</button>
-				{/if}
+				<button type="button" class="chip" class:off={!on.includes(k)} class:sel={solo === k} onclick={() => pick(k)} style="--c:{KIND_COLOR[k]}"><i></i>{k}</button>
 			{/each}
 		</div>
 	</div>
