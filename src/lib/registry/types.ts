@@ -87,6 +87,7 @@ export interface Person {
 	address2: string | null;
 	occupation: string | null;
 	workplace: string | null;
+	car_number?: string | null; // 차량 번호 (주차 봉사·연락용, 예: 12가 3456). 여러 대면 쉼표로
 	marital_status: MaritalStatus | null;
 	wedding_date: string | null;
 	previous_church: string | null;

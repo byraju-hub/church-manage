@@ -75,6 +75,7 @@ create table registry.people (
   address1 text, address2 text,               -- 비면 세대 주소 사용
   occupation text,                            -- 직업 / 직장 (화면에서 한 칸)
   workplace text,                             -- 옛 자료용. 새 입력은 occupation 한 칸에
+  car_number text,                            -- 차량 번호 (여러 대면 쉼표)
   marital_status text check (marital_status in ('미혼','기혼','이혼','사별','기타')),
   wedding_date date,
   previous_church text,                       -- 이전 출석 교회

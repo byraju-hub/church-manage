@@ -12,7 +12,7 @@
 
 	// 검색 방식: 기본(한 줄) / 복수(여러 명을 한꺼번에) / 항목별(칸을 골라서)
 	let mode = $state<'basic' | 'multi' | 'fields'>('basic');
-	const FIELDS = ['이름', '전화', '주소', '직업·직장', '메모', '인도자', '이전 교회'];
+	const FIELDS = ['이름', '전화', '주소', '직업·직장', '차량 번호', '메모', '인도자', '이전 교회'];
 	let chips = $state<Chip[]>([]);
 	let fieldsPicked = $state<string[]>(['이름', '전화']);
 	let q = $state(page.url.searchParams.get('q') ?? '');
@@ -47,7 +47,7 @@
 			const hh = registry.householdOf(p.id);
 			const hay: Record<string, string> = {
 				이름: `${p.name} ${p.name_note ?? ''}`, 전화: p.phone ?? '', 주소: `${p.address1 ?? ''} ${p.address2 ?? ''} ${hh?.address ?? ''}`,
-				'직업·직장': `${p.occupation ?? ''} ${p.workplace ?? ''}`, 메모: p.note ?? '', 인도자: `${p.guide_name ?? ''} ${registry.person(p.guide_person_id ?? '')?.name ?? ''}`, '이전 교회': p.previous_church ?? ''
+				'직업·직장': `${p.occupation ?? ''} ${p.workplace ?? ''}`, '차량 번호': p.car_number ?? '', 메모: p.note ?? '', 인도자: `${p.guide_name ?? ''} ${registry.person(p.guide_person_id ?? '')?.name ?? ''}`, '이전 교회': p.previous_church ?? ''
 			};
 			const words = t.toLowerCase().split(/\s+/);
 			return words.every((w) => fieldsPicked.some((f) => hay[f].toLowerCase().includes(w) || (digits(w).length >= 4 && digits(hay[f]).includes(digits(w)))));
@@ -325,6 +325,7 @@
 				<dt>인도자</dt><dd>{#if p.guide_person_id}{registry.person(p.guide_person_id)?.name}{:else}-{/if}</dd>
 				<dt>결혼</dt><dd>{p.marital_status ?? '-'}{p.wedding_date ? ` · ${p.wedding_date}` : ''}</dd>
 				<dt>직업 / 직장</dt><dd>{[p.occupation, p.workplace].filter(Boolean).join(' / ') || '-'}</dd>
+				{#if p.car_number}<dt>차량 번호</dt><dd>{p.car_number}</dd>{/if}
 			</dl>
 			{#if selFamily.length}
 				<h3 class="mini-h">세대 구성 · {hh?.no}</h3>

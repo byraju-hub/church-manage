@@ -15,7 +15,7 @@
 	const today = new Date().toISOString().slice(0, 10);
 	let f = $state<Record<string, any>>({
 		name: '', name_note: '', phone: '', gender: '', birth_date: '', birth_lunar: false, sms_opt_out: false, email: '', photo: '',
-		address_zip: '', address1: '', address2: '', occupation: '', workplace: '', marital_status: '', wedding_date: '',
+		address_zip: '', address1: '', address2: '', occupation: '', workplace: '', car_number: '', marital_status: '', wedding_date: '',
 		previous_church: '', guide_person_id: '', guide_name: '', note: '', category_id: 'm.n.a', edu_dept: '', mission_society: '',
 		clergy_title: '', big_family_head_id: '', big_family_relation: ''
 	});
@@ -94,7 +94,7 @@
 			name: f.name.trim(), name_note: nn(f.name_note), phone: nn(f.phone), gender: f.gender || null,
 			birth_date: nn(f.birth_date), email: nn(f.email), has_account: false, birth_lunar: f.birth_lunar, reg_no: null,
 			address_zip: nn(f.address_zip), address1: nn(f.address1), address2: nn(f.address2),
-			occupation: nn(f.occupation), workplace: nn(f.workplace), marital_status: (nn(f.marital_status) as Person['marital_status']),
+			occupation: nn(f.occupation), workplace: nn(f.workplace), car_number: nn(f.car_number), marital_status: (nn(f.marital_status) as Person['marital_status']),
 			wedding_date: nn(f.wedding_date), previous_church: nn(f.previous_church),
 			guide_person_id: nn(f.guide_person_id), guide_name: f.guide_person_id ? null : nn(f.guide_name),
 			sms_opt_out: f.sms_opt_out, faith_checked_on: null, note: nn(f.note), purged_on: null,

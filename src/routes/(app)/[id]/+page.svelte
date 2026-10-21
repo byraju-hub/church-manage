@@ -38,7 +38,7 @@
 		[...xs].sort((a, b) => (b.event_date ?? b.start_date ?? '').localeCompare(a.event_date ?? a.start_date ?? ''));
 	const nn = (x: string) => (x === '' || x === undefined ? null : x);
 
-	const EDIT_KEYS = ['name', 'name_note', 'phone', 'gender', 'birth_date', 'birth_lunar', 'email', 'address_zip', 'address1', 'address2', 'occupation', 'workplace', 'marital_status', 'wedding_date', 'previous_church', 'guide_person_id', 'guide_name', 'sms_opt_out', 'note', 'photo', 'category_id', 'clergy_title', 'edu_dept', 'mission_society', 'big_family_head_id', 'big_family_relation'];
+	const EDIT_KEYS = ['name', 'name_note', 'phone', 'gender', 'birth_date', 'birth_lunar', 'email', 'address_zip', 'address1', 'address2', 'occupation', 'workplace', 'car_number', 'marital_status', 'wedding_date', 'previous_church', 'guide_person_id', 'guide_name', 'sms_opt_out', 'note', 'photo', 'category_id', 'clergy_title', 'edu_dept', 'mission_society', 'big_family_head_id', 'big_family_relation'];
 	function startEdit() {
 		draft = {};
 		for (const k of EDIT_KEYS) draft[k] = (p as any)[k] ?? (k === 'birth_lunar' || k === 'sms_opt_out' ? false : '');
@@ -140,6 +140,7 @@
 						<tr><th>결혼</th><td>{v(p.marital_status)}{p.wedding_date ? ` · 결혼기념일 ${p.wedding_date}` : ''}</td><th>직업 / 직장</th><td>{[p.occupation, p.workplace].filter(Boolean).join(' / ') || '-'}</td></tr>
 						<tr><th>이메일</th><td>{v(p.email)}</td><th>이전 출석 교회</th><td>{v(p.previous_church)}</td></tr>
 						<tr><th>대가족</th><td>{#if bigHead}세대주 <a href="/{bigHead.id}">{bigHead.name}</a> · {v(p.big_family_relation)}{:else}-{/if}</td><th>신급 확인일</th><td>{v(p.faith_checked_on)}</td></tr>
+						<tr><th>차량 번호</th><td colspan="3">{v(p.car_number)}</td></tr>
 						<tr><th>비고</th><td colspan="3">{v(p.note)}</td></tr>
 					</tbody>
 				</table>

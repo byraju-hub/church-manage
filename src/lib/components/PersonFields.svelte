@@ -107,8 +107,11 @@
 </div>
 
 <div class="sec">
-	<h3>직업 · 직장</h3>
-	<div class="form"><label class="wide">직업 / 직장<input bind:value={f.occupation} placeholder="예: 목사 / 부평동부교회" /></label></div>
+	<h3>직업 · 직장 · 차량</h3>
+	<div class="form">
+		<label>직업 / 직장<input bind:value={f.occupation} placeholder="예: 목사 / 부평동부교회" /></label>
+		<label>차량 번호<input bind:value={f.car_number} placeholder="예: 12가 3456 (여러 대면 쉼표)" /></label>
+	</div>
 </div>
 
 <div class="sec">

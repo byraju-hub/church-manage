@@ -341,7 +341,7 @@ class Registry {
 		for (const p of this.d.people) {
 			const s = this.summary(p);
 			const hh = this.householdOf(p.id);
-			const hay = [p.name, p.name_note, p.phone, p.address1, p.address2, hh?.address, p.occupation, p.workplace, p.note, p.previous_church, p.reg_no, p.email, s.title, s.status, s.faith,
+			const hay = [p.name, p.name_note, p.phone, p.address1, p.address2, hh?.address, p.occupation, p.workplace, p.car_number, p.note, p.previous_church, p.reg_no, p.email, s.title, s.status, s.faith,
 				s.community, s.smallGroup, s.category, p.mission_society, p.edu_dept, p.clergy_title, p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : ''].filter(Boolean).join(' ').toLowerCase();
 			if (hit(hay)) { total++; if (people.length < 8) people.push(p); }
 		}
