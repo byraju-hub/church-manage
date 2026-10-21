@@ -117,7 +117,7 @@
 		<div class="bar">
 			<a class="brand" href="/">
 				<img class="logo" src="/logo.png" alt="" width="38" height="38" />
-				<span><b>부평동부교회 교적 관리</b><small>프로토타입</small></span>
+				<span><b>부평동부교회 교적 관리</b></span>
 			</a>
 
 			{#if unlocked}

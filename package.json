@@ -25,6 +25,7 @@
 	},
 	"dependencies": {
 		"html2pdf.js": "^0.12.1",
+		"jspdf": "^3.0.4",
 		"write-excel-file": "^4.1.1"
 	}
 }

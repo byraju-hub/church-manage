@@ -63,14 +63,38 @@
 	function record() {
 		registry.log('출력', `${doc}${p && needsPerson ? ` · ${p.name}` : ''}${needsPerson && doc !== '교적부' ? ` · ${docNo} · ${purpose}` : ''}`);
 	}
+	// 교회 조직표는 늘 A4 한 장에 나오도록 크기를 줄여서 맞춤
+	const onePage = $derived(doc === '교회 조직표');
 	function print() {
 		record();
+		if (onePage && sheet) {
+			// 인쇄 영역(A4 297mm - 위아래 여백 24mm)에 들어가도록 비율을 계산해 잠시 축소
+			const pxPerMm = 96 / 25.4;
+			const h = sheet.scrollHeight / pxPerMm;
+			const fit = Math.min(1, (270 / h) * 0.97);
+			sheet.style.setProperty('--fit', String(fit));
+			window.addEventListener('afterprint', () => sheet?.style.removeProperty('--fit'), { once: true });
+		}
 		window.print();
+	}
+	// 한 장짜리 PDF: 문서 전체를 그림 한 장으로 만든 뒤 A4 한 쪽에 비율을 지켜 맞춤
+	async function pdfOnePage() {
+		if (!sheet) return;
+		const html2pdf = (await import('html2pdf.js')).default;
+		const { jsPDF } = await import('jspdf');
+		const canvas: HTMLCanvasElement = await html2pdf().set({ html2canvas: { scale: 2, useCORS: true } } as unknown as Record<string, never>).from(sheet).toCanvas().get('canvas');
+		const out = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+		const maxW = 210 - 16, maxH = 297 - 16; // 여백 8mm
+		const k = Math.min(maxW / canvas.width, maxH / canvas.height);
+		const w = canvas.width * k, h = canvas.height * k;
+		out.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', (210 - w) / 2, 8, w, h);
+		out.save(fileName);
 	}
 	async function pdf() {
 		if (!sheet) return;
 		busy = true;
 		try {
+			if (onePage) { await pdfOnePage(); record(); return; }
 			const html2pdf = (await import('html2pdf.js')).default;
 			// pagebreak: 표의 줄이 페이지 사이에서 잘리지 않게 함 (타입 정의에는 없지만 html2pdf 가 지원하는 설정)
 			const opts = { margin: [10, 10, 12, 10], filename: fileName, image: { type: 'jpeg', quality: 0.96 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.keep'] } };
@@ -112,7 +136,7 @@
 
 {#if ready}
 	<div class="sheet-wrap">
-		<div class="sheet" bind:this={sheet}>
+		<div class="sheet" class:one-page={onePage} bind:this={sheet}>
 			{#if doc === '교적부' && p && s}
 				<div class="doc-head"><span>{CHURCH}</span><h2>교 적 부</h2><span>출력일 {ymd(now.toISOString().slice(0, 10))}</span></div>
 				<table class="dt">
@@ -268,12 +292,13 @@
 	.cert-logo { display: inline-block; width: 95mm; height: auto; margin-bottom: 4mm; vertical-align: middle; }
 	.seal { display: inline-grid; place-items: center; width: 16mm; height: 16mm; margin-left: 4mm; border: 2px solid #c92a2a; border-radius: 50%; color: #c92a2a; font-size: 10pt; }
 	@media print {
-		:global(.site-header), :global(.site-footer), .no-print { display: none !important; }
+		:global(.site-header), :global(.site-footer), :global(.tabbar), :global(.to-top), .no-print { display: none !important; }
 		:global(.site > main) { padding: 0 !important; max-width: none !important; }
 		:global(body) { background: #fff !important; }
 		.sheet-wrap { padding: 0; overflow: visible; }
 		.sheet { box-shadow: none; border: 0; width: auto; min-height: 0; padding: 0; }
 		.dt tr { break-inside: avoid; }
+		.sheet.one-page { zoom: var(--fit, 1); } /* 교회 조직표: 한 장에 맞춰 축소 */
 	}
 	@page { size: A4; margin: 12mm; }
 </style>

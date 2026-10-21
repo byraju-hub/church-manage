@@ -175,7 +175,7 @@
 	<div class="actions">
 		<a class="btn light" href="/members">교인 목록</a>
 		{#if registry.perms.edit}<a class="btn glass" href="/new">+ 교인 등록</a>{/if}
-		<a class="btn glass" href="/reports">명단 · 통계</a>
+		<a class="btn glass" href="/stats">통계</a>
 	</div>
 </section>
 
