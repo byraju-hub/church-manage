@@ -19,9 +19,17 @@
 	const md = (iso: string) => `${+iso.slice(5, 7)}/${+iso.slice(8, 10)}`;
 	const dow = (iso: string) => (iso === WEEKS[WEEKS.length - 1] ? ' · 이번 주일' : '');
 
+	// 명단에 보일 교인구분 3단계: 기본은 예배출석·가끔출석만. 불출석·장기결석자도 체크하면 명단에 나옴
+	// 명단 대상은 2단계 장년·새가족. 3단계 체크 하나로 둘 다 함께 거름
+	const CAT2 = ['장년', '새가족'];
+	const CAT3 = ['예배출석', '가끔출석', '불출석', '장기결석자'];
+	let shownCats = $state<string[]>(['예배출석', '가끔출석']);
+	const roster = $derived(registry.worshipRoster().map((p) => ({ p, s: registry.summary(p) })).filter(({ s }) => CAT2.includes(s.cat2)));
+	const catCount = $derived(Object.fromEntries(CAT3.map((c) => [c, roster.filter(({ s }) => s.cat3 === c).length])));
+
 	type Row = { p: ReturnType<typeof registry.person> & {}; s: ReturnType<typeof registry.summary>; group: string; community: string; first: boolean };
 	const rows = $derived.by(() => {
-		const members = registry.worshipRoster().map((p) => ({ p, s: registry.summary(p) }));
+		const members = roster.filter(({ s }) => !s.cat3 || shownCats.includes(s.cat3));
 		const byName = (a: { p: { name: string } }, b: { p: { name: string } }) => a.p.name.localeCompare(b.p.name, 'ko');
 		const out: Row[] = [];
 		for (const c of COMMUNITY_DEFS) {
@@ -30,8 +38,8 @@
 				list.forEach((x, i) => out.push({ ...x, group: g.name, community: c.name, first: i === 0 }));
 			}
 		}
-		// 소그룹 미지정자: 소그룹이 없는 재적 장년
-		members.filter(({ s }) => !s.smallGroup && s.cat2 === '장년').sort(byName)
+		// 소그룹 미지정자: 소그룹이 없는 재적 장년·새가족
+		members.filter(({ s }) => !s.smallGroup).sort(byName)
 			.forEach((x, i) => out.push({ ...x, group: '미지정', community: '-', first: i === 0 }));
 		return out;
 	});
@@ -88,6 +96,13 @@
 	</form>
 	<span class="muted split-sum">(공동체 체크 <b>{sumPresent}</b>명 / 그 외 <b>{others}</b>명){saved === undefined ? ' · 전체 인원은 가상 샘플' : ''}</span>
 	{#if total < sumPresent}<span class="warn-sm">전체 인원이 명단 체크 인원보다 적습니다.</span>{/if}
+	<div class="cats">
+		<span class="cats-h">교인구분 <b>장년 · 새가족</b> ›</span>
+		{#each CAT3 as c}
+			<label class="cat-ck" class:on={shownCats.includes(c)}><input type="checkbox" value={c} bind:group={shownCats} />{c}<small>{catCount[c]}</small></label>
+		{/each}
+		<span class="muted" style="font-size:.8rem">체크한 교인만 명단에 나옵니다.</span>
+	</div>
 </div>
 
 <div class="card" style="padding:0;overflow-x:auto">
@@ -124,7 +139,13 @@
 	.split-sum { font-size: 0.88rem; }
 	.split-sum b { color: var(--text); }
 	.warn-sm { color: #e0245e; font-size: 0.82rem; }
-	.att { table-layout: fixed; min-width: 640px; }
+	/* 교인구분 3단계 체크 (날짜 줄 아래 한 줄) */
+	.cats { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.6rem; padding-top: 0.7rem; border-top: 1px solid var(--line); }
+	.cats-h { font-size: 0.88rem; font-weight: 600; }
+	.cat-ck { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.75rem; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+	.cat-ck.on { border-color: #2f9e44; background: #ebfbee; color: #237032; }
+	.cat-ck input { width: auto; margin: 0; }
+	.cat-ck small { color: var(--muted); font-weight: 500; }	.att { table-layout: fixed; min-width: 640px; }
 	.att td { vertical-align: middle; }
 	.att td:nth-child(-n + 5) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	.att tr.first td { border-top: 2px solid var(--line-strong); }
