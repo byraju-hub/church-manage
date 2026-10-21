@@ -21,6 +21,29 @@
 		else msg = '';
 		addName = ''; addFor = null;
 	}
+	// 끌어서 순서 바꾸기: 같은 상위 구분 안에서만 옮김
+	let drag = $state<{ id: string; parent: string | null } | null>(null);
+	let drop = $state<{ id: string; before: boolean } | null>(null);
+	function over(e: DragEvent, id: string, parent: string | null) {
+		if (!drag || drag.parent !== parent || drag.id === id) return;
+		e.preventDefault();
+		const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		drop = { id, before: e.clientY < r.top + r.height / 2 };
+	}
+	function dropOn(e: DragEvent, idx: number) {
+		e.preventDefault();
+		if (drag && drop) {
+			const from = registry.childrenOf(drag.parent).findIndex((c) => c.id === drag!.id);
+			let to = drop.before ? idx : idx + 1;
+			if (from < to) to -= 1;
+			registry.moveCategory(drag.id, to);
+		}
+		drag = null; drop = null;
+	}
+	// 소그룹 편성: 추가 · 수정(이름·공동체·인도자·장소) · 삭제
+	let sgAdd = $state<{ community: string; name: string; leader: string; place: string } | null>(null);
+	let sgEdit = $state<{ id: string; community: string; name: string; leader: string; place: string } | null>(null);
+	let sgMsg = $state('');
 	function del(id: string) {
 		msg = registry.deleteCategory(id) ? '' : '이 구분에 속한 교인이 있어 지울 수 없습니다. 먼저 다른 구분으로 옮겨 주세요.';
 	}
@@ -38,40 +61,98 @@
 		<div class="card">
 			<h2>교인구분 <span class="tag">{MAX_CATEGORY_DEPTH}단계까지</span></h2>
 			<p class="muted">교인 카드의 '교인구분'에 쓰는 분류입니다. 이름을 바꾸면 그 구분의 모든 교인에게 바로 적용됩니다. 교인이 있는 구분은 지울 수 없습니다.</p>
-			{#snippet node(id: string, name: string, level: number)}
+			{#snippet node(id: string, name: string, level: number, parent: string | null, idx: number, total: number)}
 				{@const usage = registry.categoryUsage(id).count}
-				<div class="cat-row" style="padding-left:{(level - 1) * 1.6}rem">
+				<div
+					class="cat-row"
+					class:drop-before={drop?.id === id && drop.before}
+					class:drop-after={drop?.id === id && !drop.before}
+					class:dragging={drag?.id === id}
+					style="padding-left:{(level - 1) * 1.6}rem"
+					role="listitem"
+					ondragover={(e) => over(e, id, parent)}
+					ondragleave={() => { if (drop?.id === id) drop = null; }}
+					ondrop={(e) => dropOn(e, idx)}
+				>
+					<span class="grip" draggable="true" role="button" tabindex="-1" aria-label="끌어서 순서 바꾸기" title="끌어서 순서 바꾸기"
+						ondragstart={(e) => { drag = { id, parent }; e.dataTransfer?.setData('text/plain', id); const row = (e.currentTarget as HTMLElement).parentElement; if (row) e.dataTransfer?.setDragImage(row, 20, 16); }}
+						ondragend={() => { drag = null; drop = null; }}>
+						<svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4" /><circle cx="7" cy="3" r="1.4" /><circle cx="3" cy="8" r="1.4" /><circle cx="7" cy="8" r="1.4" /><circle cx="3" cy="13" r="1.4" /><circle cx="7" cy="13" r="1.4" /></svg>
+					</span>
 					<span class="lvl">{level}</span>
 					<input value={name} onchange={(e) => registry.renameCategory(id, e.currentTarget.value)} aria-label="구분 이름" />
 					<span class="muted" style="font-size:.8rem;white-space:nowrap">{usage}명</span>
 					{#if level < MAX_CATEGORY_DEPTH}<button type="button" class="ghost sm" onclick={() => { addFor = addFor === id ? null : id; addName = ''; }}>+ 하위</button>{/if}
 					<button type="button" class="ghost sm" onclick={() => del(id)} disabled={usage > 0}>삭제</button>
+					<span class="move">
+						<button type="button" class="ghost sm" disabled={idx === 0} onclick={() => registry.moveCategory(id, idx - 1)} aria-label="{name} 위로">▲</button>
+						<button type="button" class="ghost sm" disabled={idx === total - 1} onclick={() => registry.moveCategory(id, idx + 1)} aria-label="{name} 아래로">▼</button>
+					</span>
 				</div>
+				{@const kids = registry.childrenOf(id)}
+				{#each kids as c, i (c.id)}{@render node(c.id, c.name, level + 1, id, i, kids.length)}{/each}
+				<!-- 새 하위 구분 입력 칸은 하위 목록의 맨 아래에 (추가하면 맨 아래에 붙음) -->
 				{#if addFor === id}
-					<form class="cat-row" style="padding-left:{level * 1.6}rem" onsubmit={(e) => { e.preventDefault(); add(id); }}>
+					<form class="cat-row" style="padding-left:{level * 1.6 + 1.6}rem" onsubmit={(e) => { e.preventDefault(); add(id); }}>
 						<span class="lvl">{level + 1}</span><input bind:value={addName} placeholder="새 구분 이름" /><button type="submit" class="sm">추가</button>
 					</form>
 				{/if}
-				{#each registry.childrenOf(id) as c (c.id)}{@render node(c.id, c.name, level + 1)}{/each}
 			{/snippet}
-			{#each roots as c (c.id)}{@render node(c.id, c.name, 1)}{/each}
+			<p class="muted" style="font-size:.82rem;margin:.2rem 0 .6rem">왼쪽 <b>⠿</b> 손잡이를 끌거나 ▲▼ 를 눌러 같은 단계 안에서 순서를 바꿀 수 있습니다. 바꾼 순서는 교인 카드·목록의 선택 목록에 그대로 쓰입니다.</p>
+			<div role="list">
+				{#each roots as c, i (c.id)}{@render node(c.id, c.name, 1, null, i, roots.length)}{/each}
+			</div>
 			<form class="cat-row" style="margin-top:.8rem" onsubmit={(e) => { e.preventDefault(); add(null); }}>
 				<span class="lvl">1</span><input bind:value={addName} placeholder="새 1단계 구분 이름" /><button type="submit" class="sm">1단계 추가</button>
 			</form>
 		</div>
 	{:else if tab === '소그룹 편성'}
 		<div class="card" style="padding:0;overflow-x:auto">
-			<div class="card-head" style="padding:1.1rem 1.3rem 0"><h2>소그룹 편성 <span class="tag">출석부 자료</span></h2><span class="sub">인도자와 모임 장소를 바꿉니다. 소그룹 소속 교인은 출석부에서 옵니다.</span></div>
+			<div class="card-head" style="padding:1.1rem 1.3rem 0">
+				<div><h2>소그룹 편성 <span class="tag">출석부 자료</span></h2><span class="sub">소그룹을 추가·수정·삭제합니다. 이름을 바꾸면 소속 교인과 인도자 특이사항에도 바로 적용됩니다.</span></div>
+				{#if !sgAdd}<button type="button" class="sm" onclick={() => { sgAdd = { community: COMMUNITY_DEFS[0].name, name: '', leader: '', place: '' }; sgEdit = null; sgMsg = ''; }}>+ 소그룹</button>{/if}
+			</div>
+			{#if sgMsg}<div class="warn" style="margin:.8rem 1.3rem 0">{sgMsg}</div>{/if}
+			{#if sgAdd}
+				<form class="sg-add" onsubmit={(e) => { e.preventDefault(); sgMsg = registry.addSmallGroup(sgAdd!.community, sgAdd!.name, sgAdd!.place, sgAdd!.leader || null) ?? ''; if (!sgMsg) sgAdd = null; }}>
+					<label>공동체<select bind:value={sgAdd.community}>{#each COMMUNITY_DEFS as c}<option>{c.name}</option>{/each}</select></label>
+					<label>소그룹 이름 *<input bind:value={sgAdd.name} required placeholder="예: 새소망" /></label>
+					<label>인도자<PersonPicker bind:value={sgAdd.leader} placeholder="인도자 검색" /></label>
+					<label>모임 장소<input bind:value={sgAdd.place} placeholder="예: 다니엘관 101호" /></label>
+					<div class="row"><button type="submit" class="sm">추가</button><button type="button" class="ghost sm" onclick={() => { sgAdd = null; sgMsg = ''; }}>취소</button></div>
+				</form>
+			{/if}
 			<table class="sm">
-				<thead><tr><th>공동체</th><th>소그룹</th><th style="min-width:240px">인도자</th><th>모임 장소</th></tr></thead>
+				<thead><tr><th>공동체</th><th>소그룹</th><th style="min-width:220px">인도자</th><th>모임 장소</th><th>인원</th><th></th></tr></thead>
 				<tbody>
-					{#each COMMUNITY_DEFS as c}
-						{#each registry.d.smallGroups.filter((g) => g.community === c.name).sort((a, b) => a.sort_order - b.sort_order) as g (g.id)}
-							<tr>
-								<td>{c.name}</td><td><b>{g.name}</b>{#if g.care}<span class="tag part">자녀 돌봄</span>{/if}</td>
-								<td><PersonPicker value={g.leader_id ?? ''} placeholder="인도자 검색" onpick={(id) => registry.updateGroup(g.id, { leader_id: id })} /></td>
-								<td><input value={g.place ?? ''} onchange={(e) => registry.updateGroup(g.id, { place: e.currentTarget.value || null })} /></td>
-							</tr>
+					{#each COMMUNITY_DEFS as c, ci}
+						{#each registry.groupsIn(c.name) as g (g.id)}
+							{#if sgEdit?.id === g.id}
+								<tr class="editing">
+									<td><select bind:value={sgEdit.community} aria-label="공동체">{#each COMMUNITY_DEFS as x}<option>{x.name}</option>{/each}</select></td>
+									<td><input bind:value={sgEdit.name} aria-label="소그룹 이름" /></td>
+									<td><PersonPicker bind:value={sgEdit.leader} placeholder="인도자 검색" /></td>
+									<td><input bind:value={sgEdit.place} aria-label="모임 장소" /></td>
+									<td style="white-space:nowrap">{registry.groupMemberCount(g.name)}명</td>
+									<td class="row" style="flex-wrap:nowrap">
+										<button type="button" class="sm" onclick={() => { sgMsg = registry.editSmallGroup(g.id, { name: sgEdit!.name, community: sgEdit!.community, place: sgEdit!.place, leader_id: sgEdit!.leader || null }) ?? ''; if (!sgMsg) sgEdit = null; }}>저장</button>
+										<button type="button" class="ghost sm" onclick={() => { sgEdit = null; sgMsg = ''; }}>취소</button>
+									</td>
+								</tr>
+							{:else}
+								<!-- 공동체 구분: 가운데(줄기) 공동체는 옅은 회색 음영 -->
+								<tr class:shade={ci % 2 === 1}>
+									<td>{c.name}</td>
+									<td><b>{g.name}</b>{#if g.care}<span class="tag part">자녀 돌봄</span>{/if}</td>
+									<td>{#if g.leader_id}<a href="/{g.leader_id}">{registry.person(g.leader_id)?.name}</a>{:else}<span class="muted">-</span>{/if}</td>
+									<td>{g.place ?? '-'}</td>
+									<td style="white-space:nowrap">{registry.groupMemberCount(g.name)}명</td>
+									<td class="row" style="flex-wrap:nowrap">
+										<button type="button" class="ghost sm" onclick={() => { sgEdit = { id: g.id, community: g.community, name: g.name, leader: g.leader_id ?? '', place: g.place ?? '' }; sgAdd = null; sgMsg = ''; }}>수정</button>
+										<button type="button" class="ghost sm" onclick={() => { if (confirm(`'${g.name}' 소그룹을 삭제합니다.`)) sgMsg = registry.deleteSmallGroup(g.id) ?? ''; }}>삭제</button>
+									</td>
+								</tr>
+							{/if}
 						{/each}
 					{/each}
 				</tbody>

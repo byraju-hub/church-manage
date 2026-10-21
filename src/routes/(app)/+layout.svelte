@@ -82,11 +82,11 @@
 		{ href: '/members', label: '교인 목록', hint: '기본 · 복수 · 항목별 검색' },
 		{ href: '/new', label: '교인 등록', hint: '등록 카드 촬영 후 등록 가능' },
 		{ href: '/newcomers', label: '새가족 정착', hint: '등록 → 교육 → 수료 → 소그룹' },
-		{ href: '/households', label: '세대', hint: '세대원 · 분가' }
+		{ href: '/households', label: '세대 목록', hint: '세대원 · 분가' }
 	];
 	const commMenu: Item[] = [
 		{ href: '/communities', label: '공동체 편성표', hint: '인도자 · 모임 장소 · 출석' },
-		{ href: '/communities/roster', label: '공동체 · 소그룹별 명단', hint: '각 소그룹 명단 · 개인 출석률' }
+		{ href: '/communities/roster', label: '소그룹별 명단', hint: '각 소그룹 명단 · 개인 출석률' }
 	];
 	const statMenu: Item[] = [
 		{ href: '/stats', label: '통계', hint: '출석 · 소그룹 · 임직 · 세례' },
@@ -130,10 +130,11 @@
 
 					{#snippet dd(label: string, items: Item[], active: boolean)}
 						<div class="dd" class:active>
-							<button type="button" class="dd-btn" aria-haspopup="true">
+							<!-- 메뉴 이름을 누르면 첫 번째 하위 메뉴로 이동 (마우스를 올리면 하위 메뉴가 펼쳐짐) -->
+							<a href={items[0].href} class="dd-btn" aria-haspopup="true">
 								{label}
 								<svg width="10" height="10" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-							</button>
+							</a>
 							<div class="dd-menu">
 								{#each items as m}
 									<a href={m.href} class:active={path === m.href}><b>{m.label}</b>{#if m.hint}<small>{m.hint}</small>{/if}</a>

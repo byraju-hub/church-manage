@@ -24,6 +24,7 @@
 		"#lib/*": "./src/lib/*"
 	},
 	"dependencies": {
-		"html2pdf.js": "^0.12.1"
+		"html2pdf.js": "^0.12.1",
+		"write-excel-file": "^4.1.1"
 	}
 }

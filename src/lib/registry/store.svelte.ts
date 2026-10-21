@@ -13,6 +13,7 @@ import { categoryPath, currentFaith, currentOffice, currentStatus, officeTitle, 
 import { wasPresent, wasPresentGroup, sampleOthers } from './attendance.mock.ts';
 import { isoDate, type CalItem } from './calendar.ts';
 import { MAX_CATEGORY_DEPTH } from './types.ts';
+import { fixCat } from './config.ts';
 
 const KEY = 'church-registry-proto-v16';
 const USER_KEY = 'reg-user';
@@ -64,6 +65,16 @@ function migrate(d: Data): Data {
 	if (d.grades?.some((g) => typeof g.grade === 'number')) {
 		d.grades = structuredClone((seed as unknown as { grades: T.GradeDef[] }).grades);
 		for (const u of d.users ?? []) if (typeof u.grade === 'number') u.grade = map[u.grade as number] ?? 'C';
+	}
+	// 미등록/타교인을 1단계로 줄임: 예전 'o.장년.예배출석' 같은 하위 구분을 지우고 'o' 로
+	if (d.categories?.some((c) => c.id.startsWith('o.'))) {
+		d.categories = d.categories.filter((c) => !c.id.startsWith('o.'));
+		for (const p of d.people ?? []) if (p.category_id?.startsWith('o.')) p.category_id = 'o';
+	}
+	// '불출석'은 장년에만: 다른 2단계의 불출석을 지우고, 그 교인은 장기결석자로
+	if (d.categories?.some((c) => /^m\.[^a]\.n$/.test(c.id))) {
+		d.categories = d.categories.filter((c) => !/^m\.[^a]\.n$/.test(c.id));
+		for (const p of d.people ?? []) p.category_id = fixCat(p.category_id);
 	}
 	return d;
 }
@@ -434,9 +445,9 @@ class Registry {
 		const gone: Partial<Record<T.StatusKind, string>> = { 별세: 'dead', 전출: 'move', 제적: 'keep', 보관: 'keep' };
 		let next = cur;
 		if (gone[kind]) next = gone[kind]!;
-		else if (kind === '보류' && cur.startsWith('m.')) next = cur.replace(/\.[asnl]$/, '.n');
+		else if (kind === '보류' && cur.startsWith('m.')) next = fixCat(cur.replace(/\.[asnl]$/, '.n'))!; // 장년이 아니면 장기결석자
 		else if (kind === '등록' || kind === '전입' || kind === '복적') {
-			if (cur.startsWith('o.')) next = 'm' + cur.slice(1);
+			if (cur === 'o') next = 'm.n.a'; // 미등록/타교인이 등록하면 교인 › 새가족 › 예배출석
 			else if (!cur.startsWith('m.')) next = 'm.a.a';
 		}
 		if (next !== cur && this.d.categories.some((c) => c.id === next)) {
@@ -554,6 +565,15 @@ class Registry {
 		this.save();
 		return true;
 	}
+	// 같은 단계 안에서 순서 바꾸기: id 를 형제 목록의 index 자리로 옮기고 순번을 1부터 다시 매김
+	moveCategory(id: string, index: number) {
+		const c = this.d.categories.find((x) => x.id === id);
+		if (!c) return;
+		const sibs = this.childrenOf(c.parent_id).filter((x) => x.id !== id);
+		sibs.splice(Math.max(0, Math.min(index, sibs.length)), 0, c);
+		sibs.forEach((x, i) => (x.sort_order = i + 1));
+		this.save();
+	}
 	categoryUsage(id: string) {
 		const ids = new Set<string>([id]);
 		let grew = true;
@@ -570,6 +590,48 @@ class Registry {
 	updateGroup(id: string, patch: Partial<T.SmallGroup>) {
 		const g = this.d.smallGroups.find((x) => x.id === id);
 		if (g) { Object.assign(g, patch); this.save(); }
+	}
+	// 공동체의 소그룹 (설정에서 바꾼 순서·이름 그대로)
+	groupsIn(community: string) {
+		return this.d.smallGroups.filter((g) => g.community === community).sort((a, b) => a.sort_order - b.sort_order);
+	}
+	groupMemberCount(name: string) { return this.d.personGroups.filter((g) => g.small_group === name).length; }
+	// 소그룹 추가: 같은 이름이 있으면 false
+	addSmallGroup(community: string, name: string, place: string | null, leader_id: string | null): string | null {
+		name = name.trim();
+		if (!community || !name) return '공동체와 소그룹 이름을 넣어 주세요.';
+		if (this.d.smallGroups.some((g) => g.name === name)) return `'${name}' 소그룹이 이미 있습니다.`;
+		const order = Math.max(0, ...this.groupsIn(community).filter((g) => !g.care).map((g) => g.sort_order)) + 1;
+		// 자녀돌봄 편성은 늘 맨 아래에 두도록 뒤로 밀어 줌
+		for (const g of this.groupsIn(community)) if (g.care && g.sort_order >= order) g.sort_order++;
+		this.d.smallGroups.push({ id: uid(), community, name, place: place?.trim() || null, leader_id, care: false, sort_order: order });
+		this.log('소그룹 추가', `${community} › ${name}`);
+		return null;
+	}
+	// 소그룹 수정: 이름·공동체가 바뀌면 소속 교인·인도자 특이사항도 같이 바꿈
+	editSmallGroup(id: string, patch: { name: string; community: string; place: string | null; leader_id: string | null }): string | null {
+		const g = this.d.smallGroups.find((x) => x.id === id);
+		if (!g) return '소그룹을 찾을 수 없습니다.';
+		const name = patch.name.trim();
+		if (!name) return '소그룹 이름을 넣어 주세요.';
+		if (name !== g.name && this.d.smallGroups.some((x) => x.name === name)) return `'${name}' 소그룹이 이미 있습니다.`;
+		const old = g.name;
+		if (patch.community !== g.community) g.sort_order = Math.max(0, ...this.groupsIn(patch.community).map((x) => x.sort_order)) + 1;
+		for (const pg of this.d.personGroups) if (pg.small_group === old) { pg.small_group = name; pg.community = patch.community; }
+		for (const n of this.d.groupNotes) if (n.small_group === old) n.small_group = name;
+		Object.assign(g, { name, community: patch.community, place: patch.place?.trim() || null, leader_id: patch.leader_id });
+		this.log('소그룹 수정', old === name ? name : `${old} → ${name}`);
+		return null;
+	}
+	// 소그룹 삭제: 소속 교인이 있으면 지우지 않음
+	deleteSmallGroup(id: string): string | null {
+		const g = this.d.smallGroups.find((x) => x.id === id);
+		if (!g) return null;
+		const n = this.groupMemberCount(g.name);
+		if (n) return `'${g.name}'에 소속 교인 ${n}명이 있어 지울 수 없습니다. 먼저 교인들을 다른 소그룹으로 옮겨 주세요.`;
+		this.d.smallGroups = this.d.smallGroups.filter((x) => x.id !== id);
+		this.log('소그룹 삭제', `${g.community} › ${g.name}`);
+		return null;
 	}
 	addOrgUnit(parent_id: string | null, name: string) {
 		if (!name.trim()) return;

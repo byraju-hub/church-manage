@@ -3,7 +3,7 @@
 // - 같은 시드로 만들기 때문에 열 때마다 같은 사람들이 나옵니다. (날짜는 오늘 기준으로 맞춤)
 // - 공동체·소그룹 구성(3개 공동체, 소그룹 27개 + 로뎀나무숲)만 2026년 편성표의 구조를 따릅니다.
 import type * as T from './types.ts';
-import { COMMUNITY_DEFS, ORG_UNITS, catId, type GroupDef, type L2Code } from './config.ts';
+import { COMMUNITY_DEFS, ORG_UNITS, catId, fixCat, type GroupDef, type L2Code } from './config.ts';
 import { churchSeasons, isoDate, nthSunday } from './calendar.ts';
 
 function mulberry32(a: number) {
@@ -414,7 +414,7 @@ export function generate(reservedNames: string[] = [], opts: { targetActive?: nu
 		const p = mkPerson({ surname: pick(SUR), gender: chance(0.5) ? 'M' : 'F', birth: hb, hasReg: false, marital: age >= 30 ? '기혼' : null });
 		const l2: L2 = age <= 18 ? deptCode(age) : age <= 34 ? 'y' : chance(0.2) ? 'n' : 'a';
 		p.edu_dept = l2 === 'a' ? null : eduDeptOf(age);
-		p.category_id = catId('o', l2, pick(['a', 's', 's', 'n']));
+		p.category_id = 'o'; // 미등록/타교인은 1단계만
 		p.note = chance(0.5) ? '타교인(출석교회 별도)' : '등록 의사 확인 필요';
 	}
 
@@ -581,6 +581,9 @@ export function generate(reservedNames: string[] = [], opts: { targetActive?: nu
 		ev('성도 기념일', s, pick(['수술(입원)', '입원', '수술(입원)']), addDay(s, ri(3, 10)), p.id);
 	}
 	for (let i = 0; i < 6; i++) ev('성도 기념일', addDay(TODAY, ri(2, 35)), pick(['돌잔치', '회갑', '이사 감사예배', '개업 감사예배']), null, pick(activeIds).id);
+
+	// '불출석'은 장년에만 있으므로 다른 2단계의 불출석은 장기결석자로
+	for (const p of people) p.category_id = fixCat(p.category_id);
 
 	return {
 		people, households, householdMembers, statusEvents, faithEvents, officeTerms, personGroups, smallGroups, groupNotes, notes, legacyMemos,

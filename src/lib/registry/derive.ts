@@ -65,6 +65,14 @@ export function officeTitle(t: { office: OfficeName; rank_status: OfficeStatus }
 	return t.rank_status === '시무' ? base : `${t.rank_status}${base}`;
 }
 
+// 구분을 늘 붙인 직분 (교인 목록의 직분 칸): 시무권사, 은퇴권사, 서리집사, 시무집사, 원로장로, 담임목사 …
+export function officeKindTitle(t: { office: OfficeName; rank_status: OfficeStatus }, clergy?: string | null): string {
+	if (t.office === '사모') return '사모';
+	const base = t.office === '시무집사' || t.office === '서리집사' ? '집사' : t.office;
+	const kind = clergy && (t.office === '목사' || t.office === '전도사') ? clergy.replace(t.office, '') : t.rank_status;
+	return `${kind}${base}`;
+}
+
 // 휴대폰 번호 입력 중 하이픈 자동: 010-1234-5678 (숫자 10자리는 011-123-4567)
 export function formatMobile(v: string): string {
 	const d = v.replace(/\D/g, '').slice(0, 11);

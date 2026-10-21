@@ -241,7 +241,7 @@
 			{#if can}
 				<form class="form" onsubmit={(e) => { e.preventDefault(); registry.setGroup(p.id, grp.community, grp.small_group); grp.community = ''; grp.small_group = ''; }}>
 					<label>공동체<select bind:value={grp.community} onchange={() => (grp.small_group = '')}><option value="">(소속 없음)</option>{#each COMMUNITY_DEFS as c}<option>{c.name}</option>{/each}</select></label>
-					<label>소그룹<select bind:value={grp.small_group} disabled={!grp.community}><option value="">선택</option>{#each COMMUNITY_DEFS.find((c) => c.name === grp.community)?.groups ?? [] as g}<option>{g.name}</option>{/each}</select></label>
+					<label>소그룹<select bind:value={grp.small_group} disabled={!grp.community}><option value="">선택</option>{#each registry.groupsIn(grp.community) as g}<option>{g.name}</option>{/each}</select></label>
 					<div class="wide"><button type="submit" class="ghost">소속 바꾸기</button></div>
 				</form>
 			{/if}

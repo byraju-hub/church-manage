@@ -44,14 +44,14 @@
 	$effect(() => { if (page.url.searchParams.get('person')) tab = 'new'; });
 
 	// 소그룹 특이사항: 홈페이지 출석부에서 소그룹 인도자가 적은 개별 메모를 한곳에 모아 봄
-	const commOf = (g: string) => COMMUNITY_DEFS.find((c) => c.groups.some((x) => x.name === g))?.name ?? '';
+	const commOf = (g: string) => registry.groupDef(g)?.community ?? '';
 	let nq = $state('');
 	let ncomm = $state('');
 	let ngroup = $state('');
 	let nfrom = $state('');
 	let nto = $state('');
 	$effect(() => { void ncomm; ngroup = ''; });
-	const ngroupOpts = $derived(COMMUNITY_DEFS.find((c) => c.name === ncomm)?.groups.map((g) => g.name) ?? []);
+	const ngroupOpts = $derived(registry.groupsIn(ncomm).map((g) => g.name));
 	const noteRows = $derived(
 		registry.d.groupNotes
 			.filter((n) => {

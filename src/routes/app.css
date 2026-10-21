@@ -197,6 +197,7 @@ header button.ghost { padding: 0.42rem 0.8rem; font-size: 0.82rem; color: var(--
 .badge { display: inline-block; vertical-align: middle; padding: 0.15rem 0.65rem; border-radius: 999px; font-size: 0.76rem; font-weight: 700; background: var(--primary-50); color: var(--primary-600); letter-spacing: 0; }
 .badge.inactive { background: #fff1d6; color: #9a6200; }
 .badge.transferred { background: #eceff4; color: var(--muted); }
+.badge.long { background: #ffe3e3; color: #c92a2a; }
 .tag { display: inline-block; vertical-align: middle; font-size: 0.7rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 999px; background: var(--primary-50); color: #4b5a86; margin-left: 0.35rem; }
 .tag.new { background: #ffe9e7; color: #b13a32; }
 .tag.part { background: #fff3d6; color: #8a6112; }
@@ -360,6 +361,23 @@ button.org-card { box-shadow: none; font-weight: 400; }
 button.org-card:hover, .org-card.on { background: var(--primary-50); border-color: var(--primary); color: var(--text); box-shadow: none; transform: none; filter: none; }
 .cat-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.22rem 0; }
 .cat-row input { max-width: 22rem; padding: 0.38rem 0.65rem; }
+.cat-row { position: relative; border-radius: 8px; }
+/* 설정 › 소그룹 편성: 새 소그룹 입력 줄 */
+.sg-add { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(9rem, 1.2fr) minmax(12rem, 1.6fr) minmax(10rem, 1.4fr) auto; gap: 0.6rem; align-items: end; margin: 0.9rem 1.3rem 0.4rem; padding: 0.9rem; border-radius: 12px; background: var(--primary-50); }
+.sg-add label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+@media (max-width: 720px) { .sg-add { grid-template-columns: 1fr; } }
+tr.editing td { background: var(--primary-50); }
+tr.shade td { background: #f3f4f6; }
+.cat-row .grip { flex: none; display: grid; place-items: center; width: 1.1rem; height: 1.8rem; color: var(--muted); cursor: grab; border-radius: 6px; touch-action: none; }
+.cat-row .grip:hover { color: var(--primary); background: var(--primary-50); }
+.cat-row .grip:active { cursor: grabbing; }
+.cat-row .grip svg { width: 10px; height: 16px; fill: currentColor; }
+.cat-row .move { display: inline-flex; gap: 0.2rem; }
+.cat-row .move button { padding: 0.2rem 0.45rem; font-size: 0.7rem; line-height: 1; }
+.cat-row.dragging { opacity: 0.45; }
+.cat-row.drop-before::before, .cat-row.drop-after::after { content: ''; position: absolute; left: 0; right: 0; height: 3px; border-radius: 3px; background: var(--primary); }
+.cat-row.drop-before::before { top: -2px; }
+.cat-row.drop-after::after { bottom: -2px; }
 .cat-row .lvl { flex: none; width: 1.4rem; height: 1.4rem; border-radius: 50%; display: grid; place-items: center; font-size: 0.72rem; font-weight: 700; background: var(--primary-100); color: var(--primary-600); }
 .chip.sel { border-color: var(--primary); background: var(--primary-50); box-shadow: 0 0 0 2px rgba(53, 99, 233, 0.15); }
 

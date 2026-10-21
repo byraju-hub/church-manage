@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { ageOf } from '#lib/registry/derive.ts';
-	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
+	import { COMMUNITY_DEFS, fixCat } from '#lib/registry/config.ts';
 	import type { Person } from '#lib/registry/types.ts';
 
 	// 새가족 정착 흐름: 등록 → 새가족 교육 → 수료 → 소그룹 배정 → 정착 완료
@@ -60,10 +60,10 @@
 	function settle(p: Person) {
 		const age = ageOf(p.birth_date) ?? 30;
 		const cur = p.category_id ?? 'm.n.a';
-		const l1 = cur.startsWith('o.') ? 'o' : 'm';
+		if (!cur.startsWith('m.')) return; // 미등록/타교인 등은 하위 단계가 없으므로 그대로
 		const l3 = cur.split('.')[2] ?? 'a';
 		const l2 = age <= 2 ? 'b' : age <= 6 ? 'k' : age <= 12 ? 'e' : age <= 18 ? 'h' : age <= 34 && p.marital_status !== '기혼' ? 'y' : 'a';
-		registry.updatePerson(p.id, { category_id: `${l1}.${l2}.${l3}` });
+		registry.updatePerson(p.id, { category_id: fixCat(`m.${l2}.${l3}`) });
 	}
 	const avgDays = $derived.by(() => {
 		const done = by('정착 완료');
@@ -103,7 +103,7 @@
 							{#if v}
 							<div class="row" style="flex-wrap:nowrap;gap:.3rem">
 								<select bind:value={v.c} style="padding:.3rem .5rem;font-size:.8rem">{#each COMMUNITY_DEFS as c}<option>{c.name}</option>{/each}</select>
-								<select bind:value={v.g} style="padding:.3rem .5rem;font-size:.8rem"><option value="">소그룹</option>{#each COMMUNITY_DEFS.find((c) => c.name === v.c)?.groups.filter((g) => !g.care) ?? [] as g}<option>{g.name}</option>{/each}</select>
+								<select bind:value={v.g} style="padding:.3rem .5rem;font-size:.8rem"><option value="">소그룹</option>{#each registry.groupsIn(v.c).filter((g) => !g.care) as g}<option>{g.name}</option>{/each}</select>
 							</div>
 							<button class="ghost sm" disabled={!v.g} onclick={() => assign(x.p)}>소그룹 배정</button>
 							{/if}

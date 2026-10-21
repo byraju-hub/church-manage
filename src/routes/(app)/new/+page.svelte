@@ -170,7 +170,7 @@
 				<label>교회 등록일<input type="date" bind:value={regDate} /></label>
 				{#if isAdult}
 					<label>공동체<select bind:value={community} onchange={() => (smallGroup = '')}><option value="">선택</option>{#each COMMUNITY_DEFS as c}<option>{c.name}</option>{/each}</select></label>
-					<label>소그룹<select bind:value={smallGroup} disabled={!community}><option value="">선택</option>{#each COMMUNITY_DEFS.find((c) => c.name === community)?.groups ?? [] as g}<option>{g.name}</option>{/each}</select></label>
+					<label>소그룹<select bind:value={smallGroup} disabled={!community}><option value="">선택</option>{#each registry.groupsIn(community) as g}<option>{g.name}</option>{/each}</select></label>
 				{:else}
 					<p class="wide muted" style="margin:0">공동체·소그룹은 교인구분 2단계가 '장년'일 때 고릅니다.</p>
 				{/if}

@@ -16,6 +16,10 @@
 </script>
 
 <h1>확인 목록</h1>
+<!-- 관리자 메뉴 화면: 사이트 관리자 권한 또는 최고관리자만 -->
+{#if !(registry.perms.admin || registry.isSuper)}
+	<div class="warn">확인 목록은 관리자만 볼 수 있습니다.</div>
+{:else}
 <p class="muted">처음 교적을 만들 때 올리지 않은 사람, 앱에 가입했지만 합치지 못한 중복 후보입니다. (가상 예시)</p>
 {#if msg}<div class="ok">{msg}</div>{/if}
 <div class="card" style="padding:0">
@@ -37,3 +41,4 @@
 		</tbody>
 	</table>
 </div>
+{/if}

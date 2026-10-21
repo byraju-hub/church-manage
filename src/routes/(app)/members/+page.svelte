@@ -2,7 +2,7 @@
 	// 교인 목록: 검색(기본·복수·항목별)과 필터, 왼쪽 목록 · 오른쪽 상세, 내려받기
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
-	import { ageOf, officeWithKind } from '#lib/registry/derive.ts';
+	import { ageOf, officeWithKind, officeKindTitle } from '#lib/registry/derive.ts';
 	import { MISSION_SOCIETIES } from '#lib/registry/types.ts';
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
 
@@ -172,8 +172,9 @@
 				{#each rows.slice(0, shown) as { p, s } (p.id)}
 					<tr class="pick" class:on={selId === p.id} tabindex="0" onclick={() => (selId = p.id)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selId = p.id; } }}>
 						<td><b>{p.name}</b>{#if p.name_note}<span class="muted"> ({p.name_note})</span>{/if}</td>
-						<td>{s.title || '-'}</td>
-						<td><span class="badge {s.status === '재적' ? '' : s.status === '보류' ? 'inactive' : 'transferred'}">{s.status}</span></td>
+						<td>{s.office ? officeKindTitle(s.office, p.clergy_title) : '-'}</td>
+						<!-- 상태: 교인구분 3단계(예배출석·가끔출석·불출석·장기결석자). 1단계만 있는 구분(미등록/타교인·별세 등)은 '-' -->
+						<td>{#if s.cat3}<span class="badge {s.cat3 === '가끔출석' ? 'inactive' : s.cat3 === '불출석' ? 'transferred' : s.cat3 === '장기결석자' ? 'long' : ''}">{s.cat3 === '장기결석자' ? '장결자' : s.cat3}</span>{:else}-{/if}</td>
 						<td>{s.cat2 || s.cat1 || '-'}</td>
 						<td>{s.smallGroup || '-'}</td>
 					</tr>

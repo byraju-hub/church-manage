@@ -25,7 +25,7 @@
 		const byName = (a: { p: { name: string } }, b: { p: { name: string } }) => a.p.name.localeCompare(b.p.name, 'ko');
 		const out: Row[] = [];
 		for (const c of COMMUNITY_DEFS) {
-			for (const g of c.groups) {
+			for (const g of registry.groupsIn(c.name)) {
 				const list = members.filter(({ s }) => s.community === c.name && s.smallGroup === g.name).sort(byName);
 				list.forEach((x, i) => out.push({ ...x, group: g.name, community: c.name, first: i === 0 }));
 			}

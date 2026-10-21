@@ -2,9 +2,9 @@
 import type { Category, MeetingOfficer, OrgUnit } from './types.ts';
 
 // ---- 교인구분 (3단계) : '교적 프로그램 구조' 문서 ----
-//   교인 / 미등록·타교인  >  장년 / 새가족 / 청년부 / 중고등부 / 유초등부 / 유치부 / 영아부  >  예배출석 / 가끔출석 / 불출석 / 장기결석자
-//   별세 · 이사/이민 · 보관 은 1단계로 끝남
-const L1: [string, string][] = [['m', '교인'], ['o', '미등록/타교인']];
+//   교인  >  장년 / 새가족 / 청년부 / 중고등부 / 유초등부 / 유치부 / 영아부  >  예배출석 / 가끔출석 / 불출석(장년만) / 장기결석자
+//   미등록/타교인 · 별세 · 이사/이민 · 보관 은 1단계로 끝남
+const L1: [string, string][] = [['m', '교인']];
 const L2: [string, string][] = [['a', '장년'], ['n', '새가족'], ['y', '청년부'], ['h', '중고등부'], ['e', '유초등부'], ['k', '유치부'], ['b', '영아부']];
 const L3: [string, string][] = [['a', '예배출석'], ['s', '가끔출석'], ['n', '불출석'], ['l', '장기결석자']];
 
@@ -14,16 +14,20 @@ export const CATEGORIES: Category[] = (() => {
 		out.push({ id: k1, parent_id: null, name: n1, sort_order: i + 1 });
 		L2.forEach(([k2, n2], j) => {
 			out.push({ id: `${k1}.${k2}`, parent_id: k1, name: n2, sort_order: j + 1 });
-			L3.forEach(([k3, n3], k) => out.push({ id: `${k1}.${k2}.${k3}`, parent_id: `${k1}.${k2}`, name: n3, sort_order: k + 1 }));
+			// '불출석'은 장년에만 있음
+			L3.filter(([k3]) => k3 !== 'n' || k2 === 'a').forEach(([k3, n3], k) => out.push({ id: `${k1}.${k2}.${k3}`, parent_id: `${k1}.${k2}`, name: n3, sort_order: k + 1 }));
 		});
 	});
+	out.push({ id: 'o', parent_id: null, name: '미등록/타교인', sort_order: 2 });
 	out.push({ id: 'dead', parent_id: null, name: '별세', sort_order: 3 });
 	out.push({ id: 'move', parent_id: null, name: '이사/이민', sort_order: 4 });
 	out.push({ id: 'keep', parent_id: null, name: '보관', sort_order: 5 });
 	return out;
 })();
 export type L2Code = 'a' | 'n' | 'y' | 'h' | 'e' | 'k' | 'b';
-export const catId = (l1: 'm' | 'o', l2: L2Code, l3: 'a' | 's' | 'n' | 'l') => `${l1}.${l2}.${l3}`;
+// 장년이 아닌데 '불출석'이면 '장기결석자'로 (불출석은 장년에만 있음)
+export const catId = (l1: 'm', l2: L2Code, l3: 'a' | 's' | 'n' | 'l') => `${l1}.${l2}.${l3 === 'n' && l2 !== 'a' ? 'l' : l3}`;
+export const fixCat = (id: string | null) => (id && /^m\.[^a]\.n$/.test(id) ? id.slice(0, -1) + 'l' : id);
 
 // ---- 공동체·소그룹 (2026년 편성표 구조: 공동체 3개, 소그룹 28개 + 자녀돌봄) ----
 export interface GroupDef { name: string; size: number; place: string; care?: boolean }
