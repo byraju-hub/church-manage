@@ -1,5 +1,6 @@
 <script lang="ts">
-	// 주일 출석: 한 주일의 전체 명단을 뿌리 → 줄기 → 열매 공동체, 편성표의 소그룹 순서로 나열하고 마지막에 소그룹 미지정자.
+	// 주일 오전예배 출석 등록 (주일 오후 소그룹 모임 출석은 홈페이지 출석부에서 인도자가 따로 등록)
+	// 한 주일의 전체 명단을 뿌리 → 줄기 → 열매 공동체, 편성표의 소그룹 순서로 나열하고 마지막에 소그룹 미지정자.
 	// 소그룹 안에서는 가나다순. 출석은 스위치로 체크, 특이사항(결석 사유 등)은 옆 칸에 적음
 	import { page } from '$app/state';
 	import { tick } from 'svelte';
@@ -20,7 +21,7 @@
 
 	type Row = { p: ReturnType<typeof registry.person> & {}; s: ReturnType<typeof registry.summary>; group: string; community: string; first: boolean };
 	const rows = $derived.by(() => {
-		const members = registry.d.people.map((p) => ({ p, s: registry.summary(p) })).filter(({ s }) => s.memberCert);
+		const members = registry.worshipRoster().map((p) => ({ p, s: registry.summary(p) }));
 		const byName = (a: { p: { name: string } }, b: { p: { name: string } }) => a.p.name.localeCompare(b.p.name, 'ko');
 		const out: Row[] = [];
 		for (const c of COMMUNITY_DEFS) {
@@ -35,14 +36,19 @@
 		return out;
 	});
 	const isPresent = (pid: string) => registry.attended(pid, date, weeksFromEnd);
-	const totals = $derived.by(() => {
-		const names = [...COMMUNITY_DEFS.map((c) => c.name), '-'];
-		return names.map((n) => {
-			const l = rows.filter((r) => r.community === n);
-			return { name: n === '-' ? '소그룹 미지정' : n, total: l.length, present: l.filter((r) => isPresent(r.p.id)).length };
-		}).filter((t) => t.total);
-	});
-	const sumPresent = $derived(totals.reduce((s, t) => s + t.present, 0));
+	const sumPresent = $derived(rows.filter((r) => isPresent(r.p.id)).length);
+
+	// 전체 출석 인원: 명단 체크와 따로 입력 (방문자 등 명단 밖 인원 포함). 그 외 = 전체 - 명단 체크
+	const total = $derived(registry.worshipTotal(date, sumPresent));
+	const saved = $derived(registry.worshipTotalSaved(date));
+	const others = $derived(Math.max(0, total - sumPresent));
+	let totalInput = $state('');
+	$effect(() => { totalInput = String(registry.worshipTotal(date, sumPresent)); });
+	function saveTotal(e: SubmitEvent) {
+		e.preventDefault();
+		const n = parseInt(totalInput.replace(/\D/g, ''), 10);
+		registry.setWorshipTotal(date, Number.isFinite(n) ? n : null);
+	}
 
 	function mark(pid: string, ok: boolean) {
 		registry.setAttendance(date, pid, ok, registry.attendanceMark(pid, date)?.reason ?? null);
@@ -65,17 +71,23 @@
 	});
 </script>
 
-<h1>출석</h1>
+<h1>주일 오전예배 출석 등록</h1>
 {#if !registry.perms.edit}
 	<div class="warn">수정 권한이 꺼져 있어 출석을 등록할 수 없습니다. (최고관리자에게 수정 권한을 받아야 합니다)</div>
 {/if}
-<p class="muted" style="margin-top:-.6rem">실제로는 기존 출석부에서 인도자가 직접 체크합니다. 여기서는 그 화면이 어떤 모양일지 시험해 봅니다.</p>
+<p class="muted" style="margin-top:-.6rem">주일 오전예배에 참석한 교인을 등록합니다. 명단은 공동체·소그룹 순으로 보여 줄 뿐이고,
+	주일 오후 소그룹 모임 출석은 홈페이지 출석부에서 소그룹 인도자가 따로 등록합니다.</p>
 
 <div class="card att-bar">
-	<label class="row" style="gap:.4rem"><span class="muted">주일</span>
-		<select bind:value={date}>{#each [...WEEKS].reverse() as d}<option value={d}>{d} ({md(d)}{dow(d)})</option>{/each}</select></label>
+	<select bind:value={date} aria-label="주일 선택">{#each [...WEEKS].reverse() as d}<option value={d}>{d} ({md(d)}{dow(d)})</option>{/each}</select>
 	<span class="sum">출석 <b>{sumPresent}</b> / {rows.length}명</span>
-	<span class="muted per">{#each totals as t}<span>{t.name} {t.present}/{t.total}</span>{/each}</span>
+	<form class="total" onsubmit={saveTotal}>
+		<label for="att-total">전체 출석 인원</label>
+		<input id="att-total" bind:value={totalInput} inputmode="numeric" disabled={!registry.perms.edit} /><span>명</span>
+		{#if registry.perms.edit}<button type="submit" class="sm">저장</button>{/if}
+	</form>
+	<span class="muted split-sum">(공동체 체크 <b>{sumPresent}</b>명 / 그 외 <b>{others}</b>명){saved === undefined ? ' · 전체 인원은 가상 샘플' : ''}</span>
+	{#if total < sumPresent}<span class="warn-sm">전체 인원이 명단 체크 인원보다 적습니다.</span>{/if}
 </div>
 
 <div class="card" style="padding:0;overflow-x:auto">
@@ -99,12 +111,19 @@
 		</tbody>
 	</table>
 </div>
-<p class="muted">입력한 출석은 대시보드·공동체 편성표·통계에 바로 반영됩니다.</p>
+<p class="muted">입력한 오전예배 출석은 대시보드의 주일 출석·장기 결석 알림과 통계의 주일 출석에 바로 반영됩니다.</p>
 
 <style>
-	.att-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.2rem; }
+	.att-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.1rem; }
+	.att-bar select { width: auto; flex: none; }
+	.sum { white-space: nowrap; }
 	.sum b { color: #2f9e44; font-size: 1.1rem; }
-	.per { display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; font-size: 0.84rem; }
+	.total { display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
+	.total label { font-weight: 600; font-size: 0.9rem; }
+	.total input { width: 5.5rem; text-align: right; }
+	.split-sum { font-size: 0.88rem; }
+	.split-sum b { color: var(--text); }
+	.warn-sm { color: #e0245e; font-size: 0.82rem; }
 	.att { table-layout: fixed; min-width: 640px; }
 	.att td { vertical-align: middle; }
 	.att td:nth-child(-n + 5) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

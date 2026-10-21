@@ -1,10 +1,11 @@
 <script lang="ts">
-	// 교인 등록: 등록카드 순서대로 입력 (세대·신급·직분·소속·봉사·동의까지 한 번에)
+	// 교인 등록: 등록카드 순서대로 입력 (세대·신급·직분·소속·봉사·동의까지 한 번에). 위쪽에서 등록카드를 찍으면 칸을 자동으로 채움
 	import { goto } from '$app/navigation';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonFields from '#lib/components/PersonFields.svelte';
 	import HeadRelation from '#lib/components/HeadRelation.svelte';
-	import { categoryPath } from '#lib/registry/derive.ts';
+	import CardScan from '#lib/components/CardScan.svelte';
+	import { categoryPath, formatMobile } from '#lib/registry/derive.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import {
 		CONSENT_KINDS, FAITH_KINDS, ORDAINED, POSITIONS, parseRank, rankChoices,
@@ -54,6 +55,39 @@
 		if (p?.address2) f.address2 = p.address2;
 	}
 
+	// 등록카드 사진에서 읽은 내용으로 칸 채우기. 읽은 값이 있는 칸만 바꾸고, 채운 칸 이름을 돌려줌
+	function applyCard(r: Record<string, any>): string[] {
+		const done: string[] = [];
+		const put = (key: string, label: string, v: unknown) => { if (v !== null && v !== undefined && v !== '') { f[key] = v; done.push(label); } };
+		put('name', '이름', r.name);
+		put('gender', '성별', r.gender);
+		put('birth_date', '생년월일', r.birth_date);
+		if (r.birth_date) f.birth_lunar = !!r.birth_lunar;
+		put('phone', '휴대폰', r.phone ? formatMobile(r.phone) : null);
+		put('email', '이메일', r.email);
+		put('address1', '주소', r.address1);
+		put('address2', '상세주소', r.address2);
+		put('address_zip', '우편번호', r.address_zip);
+		put('occupation', '직업/직장', r.occupation);
+		put('marital_status', '결혼 여부', r.marital_status);
+		put('wedding_date', '결혼기념일', r.wedding_date);
+		put('previous_church', '이전 출석 교회', r.previous_church);
+		const memo: string[] = [];
+		// 인도자: 같은 이름의 교인이 한 명뿐이면 바로 고르고, 아니면 메모에 남김
+		if (r.guide_name) {
+			const same = registry.d.people.filter((p) => p.name === r.guide_name);
+			if (same.length === 1) { f.guide_person_id = same[0].id; done.push('인도자'); }
+			else memo.push(`인도자: ${r.guide_name}${same.length > 1 ? ' (동명이인 있음, 확인 필요)' : ''}`);
+		}
+		if (r.faith_kind) { faith = { kind: r.faith_kind, date: r.faith_date ?? '', church: r.faith_church ?? '', officiant: '' }; done.push('신급'); }
+		if (r.office && POSITIONS.some((x) => x.label === r.office)) { office.pos = r.office; done.push('직분'); }
+		if (r.reg_date) { regDate = r.reg_date; done.push('교회 등록일'); }
+		if (r.family?.length) memo.push(`카드에 적힌 가족: ${r.family.map((m: any) => `${m.name}${m.relation ? `(${m.relation}${m.birth_year ? `, ${m.birth_year}년생` : ''})` : ''}`).join(', ')}`);
+		if (r.memo) memo.push(r.memo);
+		if (memo.length) { f.note = [f.note, ...memo].filter(Boolean).join('\n'); done.push('기타 메모'); }
+		return done;
+	}
+
 	function submit(e: SubmitEvent) {
 		e.preventDefault();
 		const person: Omit<Person, 'id'> = {
@@ -91,7 +125,8 @@
 {#if !registry.perms.edit}
 	<div class="warn">수정 권한이 꺼져 있어 등록할 수 없습니다. (최고관리자에게 수정 권한을 받아야 합니다)</div>
 {:else}
-	<p class="muted">등록카드 순서대로 입력합니다. <b class="req">*</b> 표시는 필수 항목입니다. 같은 이름·전화가 있으면 먼저 보여 줍니다.</p>
+	<CardScan onresult={applyCard} />
+	<p class="muted"><b class="req">*</b> 표시는 필수 항목입니다. 같은 이름·전화가 있으면 먼저 보여 줍니다.</p>
 	<form class="form card" onsubmit={submit}>
 		<PersonFields bind:f autoNote>
 			{#snippet household()}

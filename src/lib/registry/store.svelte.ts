@@ -10,7 +10,7 @@
 import * as seed from './seed.ts';
 import type * as T from './types.ts';
 import { categoryPath, currentFaith, currentOffice, currentStatus, officeTitle, registeredOn } from './derive.ts';
-import { wasPresent } from './attendance.mock.ts';
+import { wasPresent, wasPresentGroup, sampleOthers } from './attendance.mock.ts';
 import { isoDate, type CalItem } from './calendar.ts';
 import { MAX_CATEGORY_DEPTH } from './types.ts';
 
@@ -41,7 +41,10 @@ interface Data {
 	educationRecords: T.EducationRecord[];
 	orgUnits: T.OrgUnit[];
 	meetings: T.MeetingOfficer[];
-	attendance: Record<string, Record<string, T.AttendanceMark>>;
+	// 출석은 두 가지를 따로 저장 (소그룹에 속한 교인은 한 주일에 기록이 2개)
+	attendance: Record<string, Record<string, T.AttendanceMark>>; // 1) 주일 오전예배 출석: 주일 날짜 → 사람 id
+	worshipTotals?: Record<string, number>; // 1) 주일 오전예배 전체 출석 인원 (주일 날짜 → 인원). 명단 체크와 따로 입력
+	groupAttendance?: Record<string, Record<string, T.AttendanceMark>>; // 2) 주일 오후 소그룹 모임 출석 (홈페이지 출석부에서 가져옴)
 	users: T.AppUser[];
 	grades: T.GradeDef[];
 }
@@ -57,6 +60,11 @@ const uid = () => crypto.randomUUID();
 
 function load(): Data {
 	if (hasLS) {
+		// 데이터 구조가 바뀔 때마다 KEY 번호를 올리는데, 예전 번호의 데이터(한 벌에 약 1~2MB)가 남아 있으면
+		// 브라우저 저장 공간(약 5MB)이 금방 차서 저장이 안 됨. 지금 KEY 가 아닌 예전 데이터는 지움
+		try {
+			for (const k of Object.keys(localStorage)) if ((k.startsWith('church-registry-proto-') && k !== KEY) || k === 'church-registry-perms-v1') localStorage.removeItem(k);
+		} catch {}
 		try {
 			const raw = localStorage.getItem(KEY);
 			if (raw) return JSON.parse(raw);
@@ -235,7 +243,24 @@ class Registry {
 	}
 
 	// ---- 출석 ----
-	// 이번에 직접 입력한 값이 있으면 그것을, 없으면 (가상) 출석부 샘플을 따름
+	// 출석은 두 가지가 따로 있습니다.
+	//  1) 주일 오전예배 출석: 교적 프로그램 '출석' 화면에서 등록 (attended)
+	//  2) 주일 오후 소그룹 모임 출석: 홈페이지 출석부에서 소그룹 인도자가 등록 (groupAttended)
+	// [실제 시스템] groupAttended 는 홈페이지 출석부 조회로 바꾸세요.
+	// 소그룹 모임 출석: 저장된 기록(홈페이지 출석부에서 가져온 것)이 있으면 그것을, 없으면 가상 샘플
+	groupAttended(personId: string, sundayIso: string, weeksFromEnd: number): boolean {
+		const mark = this.d.groupAttendance?.[sundayIso]?.[personId];
+		return mark ? mark.present : wasPresentGroup(personId, sundayIso, weeksFromEnd);
+	}
+	groupAttendanceMark(personId: string, sundayIso: string) { return this.d.groupAttendance?.[sundayIso]?.[personId]; }
+	// 홈페이지 출석부 기록을 받아 저장하는 자리 (교적 화면에서는 직접 입력하지 않음)
+	setGroupAttendance(sundayIso: string, personId: string, present: boolean, reason: string | null) {
+		const all = { ...(this.d.groupAttendance ?? {}) };
+		all[sundayIso] = { ...(all[sundayIso] ?? {}), [personId]: { present, reason } };
+		this.d.groupAttendance = all;
+		this.save();
+	}
+	// 주일 오전예배: 이번에 직접 입력한 값이 있으면 그것을, 없으면 가상 샘플을 따름
 	attended(personId: string, sundayIso: string, weeksFromEnd: number): boolean {
 		const mark = this.d.attendance[sundayIso]?.[personId];
 		return mark ? mark.present : wasPresent(personId, sundayIso, weeksFromEnd);
@@ -245,6 +270,21 @@ class Registry {
 		if (!this.d.attendance[sundayIso]) this.d.attendance[sundayIso] = {};
 		this.d.attendance[sundayIso][personId] = { present, reason };
 		this.save();
+	}
+	// 주일 오전예배 출석 명단: 재적 교인 중 소그룹에 속한 사람 + 소그룹이 없는 장년 ('출석' 화면 명단과 같음)
+	worshipRoster(): T.Person[] {
+		return this.d.people.filter((p) => { const s = this.summary(p); return s.memberCert && (!!s.smallGroup || s.cat2 === '장년'); });
+	}
+	// 주일 오전예배 전체 출석 인원: 직접 입력한 값, 없으면 (명단 체크 인원 + 가상 '그 외' 샘플)
+	worshipTotal(sundayIso: string, checked: number): number {
+		return this.d.worshipTotals?.[sundayIso] ?? checked + sampleOthers(sundayIso);
+	}
+	worshipTotalSaved(sundayIso: string): number | undefined { return this.d.worshipTotals?.[sundayIso]; }
+	setWorshipTotal(sundayIso: string, n: number | null) {
+		const m = { ...(this.d.worshipTotals ?? {}) };
+		if (n === null) delete m[sundayIso]; else m[sundayIso] = n;
+		this.d.worshipTotals = m;
+		this.log('주일 출석 인원 입력', `${sundayIso} ${n ?? '지움'}`);
 	}
 
 	// ---- 검색 (대시보드 검색창: 무엇이든) ----

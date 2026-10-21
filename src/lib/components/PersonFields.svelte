@@ -108,7 +108,7 @@
 
 <div class="sec">
 	<h3>직업 · 직장</h3>
-	<div class="form"><label class="wide">직업 / 직장<input bind:value={f.occupation} placeholder="예: 교사 / 가상초등학교" /></label></div>
+	<div class="form"><label class="wide">직업 / 직장<input bind:value={f.occupation} placeholder="예: 목사 / 부평동부교회" /></label></div>
 </div>
 
 <div class="sec">

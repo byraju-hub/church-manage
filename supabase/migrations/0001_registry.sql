@@ -162,10 +162,24 @@ create table registry.group_notes (              -- 인도자 특이사항: 심�
   small_group_id uuid references registry.small_groups(id),
   note_date date not null, body text not null, author text
 );
-create table registry.attendance (               -- 주일 출석 (출석부 연동 시 출석부 표를 씀)
+-- 출석은 두 가지를 따로 저장합니다. 소그룹에 속한 교인은 한 주일에 기록이 2개 생깁니다.
+--   1) 주일 오전예배 출석: 교적 프로그램 '출석' 화면에서 등록
+--   2) 주일 오후 소그룹 모임 출석: 홈페이지 출석부에서 소그룹 인도자가 등록 (출석부가 같은 DB라면 출석부 표를 view 로 연결)
+create table registry.worship_attendance (       -- 1) 주일 오전예배 출석 (명단 체크)
   sunday date not null,
   person_id uuid not null references registry.people(id) on delete cascade,
   present boolean not null, reason text,          -- 특이사항·사유
+  primary key (sunday, person_id)
+);
+create table registry.worship_totals (           -- 1) 주일 오전예배 전체 출석 인원 (명단 밖 방문자 등 포함, 따로 입력)
+  sunday date primary key,
+  total int not null check (total >= 0)           -- 그 외 인원 = total - 명단 체크 인원
+);
+create table registry.group_attendance (         -- 2) 주일 오후 소그룹 모임 출석
+  sunday date not null,
+  person_id uuid not null references registry.people(id) on delete cascade,
+  small_group_id uuid references registry.small_groups(id),  -- 그 주일에 출석한 소그룹
+  present boolean not null, reason text,
   primary key (sunday, person_id)
 );
 

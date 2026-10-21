@@ -248,7 +248,8 @@ export interface Visit {
 	follow_up: string | null;
 }
 
-// ---- 출석 (출석부는 별도 시스템. 여기서는 이번에 입력한 것만 보관) ----
+// ---- 출석 ----
+// 주일 오전예배 출석(교적 '출석' 화면)과 주일 오후 소그룹 모임 출석(홈페이지 출석부)은 같은 모양으로 따로 저장합니다.
 export interface AttendanceMark {
 	present: boolean;
 	reason: string | null; // 특이사항·사유

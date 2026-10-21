@@ -12,7 +12,7 @@
 			.filter((x) => x.s.memberCert)
 			.sort((a, b) => a.p.name.localeCompare(b.p.name, 'ko')) : []
 	);
-	const weekly = $derived(WEEKS.map((d, i) => ({ d, n: members.filter(({ p }) => registry.attended(p.id, d, WEEKS.length - 1 - i)).length })));
+	const weekly = $derived(WEEKS.map((d, i) => ({ d, n: members.filter(({ p }) => registry.groupAttended(p.id, d, WEEKS.length - 1 - i)).length })));
 	const maxN = $derived(Math.max(1, ...weekly.map((w) => w.n)));
 	const notes = $derived(g ? registry.d.groupNotes.filter((n) => n.small_group === g.name) : []);
 	const nameOf = (id: string | null) => (id ? registry.person(id)?.name ?? '' : '');
@@ -24,19 +24,19 @@
 {#if g}
 	<div class="row" style="justify-content:space-between">
 		<h1>{g.name} <small class="muted">{g.community}</small></h1>
-		<div class="row"><a class="btn ghost" href="/communities">← 편성표</a><a class="btn" href="/attendance?group={encodeURIComponent(g.name)}">출석 등록</a></div>
+		<div class="row"><a class="btn ghost" href="/communities">← 편성표</a></div>
 	</div>
 
 	<div class="kpis">
 		<div class="kpi"><div><b>{members.length}</b><span>재적 인원</span></div></div>
 		<div class="kpi"><div><b>{g.leader_id ? nameOf(g.leader_id) : '-'}</b><span>인도자{g.leader_id ? '' : ' (미정)'}</span></div></div>
 		<div class="kpi"><div><b style="font-size:1.2rem">{g.place ?? '-'}</b><span>모임 장소</span></div></div>
-		<div class="kpi"><div><b>{weekly[7].n}<small class="muted" style="font-size:.9rem"> / {members.length}</small></b><span>이번 주일 출석</span></div></div>
+		<div class="kpi"><div><b>{weekly[7].n}<small class="muted" style="font-size:.9rem"> / {members.length}</small></b><span>이번 주일 소그룹 모임 출석</span></div></div>
 	</div>
 
 	<div class="dash-grid even">
 		<section class="card">
-			<div class="card-head"><h2>출석 추이</h2><span class="sub">최근 8주</span></div>
+			<div class="card-head"><h2>소그룹 모임 출석 추이</h2><span class="sub">최근 8주 · 홈페이지 출석부(인도자 등록)</span></div>
 			<div class="spark">
 				{#each weekly as w}
 					<div class="col"><span>{w.n}</span><i style="height:{(w.n * 100) / maxN}%"></i><small>{md(w.d)}</small></div>
@@ -71,8 +71,8 @@
 						<td><a href="/{p.id}">{p.name}</a>{#if p.id === g.leader_id}<span class="tag now">인도자</span>{/if}</td>
 						<td>{s.title || '-'}</td><td>{s.faith}</td><td>{p.phone ?? '-'}</td>
 						{#each WEEKS as d, i}
-							{@const ok = registry.attended(p.id, d, WEEKS.length - 1 - i)}
-							<td style="text-align:center"><span class="pdot" class:on={ok} title={registry.attendanceMark(p.id, d)?.reason ?? ''}></span></td>
+							{@const ok = registry.groupAttended(p.id, d, WEEKS.length - 1 - i)}
+							<td style="text-align:center"><span class="pdot" class:on={ok}></span></td>
 						{/each}
 					</tr>
 				{:else}<tr><td colspan="12" class="muted">소속 교인이 없습니다.</td></tr>{/each}

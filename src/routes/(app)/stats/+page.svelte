@@ -28,7 +28,8 @@
 	const groupRows = $derived(
 		registry.d.smallGroups.filter((g) => comm === '전체' || g.community === comm).sort((a, b) => a.community.localeCompare(b.community, 'ko') || a.sort_order - b.sort_order).map((g) => {
 			const l = members.filter((x) => x.s.smallGroup === g.name);
-			const weekly = attend(l);
+			// 주일 오후 소그룹 모임 출석 (홈페이지 출석부에서 인도자가 등록)
+			const weekly = WEEKS.map((d, i) => l.filter(({ p }) => registry.groupAttended(p.id, d, WEEKS.length - 1 - i)).length);
 			const avg4 = l.length ? Math.round((weekly.slice(-4).reduce((a, b) => a + b, 0) * 100) / (l.length * 4)) : 0;
 			return { g, total: l.length, weekly, avg4 };
 		})
@@ -57,7 +58,7 @@
 {#if tab === '주일 출석'}
 	<div class="dash-grid even">
 		<section class="card">
-			<div class="card-head"><div><h2>장년 주일 출석</h2><span class="sub">최근 8주 · 재적 장년·새가족 {adult.length}명</span></div></div>
+			<div class="card-head"><div><h2>장년 주일 오전예배 출석</h2><span class="sub">최근 8주 · 재적 장년·새가족 {adult.length}명</span></div></div>
 			<div class="spark">
 				{#each adultWeekly as n, i}<div class="col"><span>{n}</span><i style="height:{(n * 100) / maxAdult}%"></i><small>{md(WEEKS[i])}</small></div>{/each}
 			</div>
@@ -82,7 +83,7 @@
 	<div class="card">
 		<div class="toolbar">
 			<select bind:value={comm}><option>전체</option>{#each COMMUNITY_DEFS as c}<option>{c.name}</option>{/each}</select>
-			<span class="muted">칸의 색이 진할수록 출석률이 높습니다. 소그룹 이름을 누르면 상세 화면으로 갑니다.</span>
+			<span class="muted">주일 오후 소그룹 모임 출석 (홈페이지 출석부에서 인도자가 등록). 칸의 색이 진할수록 출석률이 높습니다. 소그룹 이름을 누르면 상세 화면으로 갑니다.</span>
 		</div>
 	</div>
 	<div class="card" style="padding:0;overflow-x:auto">

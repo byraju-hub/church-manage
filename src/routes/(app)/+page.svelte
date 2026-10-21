@@ -14,16 +14,18 @@
 	const members = $derived(rows.filter((r) => r.s.memberCert));
 	const joined = $derived(rows.filter((r) => r.s.status === '재적').length);
 
-	// ---- 주일예배 출석 (가상 출석 샘플, 실제로는 출석부에서 가져옴) ----
+	// ---- 주일 오전예배 출석 (교적 프로그램 출석 화면에서 등록. 지금은 가상 샘플) ----
+	// 전체 출석 인원 = 출석 화면에서 입력한 값 (명단 체크 + 그 외). 출석률은 출석 명단 인원 기준
+	const roster = $derived(registry.worshipRoster());
 	const weekly = $derived(
 		WEEKS.map((date, i) => ({
 			date,
-			n: members.filter(({ p }) => registry.attended(p.id, date, WEEKS.length - 1 - i)).length
+			n: registry.worshipTotal(date, roster.filter((p) => registry.attended(p.id, date, WEEKS.length - 1 - i)).length)
 		}))
 	);
 	const latest = $derived(weekly[weekly.length - 1]);
 	const prev = $derived(weekly[weekly.length - 2]);
-	const rate = $derived(members.length ? Math.round((latest.n * 100) / members.length) : 0);
+	const rate = $derived(roster.length ? Math.round((latest.n * 100) / roster.length) : 0);
 	const delta = $derived(latest.n - prev.n);
 
 	let view = $state<'chart' | 'table'>('chart');
@@ -50,10 +52,12 @@
 	const byCommunity = $derived.by(() => {
 		const m = new Map<string, { total: number; present: number }>();
 		for (const { p, s } of members) {
-			const k = (unit === 'community' ? s.community : s.smallGroup) || '소그룹 미지정';
+			// 주일 오후 소그룹 모임 출석 (홈페이지 출석부에서 인도자가 등록). 소그룹이 없는 사람은 모임이 없으므로 뺌
+			if (!s.smallGroup) continue;
+			const k = unit === 'community' ? s.community : s.smallGroup;
 			const cur = m.get(k) ?? { total: 0, present: 0 };
 			cur.total++;
-			if (registry.attended(p.id, latest.date, 0)) cur.present++;
+			if (registry.groupAttended(p.id, latest.date, 0)) cur.present++;
 			m.set(k, cur);
 		}
 		return [...m.entries()].sort((a, b) => (unit === 'community' ? b[1].total - a[1].total : b[1].present / b[1].total - a[1].present / a[1].total));
@@ -114,7 +118,7 @@
 	//   연동하면 그 주일의 출석 인원·재적 인원을 홈페이지에서 가져와 여기 숫자에 넣습니다. (지금은 가상 출석 샘플)
 	const pctOf = (x: { present: number; total: number }) => (x.total ? Math.round((x.present * 100) / x.total) : 0);
 	const attOf = (list: typeof members) => ({ total: list.length, present: list.filter(({ p }) => registry.attended(p.id, latest.date, 0)).length });
-	const groupAtt = $derived(attOf(members.filter(({ s }) => !!s.smallGroup)));
+	const groupAtt = $derived.by(() => { const l = members.filter(({ s }) => !!s.smallGroup); return { total: l.length, present: l.filter(({ p }) => registry.groupAttended(p.id, latest.date, 0)).length }; });
 	const eduAtt = $derived(attOf(members.filter(({ p }) => !!p.edu_dept)));
 	// 이번 분기(오늘이 속한 달의 분기) 새가족 등록
 	const quarter = Math.floor(today.getMonth() / 3) + 1;
@@ -166,7 +170,7 @@
 	<div>
 		<small>{dateLabel}</small>
 		<h1>부평동부교회 현황</h1>
-		<p>재적 교인 {joined}명 · 이번 주일 출석 {latest.n}명({rate}%)</p>
+		<p>재적 교인 {joined}명 · 이번 주일 오전예배 출석 {latest.n}명({rate}%)</p>
 	</div>
 	<div class="actions">
 		<a class="btn light" href="/members">교인 목록</a>
@@ -184,10 +188,10 @@
 		<span class="ico green">{@render icon('check')}</span>
 		<div>
 			<b>{latest.n}<em class:up={delta > 0} class:down={delta < 0}>{delta === 0 ? '±0' : delta > 0 ? `▲${delta}` : `▼${-delta}`}</em></b>
-			<span>{md(latest.date)} 주일 출석 · {rate}%</span>
+			<span>{md(latest.date)} 주일 오전예배 출석 · {rate}%</span>
 		</div>
 	</a>
-	<a class="kpi" href="/stats?tab=소그룹 출석" title="홈페이지 출석부와 연동할 자리">
+	<a class="kpi" href="/stats?tab=소그룹 출석" title="주일 오후 소그룹 모임 출석 (홈페이지 출석부에서 인도자가 등록)">
 		<span class="ico blue2">{@render icon('group')}</span>
 		<div><b>{groupAtt.present}<small class="of">/{groupAtt.total}</small></b><span>{md(latest.date)} 소그룹 출석 · {pctOf(groupAtt)}%</span></div>
 	</a>
@@ -226,8 +230,8 @@
 	<section class="card">
 		<div class="card-head">
 			<div>
-				<h2>주일예배 출석 추이</h2>
-				<span class="sub">최근 8주 · 재적 교인 {members.length}명 기준 · 가상 출석 샘플</span>
+				<h2>주일 오전예배 출석 추이</h2>
+				<span class="sub">최근 8주 · 전체 출석 인원 (출석 명단 {roster.length}명 기준 출석률) · 가상 출석 샘플</span>
 			</div>
 			<div class="seg" role="tablist" aria-label="보기 방식">
 				<button type="button" class:on={view === 'chart'} onclick={() => (view = 'chart')}>그래프</button>
@@ -237,7 +241,7 @@
 
 		{#if view === 'chart'}
 			<div class="chart">
-				<svg viewBox="0 0 {W} {H}" role="img" aria-label="최근 8주 주일예배 출석 인원 막대그래프" onmouseleave={() => (hover = null)}>
+				<svg viewBox="0 0 {W} {H}" role="img" aria-label="최근 8주 주일 오전예배 출석 인원 막대그래프" onmouseleave={() => (hover = null)}>
 					{#each ticks as t}
 						<line x1={L} x2={W - R} y1={yOf(t)} y2={yOf(t)} stroke="#e5e9f2" stroke-width="1" />
 						<text x={L - 8} y={yOf(t) + 4} text-anchor="end" font-size="11" fill="#66718a">{t}</text>
@@ -254,7 +258,7 @@
 				{#if hover !== null}
 					<div class="tip" style="left:{((L + slot * hover + slot / 2) / W) * 100}%; top:{(yOf(weekly[hover].n) / H) * 100}%">
 						{weekly[hover].n}명
-						<small>{weekly[hover].date} · {members.length ? Math.round((weekly[hover].n * 100) / members.length) : 0}%</small>
+						<small>{weekly[hover].date} · {roster.length ? Math.round((weekly[hover].n * 100) / roster.length) : 0}%</small>
 					</div>
 				{/if}
 			</div>
@@ -263,7 +267,7 @@
 				<thead><tr><th>주일</th><th>출석</th><th>출석률</th></tr></thead>
 				<tbody>
 					{#each [...weekly].reverse() as w}
-						<tr><td>{w.date}</td><td>{w.n}명</td><td>{members.length ? Math.round((w.n * 100) / members.length) : 0}%</td></tr>
+						<tr><td>{w.date}</td><td>{w.n}명</td><td>{roster.length ? Math.round((w.n * 100) / roster.length) : 0}%</td></tr>
 					{/each}
 				</tbody>
 			</table>
@@ -304,9 +308,9 @@
 
 <div class="dash-grid even">
 	<section class="card">
-		<div class="card-head"><h2>공동체 · 소그룹 출석</h2>
+		<div class="card-head"><h2>공동체 · 소그룹 출석 <small class="muted" style="font-weight:500;font-size:.78rem">주일 오후 소그룹 모임</small></h2>
 			<div class="seg"><button type="button" class:on={unit === 'community'} onclick={() => (unit = 'community')}>공동체</button><button type="button" class:on={unit === 'group'} onclick={() => (unit = 'group')}>소그룹</button></div></div>
-		<p class="sub" style="margin:-.4rem 0 .6rem;color:var(--muted);font-size:.8rem">{md(latest.date)} 주일 기준{unit === 'group' ? ' · 출석률 높은 순' : ''}</p>
+		<p class="sub" style="margin:-.4rem 0 .6rem;color:var(--muted);font-size:.8rem">{md(latest.date)} 주일 · 홈페이지 출석부(인도자 등록) 기준{unit === 'group' ? ' · 출석률 높은 순' : ''}</p>
 		<div style="max-height:{unit === 'group' ? '420px' : 'none'};overflow:auto">
 		{#each byCommunity as [name, c]}
 			<div class="li" style="flex-direction:column; align-items:stretch; gap:.4rem">
@@ -387,9 +391,10 @@
 	<div class="quick">
 		<a href="/members">교인 목록<small>검색 · 필터 · 내려받기</small></a>
 		<a href="/communities">공동체 편성표<small>인도자 · 장소 · 출석</small></a>
-		<a href="/attendance">출석<small>주일 전체 명단</small></a>
+		<a href="/communities/roster">공동체 · 소그룹별 명단<small>올해 소그룹 출석률</small></a>
+		<a href="/attendance">출석<small>주일 오전예배 출석 등록</small></a>
 		<a href="/visits">심방<small>등록 · 검색 · 달력</small></a>
-		<a href="/new">교인 등록<small>등록카드 순서로 입력</small></a>
+		<a href="/new">교인 등록</a>
 		<a href="/households">세대<small>세대원 · 분가</small></a>
 		<a href="/reports">명단<small>생일 · 직분자 · 교세</small></a>
 		<a href="/stats">통계<small>출석 · 임직 · 세례</small></a>
