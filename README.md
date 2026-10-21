@@ -31,7 +31,7 @@ SvelteKit + Cloudflare Pages로 만든 **교회 교적 관리 시스템**입니�
 - 재적 이력을 남기면 교인구분이 자동으로 맞춰지고, 동명이인은 등록 순서대로 A·B·C가 자동으로 붙음.
 - 주민등록번호는 두지 않음. 개인정보 동의 기록, 접속기록(3년), 변경 이력, 5년 뒤 인적사항 삭제(보관 제외) 구조 포함.
 
-자세한 결정 사항과 남은 질문은 **[`docs/decisions.md`](docs/decisions.md)** 를 보세요.
+자세한 결정 사항과 남은 질문은 **[`docs/decisions.md`](docs/decisions.md)**, 실제 서비스로 옮길 때의 순서·체크리스트는 **[`docs/handover.md`](docs/handover.md)**(개발자 이관 매뉴얼)를 보세요.
 
 ## 폴더 구조
 ```

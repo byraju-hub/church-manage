@@ -288,16 +288,36 @@ create table registry.certificates (             -- 증명서 발급 대장 (교
 );
 
 -- ============================================================================
+-- 문자 발송 (솔라피): 자주 쓰는 문구 · 발송 기록
+-- ============================================================================
+create table registry.sms_templates (            -- 문자 보내기의 자주 쓰는 문구 ([ ] 는 고쳐 쓰는 칸, {이름}·{직분} 은 자동 치환)
+  id uuid primary key default gen_random_uuid(),
+  title text not null, body text not null, sort_order int not null default 0,
+  updated_at timestamptz not null default now(), updated_by uuid
+);
+create table registry.sms_log (                  -- 발송 기록: 누가 언제 몇 명에게 무엇을
+  id uuid primary key default gen_random_uuid(),
+  sent_at timestamptz not null default now(), sent_by uuid not null,
+  kind text not null check (kind in ('SMS','LMS')), subject text, body text not null,
+  recipient_ids uuid[] not null, sent_count int not null, failed_count int not null default 0,
+  provider_group_id text                         -- 솔라피 그룹 ID (결과 조회용)
+);
+
+-- ============================================================================
 -- RLS 예시 (개발 시 모든 표에 적용)
 -- ============================================================================
 -- 승인된 사용자인지
 create or replace function registry.is_member_user() returns boolean language sql stable as $$
   select exists (select 1 from registry.app_users where user_id = auth.uid() and status = '사용')
 $$;
--- 심방 권한이 있는지 (최고관리자는 모두 허용)
+-- 심방 권한: A 등급만 (등급 설정·최고관리자 여부와 관계없이 고정). 최고관리자라도 A 가 아니면 안 됨
 create or replace function registry.can_visit() returns boolean language sql stable as $$
-  select exists (select 1 from registry.app_users u left join registry.grades g on g.grade = u.grade
-                 where u.user_id = auth.uid() and u.status = '사용' and (u.is_super or coalesce(g.can_visit, false)))
+  select exists (select 1 from registry.app_users u
+                 where u.user_id = auth.uid() and u.status = '사용' and u.grade = 'A')
+$$;
+-- 일괄 수정: 최고관리자만 / 문자 발송: A 등급만 (서버 함수에서 확인)
+create or replace function registry.is_super() returns boolean language sql stable as $$
+  select exists (select 1 from registry.app_users where user_id = auth.uid() and status = '사용' and is_super)
 $$;
 alter table registry.people enable row level security;
 create policy people_read on registry.people for select using (registry.is_member_user());
