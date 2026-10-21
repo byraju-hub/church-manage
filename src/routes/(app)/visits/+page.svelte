@@ -90,19 +90,19 @@
 			<div class="toolbar">
 				<select bind:value={kind}><option value="">심방 구분 전체</option>{#each VISIT_KINDS as k}<option>{k}</option>{/each}</select>
 				<select bind:value={pastor}><option value="">담당 교역자 전체</option>{#each pastors as k}<option>{k}</option>{/each}</select>
-				<span class="muted">날짜</span><input type="date" bind:value={from} /> ~ <input type="date" bind:value={to} />
+				<span class="range"><span class="muted">날짜</span><input type="date" bind:value={from} aria-label="시작 날짜" /><span>~</span><input type="date" bind:value={to} aria-label="끝 날짜" /></span>
 			</div>
 		</div>
 		<div class="card" style="padding:0;overflow-x:auto">
-			<table class="sm">
+			<table class="sm vlist">
 				<thead><tr><th>날짜</th><th>구분</th><th>교인</th><th>담당</th><th>내용</th><th>후속 조치</th></tr></thead>
 				<tbody>
 					{#each rows.slice(0, 200) as v (v.id)}
 						<tr>
 							<td style="white-space:nowrap">{v.visit_date}</td>
-							<td>{v.kind} <span class="muted">· {v.method}</span></td>
-							<td><a href="/{v.person_id}">{nameOf(v.person_id)}</a></td>
-							<td>{v.pastor}{v.companions ? ` (동행 ${v.companions})` : ''}</td>
+							<td class="nw">{v.kind}<small class="muted">{v.method}</small></td>
+							<td class="nw"><a href="/{v.person_id}">{nameOf(v.person_id)}</a></td>
+							<td class="nw">{v.pastor}{#if v.companions}<small class="muted">동행 {v.companions}</small>{/if}</td>
 							<td style="min-width:220px">{v.content}{v.scripture ? ` · ${v.scripture}` : ''}{v.hymn ? ` · ${v.hymn}` : ''}</td>
 							<td>{v.follow_up ?? '-'}</td>
 						</tr>
@@ -120,11 +120,11 @@
 			<div class="toolbar">
 				<select bind:value={ncomm} aria-label="공동체 선택"><option value="">전체 공동체</option>{#each COMMUNITY_DEFS as c}<option value={c.name}>{c.name}</option>{/each}</select>
 				<select bind:value={ngroup} disabled={!ncomm} aria-label="소그룹 선택"><option value="">{ncomm ? '전체 소그룹' : '공동체를 먼저 고르세요'}</option>{#each ngroupOpts as g}<option value={g}>{g}</option>{/each}</select>
-				<span class="muted">날짜</span><input type="date" bind:value={nfrom} /> ~ <input type="date" bind:value={nto} />
+				<span class="range"><span class="muted">날짜</span><input type="date" bind:value={nfrom} aria-label="시작 날짜" /><span>~</span><input type="date" bind:value={nto} aria-label="끝 날짜" /></span>
 			</div>
 		</div>
 		<div class="card" style="padding:0;overflow-x:auto">
-			<table class="sm">
+			<table class="sm vlist">
 				<thead><tr><th>날짜</th><th>공동체</th><th>소그룹</th><th>교인</th><th>작성 인도자</th><th>특이사항</th></tr></thead>
 				<tbody>
 					{#each noteRows.slice(0, 200) as n (n.id)}

@@ -175,7 +175,7 @@
 	}
 </script>
 
-<div class="row" style="justify-content:space-between">
+<div class="row page-head" style="justify-content:space-between">
 	<h1>교인 목록 <small class="muted">({rows.length}명)</small></h1>
 	<div class="row" style="gap:.5rem">
 		{#if canSms}
@@ -226,8 +226,8 @@
 		<select bind:value={account}><option value="">앱 가입 전체</option><option value="y">가입</option><option value="n">미가입</option></select>
 	</div>
 	<div class="toolbar">
-		<span class="muted">나이</span><input type="number" style="width:5rem" placeholder="이상" bind:value={ageMin} /> ~ <input type="number" style="width:5rem" placeholder="이하" bind:value={ageMax} />
-		<span class="muted">등록일</span><input type="date" bind:value={regFrom} /> ~ <input type="date" bind:value={regTo} />
+		<span class="range"><span class="muted">나이</span><input type="number" style="width:5rem" placeholder="이상" bind:value={ageMin} /><span>~</span><input type="number" style="width:5rem" placeholder="이하" bind:value={ageMax} /></span>
+		<span class="range"><span class="muted">등록일</span><input type="date" bind:value={regFrom} aria-label="등록일 시작" /><span>~</span><input type="date" bind:value={regTo} aria-label="등록일 끝" /></span>
 	</div>
 </div>
 
@@ -275,7 +275,7 @@
 
 <div class="split">
 	<div class="card list-pane" style="padding:0">
-		<table>
+		<table class="mlist">
 			<thead><tr>{#if bulkOn}<th class="ck"><input type="checkbox" checked={allChecked} indeterminate={checkedRows.length > 0 && !allChecked} onchange={toggleAll} aria-label="검색 결과 전체 선택" title="검색 결과 {rows.length}명 전체 선택" /></th>{/if}<th>이름</th><th>직분</th><th>상태</th><th>교인구분</th><th>소그룹</th></tr></thead>
 			<tbody>
 				{#each rows.slice(0, shown) as { p, s } (p.id)}
