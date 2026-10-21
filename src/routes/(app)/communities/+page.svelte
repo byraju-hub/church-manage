@@ -34,14 +34,14 @@
 <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:.6rem;margin-bottom:.6rem">
 	<h1 style="margin:0">공동체 편성표 <small class="muted">3개 공동체 · 소그룹 {groups.filter((g) => !g.care).length}개 + 자녀돌봄</small></h1>
 </div>
-<p class="muted" style="margin-top:0">공동체와 소그룹 편성, 출석부는 지금 운영 중인 출석부 자료를 그대로 가져와 보여 줍니다. 이 화면의 출석은 주일 오후 소그룹 모임 출석(홈페이지 출석부에서 인도자가 등록)입니다. (지금은 가상 샘플)</p>
+<p class="muted" style="margin-top:0">공동체와 소그룹 편성표입니다. 출석은 현재 운영 중인 홈페이지의 자료를 그대로 공유합니다.</p>
 
 {#each COMMUNITY_DEFS as c}
 	{@const t = sum(c.name)}
 	{@const k = sum(c.name, true)}
 	<div class="card" style="padding:0">
 		<div class="card-head" style="padding:1.1rem 1.3rem 0">
-			<div><h2>{c.name} <span class="tag">{c.born}</span></h2>
+			<div><h2>[ {c.name} ] <span class="tag">{c.born}</span></h2>
 				<span class="sub">재적 {t.t}명 · <b class="att">{WEEKS[7].slice(5).replace('-', '/')} 출석 {t.p}명 ({pct(t)}%)</b>{#if k.t}<span class="muted"> &nbsp;|&nbsp; 자녀돌봄 {k.t}명 · <b class="att">출석 {k.p}명 ({pct(k)}%)</b></span>{/if}</span></div>
 		</div>
 		<div style="overflow-x:auto">
@@ -70,6 +70,7 @@
 <style>
 	.att { color: #e8590c; font-weight: 700; } /* 이번 주 출석: 주황색으로 눈에 띄게 */
 	.comm { table-layout: fixed; width: 100%; }
+	.comm :is(th, td) { text-align: center; } /* 표 안 내용은 모두 가운데 정렬 */
 	.c-g { width: 22%; } .c-l { width: 15%; } .c-p { width: 33%; } .c-n { width: 15%; }
 	.comm td:nth-child(2), .comm td:nth-child(4), .comm td:nth-child(5) { white-space: nowrap; }
 	@media (max-width: 720px) {

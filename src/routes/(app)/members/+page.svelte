@@ -5,6 +5,7 @@
 	import { ageOf, officeWithKind, officeKindTitle } from '#lib/registry/derive.ts';
 	import { MISSION_SOCIETIES } from '#lib/registry/types.ts';
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
+	import ExportButtons from '#lib/components/ExportButtons.svelte';
 
 	// 검색 방식: 기본(한 줄) / 복수(여러 명을 한꺼번에) / 항목별(칸을 골라서)
 	let mode = $state<'basic' | 'multi' | 'fields'>('basic');
@@ -91,7 +92,7 @@
 	const groups = $derived(uniq(registry.d.personGroups.filter((g) => !community || g.community === community).map((g) => g.small_group)));
 	const titles = $derived(uniq(summaries.map((s) => s.title)));
 
-	// 내려받기: 필요한 칸만 골라서 CSV
+	// 내려받기: 필요한 칸만 골라서 엑셀(.xlsx)
 	const COLS: Record<string, (p: any, s: any) => string> = {
 		이름: (p) => p.name, 동명이인구분: (p) => p.name_note ?? '', 성별: (p) => (p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : ''),
 		생년월일: (p) => p.birth_date ?? '', 나이: (p) => String(ageOf(p.birth_date) ?? ''), 휴대폰: (p) => p.phone ?? '',
@@ -101,15 +102,24 @@
 	};
 	let picked = $state<string[]>(['이름', '휴대폰', '직분', '상태', '신급']);
 
-	function download() {
-		const head = picked.join(',');
-		const body = rows.map(({ p, s }) => picked.map((c) => `"${COLS[c](p, s).replace(/"/g, '""')}"`).join(','));
-		const blob = new Blob(['﻿' + [head, ...body].join('\n')], { type: 'text/csv;charset=utf-8' });
-		const a = document.createElement('a');
-		a.href = URL.createObjectURL(blob);
-		a.download = `교인목록-${new Date().toISOString().slice(0, 10)}.csv`;
-		a.click();
-		registry.log('내려받기', `${rows.length}명 · ${picked.join('/')}`);
+	// 고른 순서가 아니라 위 칸 순서대로, 제목 줄 굵게·회색, 모든 칸 가운데 정렬·테두리
+	let xlBusy = $state(false);
+	async function download() {
+		xlBusy = true;
+		try {
+			const writeXlsxFile = (await import('write-excel-file/browser')).default;
+			const cols = Object.keys(COLS).filter((c) => picked.includes(c));
+			const st = { borderStyle: 'thin' as const, borderColor: '#999999', align: 'center' as const, alignVertical: 'center' as const };
+			const data = [
+				cols.map((c) => ({ value: c, fontWeight: 'bold' as const, backgroundColor: '#E9ECEF', ...st })),
+				...rows.map(({ p, s }) => cols.map((c) => ({ value: COLS[c](p, s), ...st })))
+			];
+			const W: Record<string, number> = { 이름: 10, 동명이인구분: 8, 성별: 6, 생년월일: 12, 나이: 6, 휴대폰: 15, 주소: 40, 직분: 10, 상태: 8, 교인구분: 24, 전도회: 10, 신급: 8, 공동체: 12, 소그룹: 12, 등록일: 12 };
+			await writeXlsxFile(data, { sheet: '교인 목록', columns: cols.map((c) => ({ width: W[c] ?? 12 })), stickyRowsCount: 1 }).toFile(`교인목록-${new Date().toISOString().slice(0, 10)}.xlsx`);
+			registry.log('내려받기', `${rows.length}명 · ${cols.join('/')}`);
+		} finally {
+			xlBusy = false;
+		}
 	}
 	function runSearch() {
 		if (!searched || q) registry.log('검색', q || '(조건 필터)');
@@ -245,11 +255,11 @@
 
 {#if registry.perms.export}
 	<div class="card">
-		<h2>내려받기 <span class="muted" style="font-weight:400">— 필요한 칸만 골라 엑셀(CSV)로 · 용도를 적어야 함(실제 시스템)</span></h2>
+		<h2>내려받기 <span class="muted" style="font-weight:400">— 필요한 칸만 골라 엑셀로 · 용도를 적어야 함(실제 시스템)</span></h2>
 		<div class="cols">
 			{#each Object.keys(COLS) as c}<label><input type="checkbox" value={c} bind:group={picked} />{c}</label>{/each}
 		</div>
-		<p><button onclick={download} disabled={!picked.length}>현재 목록 {rows.length}명 내려받기</button></p>
+		<p class="row" style="align-items:center"><ExportButtons onexcel={download} disabled={!picked.length} busy={xlBusy} /><span class="muted">현재 목록 {rows.length}명</span></p>
 	</div>
 {:else}
 	<p class="muted">내려받기 권한이 꺼져 있습니다. (최고관리자에게 내려받기·출력 권한을 받아야 합니다)</p>

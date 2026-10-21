@@ -10,7 +10,8 @@
 		g ? registry.membersOfGroup(g.name)
 			.map((p) => ({ p, s: registry.summary(p) }))
 			.filter((x) => x.s.memberCert)
-			.sort((a, b) => a.p.name.localeCompare(b.p.name, 'ko')) : []
+			// 인도자를 맨 위에, 나머지는 가나다순
+			.sort((a, b) => Number(b.p.id === g.leader_id) - Number(a.p.id === g.leader_id) || a.p.name.localeCompare(b.p.name, 'ko')) : []
 	);
 	const weekly = $derived(WEEKS.map((d, i) => ({ d, n: members.filter(({ p }) => registry.groupAttended(p.id, d, WEEKS.length - 1 - i)).length })));
 	const maxN = $derived(Math.max(1, ...weekly.map((w) => w.n)));
@@ -23,7 +24,7 @@
 
 {#if g}
 	<div class="row" style="justify-content:space-between">
-		<h1>{g.name} <small class="muted">{g.community}</small></h1>
+		<h1>{g.name} <small class="muted">&nbsp;[ {g.community} ]</small></h1>
 		<div class="row"><a class="btn ghost" href="/communities">← 편성표</a></div>
 	</div>
 

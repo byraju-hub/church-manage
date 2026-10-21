@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
+	import ExportButtons from '#lib/components/ExportButtons.svelte';
 	import { ageOf, fullAddress, officeTitle } from '#lib/registry/derive.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 
@@ -102,8 +103,7 @@
 				<label class="row" style="gap:.3rem"><input type="checkbox" bind:checked={consentOnly} />요람 공개에 동의한 사람만</label>
 			{/if}
 			<span style="flex:1"></span>
-			<button class="ghost" onclick={print} disabled={!ready || !registry.perms.export}>인쇄</button>
-			<button onclick={pdf} disabled={!ready || busy || !registry.perms.export}>{busy ? 'PDF 만드는 중…' : 'PDF 내려받기'}</button>
+			<ExportButtons onprint={print} onpdf={pdf} disabled={!ready || !registry.perms.export} {busy} />
 		</div>
 		{#if doc === '교인 요람' && consentOnly}<p class="muted" style="margin:0;font-size:.82rem">요람에는 '요람 공개'에 동의한 사람만 나옵니다. (일괄 동의를 받기 전이라 지금은 몇 명만 있습니다. 시험할 때는 체크를 풀어 보세요)</p>{/if}
 		{#if doc === '세례증명서' && p && !baptism}<p class="warn" style="margin:.4rem 0 0">이 교인은 세례(유아세례·입교) 기록이 없어 세례증명서를 만들 수 없습니다.</p>{/if}
@@ -186,7 +186,8 @@
 					</tbody></table>
 					<p class="cert-body">{doc === '교인증명서' ? '위 사람은 본 교회에 등록된 교인임을 증명합니다.' : `위 사람은 위와 같이 ${baptism?.kind ?? '세례'}를 받았음을 증명합니다.`}</p>
 					<p class="cert-date">{todayKo}</p>
-					<p class="cert-sign">대한예수교장로회 {CHURCH}<br />담임목사 <b>{pastor}</b> <span class="seal">(인)</span></p>
+					<!-- 교회 이름 자리에 교회 로고(대한예수교장로회 부평동부교회) -->
+					<p class="cert-sign"><img class="cert-logo" src="/church-logo.png" alt="대한예수교장로회 {CHURCH}" width="360" height="67" style="width:95mm;height:auto" /><br />담임목사 <b>{pastor}</b> <span class="seal">(인)</span></p>
 				</div>
 
 			{:else if doc === '교인 요람'}
@@ -245,6 +246,8 @@
 	.dt.zebra tbody tr:nth-child(even) td { background: #f6f8fc; }
 	.dt tbody tr:hover { background: none; }
 	.dt .c { text-align: center; color: #555; }
+	/* 교인 요람 · 생일 명단 · 직분자 명단(zebra), 교회 조직표(meet-t · keep): 표 내용 가운데 정렬 */
+	.dt.zebra td, .dt.meet-t td, .dt.keep td { text-align: center; }
 	.photo-cell { width: 28mm; text-align: center; }
 	.photo-cell img { width: 26mm; height: 34mm; object-fit: cover; display: block; margin: 0 auto; }
 	.photo-cell span { display: grid; place-items: center; width: 26mm; height: 34mm; margin: 0 auto; border: 1px dashed #aaa; color: #999; font-size: 9pt; }
@@ -262,6 +265,7 @@
 	.cert-body { text-align: center; font-size: 13pt; margin: 22mm 0 14mm; }
 	.cert-date { text-align: center; font-size: 12pt; margin-bottom: 22mm; }
 	.cert-sign { text-align: center; font-size: 14pt; line-height: 2; }
+	.cert-logo { display: inline-block; width: 95mm; height: auto; margin-bottom: 4mm; vertical-align: middle; }
 	.seal { display: inline-grid; place-items: center; width: 16mm; height: 16mm; margin-left: 4mm; border: 2px solid #c92a2a; border-radius: 50%; color: #c92a2a; font-size: 10pt; }
 	@media print {
 		:global(.site-header), :global(.site-footer), .no-print { display: none !important; }

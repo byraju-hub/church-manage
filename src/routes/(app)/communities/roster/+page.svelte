@@ -7,6 +7,7 @@
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import { ageOf } from '#lib/registry/derive.ts';
 	import { tick } from 'svelte';
+	import ExportButtons from '#lib/components/ExportButtons.svelte';
 
 	const active = $derived(registry.d.people.map((p) => ({ p, s: registry.summary(p) })).filter(({ s }) => s.memberCert));
 	const YEAR = new Date().getFullYear();
@@ -26,7 +27,8 @@
 		const used = new Set<Row>();
 		const grp = (name: string, xs: Row[]) => {
 			xs.forEach((x) => used.add(x));
-			return { name, xs: xs.sort(byName), rate: xs.length ? Math.round(xs.reduce((s, x) => s + x.rate, 0) / xs.length) : 0 };
+			// 인도자를 맨 앞에, 나머지는 가나다순
+			return { name, xs: xs.sort((a, b) => Number(leaders.has(b.p.id)) - Number(leaders.has(a.p.id)) || byName(a, b)), rate: xs.length ? Math.round(xs.reduce((s, x) => s + x.rate, 0) / xs.length) : 0 };
 		};
 		for (const c of COMMUNITY_DEFS) {
 			const groups = registry.groupsIn(c.name).map((g) => grp(g.name, rows.filter((x) => x.s.community === c.name && x.s.smallGroup === g.name))).filter((g) => g.xs.length);
@@ -53,6 +55,8 @@
 	const today = new Date().toISOString().slice(0, 10);
 	const leaderOf = (name: string) => { const id = registry.groupDef(name)?.leader_id; return id ? registry.person(id)?.name ?? '' : ''; };
 	const scope = $derived(group ? `${comm} › ${group}` : comm || '전체 공동체');
+	// 인쇄·PDF 맨 위 제목: 예) '헵시바 소그룹 명단', '줄기 공동체 명단', '전체 공동체 명단'
+	const sheetTitle = $derived(comm === '미지정' ? '소그룹 미지정자 명단' : group ? `${group} 소그룹 명단` : `${comm || '전체 공동체'} 명단`);
 	const fileName = $derived(`소그룹별 명단-${(group || comm || '전체').replace(/\s+/g, '')}-${today}.pdf`);
 	let sheet = $state<HTMLElement>();
 	let busy = $state(false);
@@ -60,7 +64,8 @@
 	// 인쇄·PDF 항목 고르기: 이름(필수)·직분만이면 소그룹마다 이름 상자, 그 밖의 항목이 하나라도 있으면 표
 	const COLS = ['이름', '직분', '생년월일', '나이', '휴대폰', '비고'] as const;
 	type Col = (typeof COLS)[number];
-	let cols = $state<Record<Col, boolean>>({ 이름: true, 직분: true, 생년월일: false, 나이: false, 휴대폰: false, 비고: false });
+	// 처음에는 모든 항목이 체크된 상태, 필요 없는 항목만 빼면 됨
+	let cols = $state<Record<Col, boolean>>({ 이름: true, 직분: true, 생년월일: true, 나이: true, 휴대폰: true, 비고: true });
 	const tableMode = $derived(cols.생년월일 || cols.나이 || cols.휴대폰 || cols.비고);
 	const tableCols = $derived(COLS.filter((c) => cols[c]));
 	// 표 칸 너비: 고른 항목들의 비율로 나눠 이름 칸만 길어지지 않게 (글자 수 기준 비율)
@@ -128,15 +133,7 @@
 	<select bind:value={group} disabled={!comm || comm === '미지정'} aria-label="소그룹 선택"><option value="">{comm ? '전체 소그룹' : '공동체를 먼저 고르세요'}</option>{#each groupOpts as g}<option value={g}>{g}</option>{/each}</select>
 	<span class="muted">{shownCount}명</span>
 	<span class="out">
-		<button type="button" class="ghost" onclick={() => (ask = '인쇄')} disabled={!registry.perms.export || !shownCount} title={registry.perms.export ? '지금 고른 명단을 인쇄' : '내려받기·출력 권한이 필요합니다'}>인쇄</button>
-		<button type="button" class="ghost xl" onclick={() => (ask = '엑셀')} disabled={!registry.perms.export || !shownCount || busy} title="엑셀(.xlsx)로 내보내기" aria-label="엑셀로 내보내기">
-			<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="18" rx="3" fill="#1D6F42" /><path d="M7.5 7.5l4 4.5-4 4.5M16.5 7.5l-4 4.5 4 4.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-			엑셀
-		</button>
-		<button type="button" class="ghost pdf" onclick={() => (ask = 'PDF 저장')} disabled={!registry.perms.export || !shownCount || busy} title="PDF로 저장" aria-label="PDF로 저장">
-			<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="4" fill="#E2231A" /><path d="M6.2 17.3c1.2-.7 3.6-4.7 5.1-9.4.4-1.3.1-2.3-.5-2.3s-.9 1-.5 2.6c.8 3 3.6 6.8 6.4 7.6 1.6.5 2.2-.2 1.6-.8-.7-.7-3.9-.4-7 .7-3 1.1-5.1 2.7-5.1 1.6z" fill="none" stroke="#fff" stroke-width="1.4" stroke-linejoin="round" /></svg>
-			{busy ? '만드는 중…' : 'PDF'}
-		</button>
+		<ExportButtons onprint={() => (ask = '인쇄')} onexcel={() => (ask = '엑셀')} onpdf={() => (ask = 'PDF 저장')} disabled={!registry.perms.export || !shownCount} {busy} title={registry.perms.export ? '' : '내려받기·출력 권한이 필요합니다'} />
 	</span>
 </div>
 {#if ask}
@@ -163,7 +160,7 @@
 	<span class="hi">● 80% 이상</span> <span class="mid">● 50~79%</span> <span class="lo">● 50% 미만</span> <span class="lead">● 인도자</span>
 	<span>(이름 옆 숫자는 개인 출석률)</span></p>
 {#each shown as c}
-	<h2 style="margin:1.2rem 0 .5rem">{c.community}</h2>
+	<h2 style="margin:1.2rem 0 .5rem">[ {c.community} ]</h2>
 	{#each c.groups as g}
 		<div class="card"><h3 style="margin:0 0 .5rem">{g.name} <span class="muted">({g.xs.length}명)</span> <small class="{band(g.rate)}">평균 출석률 {g.rate}%</small></h3>
 			<div class="names">
@@ -178,8 +175,8 @@
 <div class="print-wrap">
 	<div class="sheet" bind:this={sheet}>
 		<div class="sh-title">
-			<h1>소그룹별 명단</h1>
-			<p>{scope} · {shownCount}명 · {today} 기준</p>
+			<h1>{sheetTitle}</h1>
+			<p>{shownCount}명 · {today} 기준</p>
 		</div>
 		{#each shown as c}
 			{#each c.groups as g}
@@ -222,11 +219,6 @@
 	.nm { display: inline-flex; align-items: baseline; gap: 0.25rem; padding: 0.2rem 0.55rem; border-radius: 8px; font-weight: 600; color: var(--t); background: color-mix(in srgb, var(--c) 12%, #fff); border: 1px solid color-mix(in srgb, var(--c) 40%, #fff); text-decoration: none; }
 	.nm small { font-size: 0.72rem; font-weight: 500; opacity: 0.85; }
 	.out { display: inline-flex; gap: 0.4rem; margin-left: auto; }
-	.xl { display: inline-flex; align-items: center; gap: 0.35rem; color: #1d6f42; border-color: #9fd3b4; }
-	.xl:hover:not(:disabled) { background: #ebf7f0; color: #1d6f42; border-color: #1d6f42; }
-	.xl svg, .pdf svg { width: 18px; height: 18px; }
-	.pdf { display: inline-flex; align-items: center; gap: 0.35rem; color: #c4161c; border-color: #f2b1ae; }
-	.pdf:hover:not(:disabled) { background: #fdecea; color: #c4161c; border-color: #e2231a; }
 
 	/* 출력·PDF용 표: 화면에서는 화면 밖에 둠 (PDF 만들 때 그려져 있어야 해서 display:none 대신) */
 	.print-wrap { position: fixed; left: -10000px; top: 0; width: 174mm; height: 0; overflow: hidden; }
