@@ -394,10 +394,7 @@
 		<a href="/communities/roster">공동체 명단</a>
 		<a href="/attendance">출석</a>
 		<a href="/visits">심방</a>
-		<a href="/new">교인 등록</a>
 		<a href="/households">세대</a>
-		<a href="/reports">명단</a>
 		<a href="/stats">통계</a>
-		<a href="/candidates">확인 목록</a>
 	</div>
 </section>
