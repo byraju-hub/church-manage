@@ -21,6 +21,8 @@
 	let last = Date.now();
 	let menuOpen = $state(false);
 	let userOpen = $state(false);
+	let scrollY = $state(0);
+	const toTop = () => window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 	const me = $derived(registry.me);
 	const unlocked = $derived(!!me && me.status === '사용');
 
@@ -103,6 +105,8 @@
 	const isCard = $derived(path !== '/' && !known.some((p) => path === p || path.startsWith(p + '/')));
 	const showAdmin = $derived(registry.perms.admin || registry.isSuper);
 </script>
+
+<svelte:window bind:scrollY />
 
 {#snippet kakaoIcon()}
 	<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="#191919" d="M12 3C6.48 3 2 6.5 2 10.82c0 2.8 1.88 5.25 4.7 6.63-.15.53-.97 3.4-1 3.62 0 0-.02.17.09.24.11.06.24.01.24.01.31-.04 3.62-2.37 4.19-2.77.58.08 1.17.12 1.78.12 5.52 0 10-3.5 10-7.82C22 6.5 17.52 3 12 3z" /></svg>
@@ -237,6 +241,13 @@
 		</nav>
 	{/if}
 
+	{#if scrollY > 400}
+		<!-- 스크롤을 내리면 오른쪽 아래에 '맨 위로' 버튼 -->
+		<button type="button" class="to-top" onclick={toTop} aria-label="맨 위로" title="맨 위로">
+			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5" /><path d="M5 12l7-7 7 7" /></svg>
+		</button>
+	{/if}
+
 	<footer class="site-footer">
 		<div class="foot">
 			<div>
@@ -249,6 +260,15 @@
 </div>
 
 <style>
+	.to-top {
+		position: fixed; right: 1.2rem; bottom: calc(1.2rem + env(safe-area-inset-bottom)); z-index: 35;
+		display: grid; place-items: center; width: 46px; height: 46px; padding: 0; border-radius: 50%;
+		color: #fff; background: var(--primary); border: 0; box-shadow: var(--shadow-md);
+	}
+	.to-top svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+	@media (max-width: 960px) {
+		.to-top { bottom: calc(4.6rem + env(safe-area-inset-bottom)); right: 0.9rem; width: 42px; height: 42px; }
+	}
 	.kakao { width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1rem; font-size: 0.98rem; font-weight: 700; color: #191919; background: #fee500; border: 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12); }
 	.kakao:hover { background: #fada0a; color: #191919; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16); filter: none; }
 	.kakao-sheet { text-align: left; }

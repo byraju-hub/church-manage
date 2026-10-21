@@ -170,7 +170,7 @@
 	<div>
 		<small>{dateLabel}</small>
 		<h1>부평동부교회 현황</h1>
-		<p>재적 교인 {joined}명 · 이번 주일 오전예배 출석 {latest.n}명({rate}%)</p>
+		<p>재적 교인 {joined}명 · 이번 주일 출석 {latest.n}명({rate}%)</p>
 	</div>
 	<div class="actions">
 		<a class="btn light" href="/members">교인 목록</a>
@@ -188,7 +188,7 @@
 		<span class="ico green">{@render icon('check')}</span>
 		<div>
 			<b>{latest.n}<em class:up={delta > 0} class:down={delta < 0}>{delta === 0 ? '±0' : delta > 0 ? `▲${delta}` : `▼${-delta}`}</em></b>
-			<span>{md(latest.date)} 주일 오전예배 출석 · {rate}%</span>
+			<span>{md(latest.date)} 주일 출석 · {rate}%</span>
 		</div>
 	</a>
 	<a class="kpi" href="/stats?tab=소그룹 출석" title="주일 오후 소그룹 모임 출석 (홈페이지 출석부에서 인도자가 등록)">
@@ -222,7 +222,7 @@
 </div>
 
 <section class="card">
-	<div class="card-head"><h2>캘린더</h2><span class="sub">생일 · 성도 기념일 · 교회 기념일 · 사역 · 성례 · 심방 계획 (색으로 구분 · 항목을 누르면 그것만 보임)</span></div>
+	<div class="card-head"><h2>캘린더</h2><span class="sub">* 색상별로 항목을 구분하고, 항목을 누르면 해당 내용만 표시됩니다.</span></div>
 	<Calendar />
 </section>
 
@@ -230,7 +230,7 @@
 	<section class="card">
 		<div class="card-head">
 			<div>
-				<h2>주일 오전예배 출석 추이</h2>
+				<h2>주일 출석 추이</h2>
 				<span class="sub">최근 8주 · 전체 출석 인원 (출석 명단 {roster.length}명 기준 출석률) · 가상 출석 샘플</span>
 			</div>
 			<div class="seg" role="tablist" aria-label="보기 방식">
@@ -241,7 +241,7 @@
 
 		{#if view === 'chart'}
 			<div class="chart">
-				<svg viewBox="0 0 {W} {H}" role="img" aria-label="최근 8주 주일 오전예배 출석 인원 막대그래프" onmouseleave={() => (hover = null)}>
+				<svg viewBox="0 0 {W} {H}" role="img" aria-label="최근 8주 주일 출석 인원 막대그래프" onmouseleave={() => (hover = null)}>
 					{#each ticks as t}
 						<line x1={L} x2={W - R} y1={yOf(t)} y2={yOf(t)} stroke="#e5e9f2" stroke-width="1" />
 						<text x={L - 8} y={yOf(t) + 4} text-anchor="end" font-size="11" fill="#66718a">{t}</text>
@@ -389,15 +389,15 @@
 <section class="card" style="margin-top:1.1rem">
 	<div class="card-head"><h2>바로 가기</h2></div>
 	<div class="quick">
-		<a href="/members">교인 목록<small>검색 · 필터 · 내려받기</small></a>
-		<a href="/communities">공동체 편성표<small>인도자 · 장소 · 출석</small></a>
-		<a href="/communities/roster">공동체 · 소그룹별 명단<small>올해 소그룹 출석률</small></a>
-		<a href="/attendance">출석<small>주일 오전예배 출석 등록</small></a>
-		<a href="/visits">심방<small>등록 · 검색 · 달력</small></a>
+		<a href="/members">교인 목록</a>
+		<a href="/communities">공동체 편성표</a>
+		<a href="/communities/roster">공동체 명단</a>
+		<a href="/attendance">출석</a>
+		<a href="/visits">심방</a>
 		<a href="/new">교인 등록</a>
-		<a href="/households">세대<small>세대원 · 분가</small></a>
-		<a href="/reports">명단<small>생일 · 직분자 · 교세</small></a>
-		<a href="/stats">통계<small>출석 · 임직 · 세례</small></a>
-		<a href="/candidates">확인 목록<small>중복 · 미등록 확인</small></a>
+		<a href="/households">세대</a>
+		<a href="/reports">명단</a>
+		<a href="/stats">통계</a>
+		<a href="/candidates">확인 목록</a>
 	</div>
 </section>
