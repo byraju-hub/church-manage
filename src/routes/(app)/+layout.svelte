@@ -82,8 +82,7 @@
 		{ href: '/members', label: '교인 목록', hint: '기본 · 복수 · 항목별 검색' },
 		{ href: '/new', label: '교인 등록', hint: '등록 카드 촬영 후 등록 가능' },
 		{ href: '/newcomers', label: '새가족 정착', hint: '등록 → 교육 → 수료 → 소그룹' },
-		{ href: '/households', label: '세대', hint: '세대원 · 분가' },
-		{ href: '/candidates', label: '확인 목록', hint: '중복 · 미등록 확인' }
+		{ href: '/households', label: '세대', hint: '세대원 · 분가' }
 	];
 	const commMenu: Item[] = [
 		{ href: '/communities', label: '공동체 편성표', hint: '인도자 · 모임 장소 · 출석' },
@@ -96,6 +95,7 @@
 	];
 	const adminMenu: Item[] = [
 		{ href: '/admin', label: '회원 · 권한', hint: '가입 승인 · 등급 · 접속기록' },
+		{ href: '/candidates', label: '확인 목록', hint: '중복 · 미등록 확인' },
 		{ href: '/settings', label: '설정', hint: '교인구분 · 소그룹 · 조직표' }
 	];
 	const path = $derived(page.url.pathname);
