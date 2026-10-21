@@ -56,6 +56,18 @@
 	);
 	const committees = $derived(registry.d.orgUnits.filter((o) => !o.parent_id).sort((a, b) => a.sort_order - b.sort_order));
 	const deptsOf = (id: string) => registry.d.orgUnits.filter((o) => o.parent_id === id).sort((a, b) => a.sort_order - b.sort_order);
+	// 조직표: 위원회를 왼쪽·오른쪽 번갈아 두 줄로 쌓음 (빈칸 없이 위로 붙임). 홀수 개면 마지막은 짧은 쪽으로
+	const orgCols = $derived.by(() => {
+		const cols: { c: (typeof committees)[number]; ci: number }[][] = [[], []];
+		const rows = [0, 0];
+		committees.forEach((c, ci) => {
+			const last = ci === committees.length - 1 && ci % 2 === 0;
+			const k = last ? (rows[1] < rows[0] ? 1 : 0) : ci % 2;
+			cols[k].push({ c, ci });
+			rows[k] += deptsOf(c.id).length + 2;
+		});
+		return cols;
+	});
 	const pname = (id: string | null) => (id ? registry.person(id)?.name ?? '' : '');
 	const ready = $derived(!needsPerson || (!!p && (doc !== '세례증명서' || !!baptism)));
 	const fileName = $derived(`${doc}${p && needsPerson ? `-${p.name}` : doc === '생일 명단' ? `-${month}월` : ''}-${now.toISOString().slice(0, 10)}.pdf`);
@@ -236,13 +248,13 @@
 					{#each registry.d.meetings as m (m.meeting)}<tr><td class="c"><b>{m.meeting}</b></td><td class="c">{m.chair}</td><td class="c">{m.secretary}</td></tr>{/each}
 				</tbody></table>
 				<div class="org-cols">
-					{#each committees as c, ci (c.id)}
+					{#each orgCols as col}<div class="org-col">{#each col as { c, ci } (c.id)}
 						<table class="dt list keep">
 							<thead><tr><th colspan="3" class="cm-th">{ci + 1}. {c.name} <span>위원장 {c.leader_id ? `${pname(c.leader_id)} 장로` : ''}</span></th></tr>
 								<tr><th>부서</th><th>부서장</th><th>담당자</th></tr></thead>
 							<tbody>{#each deptsOf(c.id) as d}<tr><td>{d.name}</td><td class="c">{pname(d.leader_id)}</td><td class="c">{d.staff_ids.map(pname).join(', ')}</td></tr>{/each}</tbody>
 						</table>
-					{/each}
+					{/each}</div>{/each}
 				</div>
 
 			{:else if doc === '직분자 명단'}
@@ -278,6 +290,7 @@
 	.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 	.meet-t { margin-bottom: 12px; }
 	.org-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+	.org-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 	.cm-th { background: #2a50c8 !important; color: #fff !important; text-align: left !important; font-size: 10pt !important; }
 	.cm-th span { float: right; font-weight: 500; font-size: 9pt; }
 	.foot-note { margin-top: 14px; font-size: 8.5pt; color: #666; border-top: 1px solid #ccc; padding-top: 6px; }
