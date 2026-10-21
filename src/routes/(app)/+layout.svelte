@@ -22,6 +22,13 @@
 	let menuOpen = $state(false);
 	let userOpen = $state(false);
 	let scrollY = $state(0);
+	// 스크롤을 내리면 상단바가 지금 높이(최소)로 부드럽게 줄어듦. 맨 위에서는 조금 더 크게.
+	// 줄어들 때 페이지 길이가 바뀌어 경계에서 깜빡이지 않도록, 줄이는 점(40px)과 되돌리는 점(8px)을 다르게 둠
+	let compact = $state(false);
+	$effect(() => {
+		if (!compact && scrollY > 40) compact = true;
+		else if (compact && scrollY < 8) compact = false;
+	});
 	const toTop = () => window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 	const me = $derived(registry.me);
 	const unlocked = $derived(!!me && me.status === '사용');
@@ -113,7 +120,7 @@
 {/snippet}
 
 <div class="site">
-	<header class="site-header">
+	<header class="site-header" class:compact>
 		<div class="bar">
 			<a class="brand" href="/">
 				<img class="logo" src="/logo.png" alt="" width="38" height="38" />
