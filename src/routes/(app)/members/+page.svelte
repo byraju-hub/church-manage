@@ -3,9 +3,12 @@
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { ageOf, officeWithKind, officeKindTitle } from '#lib/registry/derive.ts';
-	import { MISSION_SOCIETIES } from '#lib/registry/types.ts';
+	import { MISSION_SOCIETIES, OFFICE_NAMES, rankChoices, type FaithKind, type OfficeName } from '#lib/registry/types.ts';
+	import { categoryPath } from '#lib/registry/derive.ts';
+	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
 	import ExportButtons from '#lib/components/ExportButtons.svelte';
+	import SmsDialog from '#lib/components/SmsDialog.svelte';
 
 	// 검색 방식: 기본(한 줄) / 복수(여러 명을 한꺼번에) / 항목별(칸을 골라서)
 	let mode = $state<'basic' | 'multi' | 'fields'>('basic');
@@ -125,11 +128,64 @@
 		if (!searched || q) registry.log('검색', q || '(조건 필터)');
 		searched = true;
 	}
+
+	// ---- 일괄 수정: 검색 결과에서 체크한 교인을 한꺼번에 (수정 권한이 있을 때만) ----
+	// 문자 보내기: A 등급만 (검색 결과 전체에게. 수신 거부·번호 없음은 창에서 자동 제외)
+	const canSms = $derived(registry.me?.status === '사용' && registry.me?.grade === 'A');
+	let smsOpen = $state(false);
+	// 평소에는 접혀 있고, 검색창 옆 '일괄 수정' 버튼을 누르면 펼쳐짐 (체크칸도 그때만 보임)
+	let bulkOpen = $state(false);
+	// 일괄 수정은 최고관리자만
+	const bulkOn = $derived(bulkOpen && registry.isSuper);
+	let checked = $state<Set<string>>(new Set());
+	const checkedRows = $derived(rows.filter(({ p }) => checked.has(p.id)));
+	const allChecked = $derived(rows.length > 0 && checkedRows.length === rows.length);
+	function toggle(id: string) { const n = new Set(checked); if (n.has(id)) n.delete(id); else n.add(id); checked = n; bMsg = ''; }
+	function toggleAll() { checked = allChecked ? new Set() : new Set(rows.map(({ p }) => p.id)); bMsg = ''; }
+	let bk = $state<'category' | 'faith' | 'office' | 'group'>('category');
+	// 교인구분: 1 → 2 → 3단계 (고른 데까지 적용)
+	let bc1 = $state(''), bc2 = $state(''), bc3 = $state('');
+	const bCat = $derived(bc3 || bc2 || bc1);
+	let bFaith = $state<FaithKind>('세례');
+	let bOffice = $state<OfficeName>('서리집사');
+	let bRank = $state('서리');
+	$effect(() => { bRank = rankChoices(bOffice)[0]; });
+	let bDate = $state(new Date().toISOString().slice(0, 10));
+	let bEndOld = $state(true);
+	let bComm = $state('');
+	let bGroup = $state('');
+	let bMsg = $state('');
+	const bLabel = $derived(
+		bk === 'category' ? `교인구분을 '${categoryPath(registry.d.categories, bCat || null).map((c) => c.name).join(' › ')}'(으)로`
+		: bk === 'faith' ? `신급 '${bFaith}' 기록(${bDate || '날짜 미상'})을 추가`
+		: bk === 'office' ? `직분을 '${bOffice} · ${bRank}'(${bDate || '날짜 미상'})(으)로${bEndOld ? ' 바꾸고 지금 직분은 마침 처리' : ' 추가'}`
+		: bComm && bGroup ? `소그룹을 '${bComm} › ${bGroup}'(으)로` : '공동체·소그룹 소속을 없앰'
+	);
+	const bReady = $derived(checkedRows.length > 0 && (bk !== 'category' || !!bCat) && (bk !== 'group' || !bComm || !!bGroup));
+	function applyBulk() {
+		if (!bReady) return;
+		if (!confirm(`선택한 ${checkedRows.length}명의 ${bLabel} 바꿉니다.\n각 교인의 변경 이력에 남습니다. 계속할까요?`)) return;
+		const ids = checkedRows.map(({ p }) => p.id);
+		const n = registry.bulkEdit(ids, bk === 'category' ? { kind: 'category', category_id: bCat }
+			: bk === 'faith' ? { kind: 'faith', faith: bFaith, date: bDate || null }
+			: bk === 'office' ? { kind: 'office', office: bOffice, rank: bRank, date: bDate || null, endOld: bEndOld }
+			: { kind: 'group', community: bGroup ? bComm : '', small_group: bGroup });
+		bMsg = `${n}명을 바꿨습니다.${ids.length - n ? ` (이미 같은 값인 ${ids.length - n}명은 그대로)` : ''}`;
+		checked = new Set();
+	}
 </script>
 
 <div class="row" style="justify-content:space-between">
 	<h1>교인 목록 <small class="muted">({rows.length}명)</small></h1>
-	{#if registry.perms.edit}<a class="btn" href="/new">+ 교인 등록</a>{/if}
+	<div class="row" style="gap:.5rem">
+		{#if canSms}
+			<button type="button" class="sms-btn" onclick={() => (smsOpen = true)} disabled={!rows.length} title="검색 결과 {rows.length}명에게 문자 보내기">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16a1.5 1.5 0 011.5 1.5v9a1.5 1.5 0 01-1.5 1.5H10l-4.5 3.5V17.5H4A1.5 1.5 0 012.5 16V7A1.5 1.5 0 014 5.5z" /><circle cx="8" cy="11.5" r="1.1" /><circle cx="12" cy="11.5" r="1.1" /><circle cx="16" cy="11.5" r="1.1" /></svg>
+				문자 보내기<span class="cnt">{rows.length}</span>
+			</button>
+		{/if}
+		{#if registry.perms.edit}<a class="btn" href="/new">+ 교인 등록</a>{/if}
+	</div>
 </div>
 
 <div class="card">
@@ -139,6 +195,7 @@
 			<button type="button" class:on={mode === 'multi'} onclick={() => (mode = 'multi')}>복수 검색</button>
 			<button type="button" class:on={mode === 'fields'} onclick={() => (mode = 'fields')}>항목별 검색</button>
 		</div>
+		{#if registry.isSuper}<span style="flex:1"></span><button type="button" class="ghost sm" class:on-bulk={bulkOpen} onclick={() => { bulkOpen = !bulkOpen; if (!bulkOpen) { checked = new Set(); bMsg = ''; } }} aria-expanded={bulkOpen}>{bulkOpen ? '일괄 수정 닫기' : '일괄 수정'}</button>{/if}
 	</div>
 	<div class="toolbar">
 		{#if mode === 'multi'}
@@ -174,13 +231,56 @@
 	</div>
 </div>
 
+{#if bulkOn}
+	<!-- 일괄 수정: 목록에서 체크한 교인만 -->
+	<div class="card bulk" class:active={checkedRows.length > 0}>
+		<div class="bulk-top">
+			<b>일괄 수정</b>
+			<span class="muted">{checkedRows.length ? `${checkedRows.length}명 선택됨` : '아래 목록에서 교인을 체크하세요 (맨 위 체크는 검색 결과 전체)'}</span>
+			{#if checkedRows.length}<button type="button" class="ghost sm" onclick={() => (checked = new Set())}>선택 해제</button>{/if}
+			<span style="flex:1"></span><button type="button" class="ghost sm" onclick={() => { bulkOpen = false; checked = new Set(); bMsg = ''; }}>닫기</button>
+		</div>
+		<div class="toolbar" style="margin:.6rem 0 0">
+			<div class="seg" role="tablist" aria-label="일괄 수정 항목">
+				<button type="button" class:on={bk === 'category'} onclick={() => (bk = 'category')}>교인구분</button>
+				<button type="button" class:on={bk === 'faith'} onclick={() => (bk = 'faith')}>신급</button>
+				<button type="button" class:on={bk === 'office'} onclick={() => (bk = 'office')}>직분</button>
+				<button type="button" class:on={bk === 'group'} onclick={() => (bk = 'group')}>공동체·소그룹</button>
+			</div>
+		</div>
+		<div class="toolbar" style="margin:.6rem 0 0">
+			{#if bk === 'category'}
+				<select bind:value={bc1} onchange={() => { bc2 = ''; bc3 = ''; }} aria-label="1단계"><option value="">1단계 선택</option>{#each registry.childrenOf(null) as c}<option value={c.id}>{c.name}</option>{/each}</select>
+				{#if bc1 && registry.childrenOf(bc1).length}<select bind:value={bc2} onchange={() => (bc3 = '')} aria-label="2단계"><option value="">2단계 선택</option>{#each registry.childrenOf(bc1) as c}<option value={c.id}>{c.name}</option>{/each}</select>{/if}
+				{#if bc2 && registry.childrenOf(bc2).length}<select bind:value={bc3} aria-label="3단계"><option value="">3단계 선택</option>{#each registry.childrenOf(bc2) as c}<option value={c.id}>{c.name}</option>{/each}</select>{/if}
+			{:else if bk === 'faith'}
+				<select bind:value={bFaith} aria-label="신급">{#each ['학습', '세례', '유아세례', '입교'] as f}<option>{f}</option>{/each}</select>
+				<span class="muted">받은 날</span><input type="date" bind:value={bDate} />
+				<span class="muted" style="font-size:.8rem">같은 기록이 이미 있는 교인은 건너뜁니다.</span>
+			{:else if bk === 'office'}
+				<select bind:value={bOffice} aria-label="직분">{#each OFFICE_NAMES as o}<option>{o}</option>{/each}</select>
+				<select bind:value={bRank} aria-label="구분">{#each rankChoices(bOffice) as r}<option>{r}</option>{/each}</select>
+				<span class="muted">임직(시작)일</span><input type="date" bind:value={bDate} />
+				<label class="row" style="gap:.3rem"><input type="checkbox" bind:checked={bEndOld} />지금 직분은 마침 처리</label>
+			{:else}
+				<select bind:value={bComm} onchange={() => (bGroup = '')} aria-label="공동체"><option value="">소속 없음 (빼기)</option>{#each COMMUNITY_DEFS as c}<option>{c.name}</option>{/each}</select>
+				{#if bComm}<select bind:value={bGroup} aria-label="소그룹"><option value="">소그룹 선택</option>{#each registry.groupsIn(bComm) as g}<option>{g.name}</option>{/each}</select>{/if}
+			{/if}
+			<span style="flex:1"></span>
+			<button type="button" onclick={applyBulk} disabled={!bReady}>선택한 {checkedRows.length}명에 적용</button>
+		</div>
+		{#if bMsg}<p class="ok" style="margin:.6rem 0 0">{bMsg}</p>{/if}
+	</div>
+{/if}
+
 <div class="split">
 	<div class="card list-pane" style="padding:0">
 		<table>
-			<thead><tr><th>이름</th><th>직분</th><th>상태</th><th>교인구분</th><th>소그룹</th></tr></thead>
+			<thead><tr>{#if bulkOn}<th class="ck"><input type="checkbox" checked={allChecked} indeterminate={checkedRows.length > 0 && !allChecked} onchange={toggleAll} aria-label="검색 결과 전체 선택" title="검색 결과 {rows.length}명 전체 선택" /></th>{/if}<th>이름</th><th>직분</th><th>상태</th><th>교인구분</th><th>소그룹</th></tr></thead>
 			<tbody>
 				{#each rows.slice(0, shown) as { p, s } (p.id)}
-					<tr class="pick" class:on={selId === p.id} tabindex="0" onclick={() => (selId = p.id)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selId = p.id; } }}>
+					<tr class="pick" class:on={selId === p.id} class:checked={checked.has(p.id)} tabindex="0" onclick={() => (selId = p.id)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selId = p.id; } }}>
+						{#if bulkOn}<td class="ck" onclick={(e) => e.stopPropagation()}><input type="checkbox" checked={checked.has(p.id)} onchange={() => toggle(p.id)} aria-label="{p.name} 선택" /></td>{/if}
 						<td><b>{p.name}</b>{#if p.name_note}<span class="muted"> ({p.name_note})</span>{/if}</td>
 						<td>{s.office ? officeKindTitle(s.office, p.clergy_title) : '-'}</td>
 						<!-- 상태: 교인구분 3단계(예배출석·가끔출석·불출석·장기결석자). 1단계만 있는 구분(미등록/타교인·별세 등)은 '-' -->
@@ -189,7 +289,7 @@
 						<td>{s.smallGroup || '-'}</td>
 					</tr>
 				{:else}
-					<tr><td colspan="5" class="muted">조건에 맞는 교인이 없습니다.</td></tr>
+					<tr><td colspan="6" class="muted">조건에 맞는 교인이 없습니다.</td></tr>
 				{/each}
 			</tbody>
 		</table>
@@ -264,3 +364,22 @@
 {:else}
 	<p class="muted">내려받기 권한이 꺼져 있습니다. (최고관리자에게 내려받기·출력 권한을 받아야 합니다)</p>
 {/if}
+
+{#if smsOpen}<SmsDialog people={rows.map(({ p }) => p)} onclose={() => (smsOpen = false)} />{/if}
+
+<style>
+	/* 일괄 수정 상자: 선택한 교인이 있으면 파란 테두리로 강조 */
+	.bulk { border: 1px dashed var(--line); }
+	.bulk.active { border: 1.5px solid var(--primary); background: var(--primary-50); }
+	.bulk-top { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
+	th.ck, td.ck { width: 2.2rem; text-align: center; padding-left: 0.6rem; padding-right: 0.2rem; }
+	td.ck input, th.ck input { width: auto; cursor: pointer; }
+	tr.checked td { background: var(--primary-50); }
+	/* 문자 보내기 버튼: 초록 → 하늘색, 말풍선 아이콘과 인원 */
+	.sms-btn { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.62rem 1rem; border: 0; border-radius: 12px; color: #fff; font-weight: 700; background: linear-gradient(135deg, #22c55e, #0ea5e9); box-shadow: 0 6px 16px rgba(14, 165, 233, 0.28); }
+	.sms-btn:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(14, 165, 233, 0.35); }
+	.sms-btn svg { width: 20px; height: 20px; fill: #fff; }
+	.sms-btn svg circle { fill: #10b3c9; }
+	.sms-btn .cnt { padding: 0.05rem 0.5rem; border-radius: 999px; background: rgba(255, 255, 255, 0.25); font-size: 0.78rem; }
+	.on-bulk { background: var(--primary-50); border-color: var(--primary); color: var(--primary-600); }
+</style>

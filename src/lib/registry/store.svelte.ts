@@ -12,10 +12,27 @@ import type * as T from './types.ts';
 import { categoryPath, currentFaith, currentOffice, currentStatus, officeTitle, registeredOn } from './derive.ts';
 import { wasPresent, wasPresentGroup, sampleOthers } from './attendance.mock.ts';
 import { isoDate, type CalItem } from './calendar.ts';
-import { MAX_CATEGORY_DEPTH } from './types.ts';
+import { MAX_CATEGORY_DEPTH, parseRank } from './types.ts';
 import { fixCat } from './config.ts';
 
 const KEY = 'church-registry-proto-v16';
+
+// 문자 자주 쓰는 문구. [ ] 안은 보낼 때 고쳐 쓰는 자리, {이름}·{직분} 은 받는 사람마다 바뀜
+export interface SmsTemplate { id: string; title: string; body: string }
+const DEFAULT_SMS_TEMPLATES: SmsTemplate[] = [
+	{ id: 'sms-funeral', title: '장례 안내', body: '■ 부고 ■ 부평동부교회 [직분] [이름] 님께서 [날짜]에 소천하셨습니다.\n빈소: [장례식장] [호실]\n발인: [날짜] [시간]\n장지: [장지]\n유족들에게 주님의 위로가 함께하시길 기도해 주시기 바랍니다.' },
+	{ id: 'sms-wedding', title: '결혼 안내', body: '■ 결혼 안내 ■ [직분] [이름] 님의 자녀 [신랑/신부 이름]의 결혼예배가 있습니다.\n일시: [날짜] [시간]\n장소: [예식장]\n많은 축복과 기도 부탁드립니다. - 부평동부교회' },
+	{ id: 'sms-worship', title: '주일 예배 안내', body: '{이름} {직분}님, 이번 주일([날짜])은 [예배 내용]입니다. 함께 예배드려요. - 부평동부교회' },
+	{ id: 'sms-birthday', title: '생일 축하', body: '{이름} {직분}님, 생일을 축하드립니다! 주님의 은혜와 평안이 늘 함께하시길 기도합니다. - 부평동부교회' },
+	{ id: 'sms-visit', title: '심방 안내', body: '{이름} {직분}님, [날짜] [시간]에 [교역자] 목사님이 심방하려고 합니다. 괜찮으신지 회신 부탁드립니다. - 부평동부교회' }
+];
+
+// 교인 목록 일괄 수정 종류
+export type BulkOp =
+	| { kind: 'category'; category_id: string }
+	| { kind: 'faith'; faith: T.FaithKind; date: string | null }
+	| { kind: 'office'; office: T.OfficeName; rank: string; date: string | null; endOld: boolean }
+	| { kind: 'group'; community: string; small_group: string };
 const USER_KEY = 'reg-user';
 const hasLS = typeof localStorage !== 'undefined';
 
@@ -46,6 +63,7 @@ interface Data {
 	attendance: Record<string, Record<string, T.AttendanceMark>>; // 1) 주일 오전예배 출석: 주일 날짜 → 사람 id
 	worshipTotals?: Record<string, number>; // 1) 주일 오전예배 전체 출석 인원 (주일 날짜 → 인원). 명단 체크와 따로 입력
 	groupAttendance?: Record<string, Record<string, T.AttendanceMark>>; // 2) 주일 오후 소그룹 모임 출석 (홈페이지 출석부에서 가져옴)
+	smsTemplates?: SmsTemplate[]; // 문자 보내기의 자주 쓰는 문구 (모든 A 등급이 함께 씀)
 	users: T.AppUser[];
 	grades: T.GradeDef[];
 }
@@ -485,6 +503,65 @@ class Registry {
 		this.d.officeTerms.push({ ...e, id: uid() });
 		this.change(e.person_id, '직분 이력', `${e.office} ${e.rank_status} ${e.start_date ?? '(날짜 미상)'}${e.church ? ` · ${e.church}` : ''}`);
 		this.log('수정', this.person(e.person_id)?.name ?? '');
+	}
+	// ---- 일괄 수정: 교인 목록에서 고른 여러 사람을 한 번에 ----
+	// 사람마다 변경 이력은 그대로 남기고, 저장과 접속기록은 한 번만. 바뀐 사람 수를 돌려줌
+	bulkEdit(ids: string[], op: BulkOp): number {
+		if (!this.isSuper) return 0; // 일괄 수정은 최고관리자만 ([실제 시스템] 서버에서도 같은 확인)
+		const today = new Date().toISOString().slice(0, 10);
+		let n = 0;
+		for (const id of ids) {
+			const p = this.person(id);
+			if (!p) continue;
+			if (op.kind === 'category') {
+				if (p.category_id === op.category_id) continue;
+				this.d.changeLog.unshift({ id: uid(), person_id: id, at: now(), by: this.who, field: '교인구분(일괄)', before: this.catLabel(p.category_id), after: this.catLabel(op.category_id) });
+				p.category_id = op.category_id;
+			} else if (op.kind === 'faith') {
+				// 같은 신급 기록이 이미 있으면 건너뜀
+				if (this.d.faithEvents.some((e) => e.person_id === id && e.kind === op.faith)) continue;
+				this.d.faithEvents.push({ id: uid(), person_id: id, kind: op.faith, event_date: op.date, church: null, officiant: null, note: null });
+				this.change(id, '신급 이력(일괄)', `${op.faith} ${op.date ?? '(날짜 미상)'}`);
+			} else if (op.kind === 'office') {
+				const { rank_status, clergy } = parseRank(op.rank);
+				const live = this.d.officeTerms.filter((t) => t.person_id === id && !t.end_date);
+				if (live.some((t) => t.office === op.office && t.rank_status === rank_status)) continue;
+				// 지금 직분은 새 직분 시작일(없으면 오늘)로 마침 처리
+				if (op.endOld) for (const t of live) t.end_date = op.date ?? today;
+				this.d.officeTerms.push({ id: uid(), person_id: id, office: op.office, rank_status, start_date: op.date, end_date: null, church: null, note: null });
+				if (op.office === '목사' || op.office === '전도사') p.clergy_title = clergy;
+				this.change(id, '직분 이력(일괄)', `${op.office} ${clergy ?? rank_status} ${op.date ?? '(날짜 미상)'}`);
+			} else {
+				const cur = this.groupOf(id);
+				if ((cur?.community ?? '') === op.community && (cur?.small_group ?? '') === op.small_group) continue;
+				const before = cur ? `${cur.community} › ${cur.small_group}` : null;
+				if (!op.community || !op.small_group) this.d.personGroups = this.d.personGroups.filter((g) => g.person_id !== id);
+				else if (cur) { cur.community = op.community; cur.small_group = op.small_group; }
+				else this.d.personGroups.push({ person_id: id, community: op.community, small_group: op.small_group });
+				this.d.changeLog.unshift({ id: uid(), person_id: id, at: now(), by: this.who, field: '소그룹(일괄)', before, after: op.community && op.small_group ? `${op.community} › ${op.small_group}` : null });
+			}
+			n++;
+		}
+		const what = op.kind === 'category' ? `교인구분 → ${this.catLabel(op.category_id)}` : op.kind === 'faith' ? `신급 → ${op.faith}` : op.kind === 'office' ? `직분 → ${op.office} ${op.rank}` : `소그룹 → ${op.small_group ? `${op.community} › ${op.small_group}` : '소속 없음'}`;
+		this.log('일괄 수정', `${what} · ${n}명 (선택 ${ids.length}명)`);
+		return n;
+	}
+	// ---- 문자 자주 쓰는 문구 ----
+	get smsTemplates(): SmsTemplate[] { return this.d.smsTemplates ?? DEFAULT_SMS_TEMPLATES; }
+	saveSmsTemplate(t: { id?: string; title: string; body: string }): string {
+		const list = [...this.smsTemplates];
+		const title = t.title.trim() || '이름 없는 문구';
+		const i = t.id ? list.findIndex((x) => x.id === t.id) : -1;
+		const id = i >= 0 ? list[i].id : uid();
+		if (i >= 0) list[i] = { id, title, body: t.body };
+		else list.push({ id, title, body: t.body });
+		this.d.smsTemplates = list;
+		this.save();
+		return id;
+	}
+	deleteSmsTemplate(id: string) {
+		this.d.smsTemplates = this.smsTemplates.filter((x) => x.id !== id);
+		this.save();
 	}
 	addNote(person_id: string, body: string) {
 		this.d.notes.unshift({ id: uid(), person_id, body, author: this.who, created_at: today() });
