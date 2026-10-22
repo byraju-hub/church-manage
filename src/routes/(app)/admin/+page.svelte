@@ -1,20 +1,20 @@
 <script lang="ts">
-	// 관리자 › 회원 · 권한: 카카오 가입 승인, 등급(A·B·C) 지정·설정, 접속기록
+	// 관리자 › 사용자 설정: 카카오 가입 승인, 등급(A·B·C) 지정·설정, 접속기록
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
 	import { GRADES, type Grade, type Perms } from '#lib/registry/types.ts';
 
 	// 회원 · 권한: 카카오로 가입한 회원을 최고관리자가 승인하고 등급(A 전임 교역자 · B 교적 관리 · C 열람)을 정합니다.
 	// [실제 시스템] app_users 표의 status·grade·is_super 를 바꾸는 일은 서버 함수에서 최고관리자인지 다시 확인한 뒤 처리합니다.
-	const tabs = ['회원 목록', '가입 신청', '등급 설정', '접속기록'];
-	let tab = $state('회원 목록');
+	const tabs = ['사용자 목록', '가입 신청', '등급 설정', '접속 기록'];
+	let tab = $state('사용자 목록');
 	const pending = $derived(registry.d.users.filter((u) => u.status === '승인 대기'));
 	const active = $derived(registry.d.users.filter((u) => u.status !== '승인 대기'));
 	const PERMS: { key: keyof Perms; label: string; hint: string }[] = [
 		{ key: 'edit', label: '수정', hint: '교적 등록·수정, 출석 등록, 새가족 정착 처리' },
 		{ key: 'export', label: '내려받기·출력', hint: '목록 내려받기, 교적부·증명서·요람 출력(PDF)' },
 		{ key: 'visit', label: '심방', hint: `A 등급만 (바꿀 수 없음): 심방 메뉴(목록·등록·녹음 분석·${registry.t2} 특이사항), 교적 카드의 심방·디모데 메모, 대시보드 최근 심방` },
-		{ key: 'admin', label: '사이트 관리자', hint: `관리자 › 설정 (기본 설정·교인구분·${registry.t2}·조직표)` }
+		{ key: 'admin', label: '사이트 관리자', hint: '관리자 › 교회 설정 · 프로그램 설정' }
 	];
 	const nameOf = (id: string | null) => (id ? registry.person(id)?.name ?? '' : '');
 	let approveGrade = $state<Record<string, Grade>>({});
@@ -25,7 +25,7 @@
 	const count = (g: Grade) => registry.d.users.filter((u) => u.status === '사용' && u.grade === g && !u.is_super).length;
 </script>
 
-<h1>회원 · 권한 <span class="tag">관리자</span></h1>
+<h1>사용자 설정 <span class="tag">관리자</span></h1>
 <p class="muted" style="margin-top:-.6rem">교적 관리는 <b>카카오로 회원가입</b>한 뒤 <b>최고관리자</b>가 승인하고 <b>등급</b>을 정해 준 사람만 씁니다. 등급마다 할 수 있는 일은 '등급 설정'에서 정합니다.</p>
 
 {#if !registry.isSuper}
@@ -36,7 +36,7 @@
 	{#each tabs as t}<button class:on={tab === t} onclick={() => (tab = t)}>{t}{t === '가입 신청' && pending.length ? ` (${pending.length})` : ''}</button>{/each}
 </div>
 
-{#if tab === '회원 목록'}
+{#if tab === '사용자 목록'}
 	<div class="kpis" style="margin-bottom:1rem">
 		{#each GRADES as g}<div class="kpi"><div><b>{count(g)}</b><span>{registry.gradeDef(g)?.name}</span></div></div>{/each}
 		<div class="kpi"><div><b>{registry.d.users.filter((u) => u.is_super).length}</b><span>최고관리자</span></div></div>
@@ -89,7 +89,7 @@
 				{/if}
 			</div>
 		{:else}<p class="empty">가입 신청이 없습니다.</p>{/each}
-		<p class="muted" style="font-size:.82rem">교인이 아니거나 누구인지 확인되지 않는 신청은 거절하세요. 승인할 때 등급을 고르고, 나중에 회원 목록에서 바꿀 수 있습니다.</p>
+		<p class="muted" style="font-size:.82rem">교인이 아니거나 누구인지 확인되지 않는 신청은 거절하세요. 승인할 때 등급을 고르고, 나중에 사용자 목록에서 바꿀 수 있습니다.</p>
 	</div>
 {:else if tab === '등급 설정'}
 	<div class="card" style="padding:0;overflow-x:auto">

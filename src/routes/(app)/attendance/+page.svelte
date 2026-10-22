@@ -42,6 +42,14 @@
 			.forEach((x, i) => out.push({ ...x, group: '미지정', community: '-', first: i === 0 }));
 		return out;
 	});
+	// 검색: 이름·직분·소그룹·공동체 (띄어 쓴 낱말은 모두 들어간 사람만). 출석 합계는 검색과 관계없이 전체 명단 기준
+	let q = $state('');
+	const shownRows = $derived.by(() => {
+		const words = q.trim().split(/\s+/).filter(Boolean);
+		if (!words.length) return rows;
+		const hit = rows.filter((r) => { const hay = `${r.p.name} ${r.s.title} ${r.group} ${r.community}`; return words.every((w) => hay.includes(w)); });
+		return hit.map((r, i) => ({ ...r, first: i === 0 || hit[i - 1].group !== r.group }));
+	});
 	const isPresent = (pid: string) => registry.attended(pid, date, weeksFromEnd);
 	const sumPresent = $derived(rows.filter((r) => isPresent(r.p.id)).length);
 
@@ -102,6 +110,11 @@
 		{/each}
 		<span class="muted" style="font-size:.8rem">체크한 교인만 명단에 나옵니다.</span>
 	</div>
+	<div class="att-search">
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+		<input type="search" bind:value={q} placeholder="이름 · 직분 · {registry.t2} · {registry.t1} 검색 (예: 김 권사, 만나)" aria-label="출석 명단 검색" />
+		{#if q.trim()}<span class="muted" style="font-size:.85rem;white-space:nowrap">검색 결과 <b>{shownRows.length}</b>명</span>{/if}
+	</div>
 </div>
 
 <div class="card" style="padding:0;overflow-x:auto">
@@ -109,7 +122,7 @@
 		<colgroup><col style="width:4.2rem" /><col style="width:16%" /><col style="width:13%" /><col style="width:14%" /><col style="width:13%" /><col /></colgroup>
 		<thead><tr><th>출석</th><th>이름</th><th>직분</th><th>{registry.t2}</th><th>{registry.t1}</th><th>특이사항</th></tr></thead>
 		<tbody>
-			{#each rows as r (r.p.id)}
+			{#each shownRows as r (r.p.id)}
 				{@const ok = isPresent(r.p.id)}
 				<tr class:on={ok} class:first={r.first} id={r.first ? `g-${r.group}` : undefined}>
 					<td><label class="switch"><input type="checkbox" checked={ok} disabled={!registry.perms.edit} onchange={(e) => mark(r.p.id, e.currentTarget.checked)} aria-label="{r.p.name} 출석" /><i></i></label></td>
@@ -140,6 +153,8 @@
 	.warn-sm { color: var(--orange-600); font-size: 0.82rem; }
 	/* 교인구분 3단계 체크 (날짜 줄 아래 한 줄) */
 	.cats { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.6rem; padding-top: 0.7rem; border-top: 1px solid var(--line); }
+	.att-search { flex-basis: 100%; display: flex; align-items: center; gap: 0.5rem; padding-top: 0.7rem; border-top: 1px solid var(--line); color: var(--muted); }
+	.att-search input { flex: 1; max-width: 32rem; }
 	.cats-h { font-size: 0.88rem; font-weight: 600; }
 	.cat-ck { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.75rem; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
 	.cat-ck.on { border-color: var(--teal-600); background: var(--teal-50); color: var(--teal-600); }

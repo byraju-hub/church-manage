@@ -87,10 +87,10 @@
 		{ href: '/members', label: '교인 목록', hint: '기본 · 복수 · 항목별 검색' },
 		{ href: '/new', label: '교인 등록', hint: '등록 카드 촬영 후 등록 가능' },
 		{ href: '/newcomers', label: '새가족 정착', hint: `등록 → 교육 → 수료 → ${registry.t2}` },
-		{ href: '/households', label: '세대 목록', hint: '세대원 · 분가' }
+		{ href: '/households', label: '세대 목록', hint: '세대 구성 & 분리' }
 	]);
 	const commMenu: Item[] = $derived([
-		{ href: '/communities', label: `${registry.t1} 편성표`, hint: '인도자 · 모임 장소 · 출석' },
+		{ href: '/communities', label: `${registry.t1} 편성표`, hint: `${registry.t2} · 모임 장소 · 출석 · 특이사항` },
 		{ href: '/communities/roster', label: `${registry.t2}별 명단`, hint: `각 ${registry.t2} 명단 · 개인 출석률` }
 	]);
 	const statMenu: Item[] = $derived([
@@ -98,12 +98,17 @@
 		{ href: '/reports', label: '명단', hint: '생일 · 직분자 · 세례 대상자' },
 		{ href: '/documents', label: '문서 출력', hint: '교적부 · 증명서 · 요람 · PDF' }
 	]);
-	const adminMenu: Item[] = $derived([
-		{ href: '/admin', label: '회원 · 권한', hint: '가입 승인 · 등급 · 접속기록' },
-		{ href: '/candidates', label: '확인 목록', hint: '중복 · 미등록 확인' },
-		{ href: '/settings', label: '설정', hint: `기본 설정 · 교인구분 · ${registry.t2} · 조직표` }
-	]);
+	// 관리자 메뉴를 누르면 첫 항목(교회 설정 › 기본 설정)으로
 	const path = $derived(page.url.pathname);
+	const PROGRAM_TABS =['교인구분', '코드표', '확인 목록', '백업'];
+	const adminMenu: Item[] = $derived([
+		{ href: '/settings', label: '교회 설정', hint: `기본 설정 · 연간 설정 · 조직표 · ${registry.t2} 편성` },
+		{ href: '/admin', label: '사용자 설정', hint: '사용자 목록 · 가입 신청 · 등급 · 접속 기록' },
+		{ href: `/settings?tab=${encodeURIComponent('교인구분')}`, label: '프로그램 설정', hint: '교인구분 · 코드표 · 확인 목록 · 백업' }
+	]);
+	// 교회 설정과 프로그램 설정은 같은 화면(/settings)이라 탭으로 어느 쪽인지 가림
+	const isProgram = $derived(path === '/settings' && PROGRAM_TABS.includes(page.url.searchParams.get('tab') ?? ''));
+	const menuOn = (m: Item) => (m.href.startsWith('/settings?') ? isProgram : m.href === '/settings' ? path === '/settings' && !isProgram : path === m.href);
 	const inMenu = (items: Item[]) => items.some((i) => path === i.href || path.startsWith(i.href + '/'));
 	// 교적 카드(/p10 같은 주소)는 '교적'에 속한 화면으로 봄
 	const known = ['/', '/members', '/new', '/newcomers', '/households', '/candidates', '/communities', '/attendance', '/visits', '/orgs', '/stats', '/reports', '/documents', '/admin', '/settings'];
@@ -142,7 +147,7 @@
 							</a>
 							<div class="dd-menu">
 								{#each items as m}
-									<a href={m.href} class:active={path === m.href}><b>{m.label}</b>{#if m.hint}<small>{m.hint}</small>{/if}</a>
+									<a href={m.href} class:active={menuOn(m)}><b>{m.label}</b>{#if m.hint}<small>{m.hint}</small>{/if}</a>
 								{/each}
 							</div>
 						</div>
@@ -153,7 +158,7 @@
 					{#if registry.perms.visit}<a href="/visits" class:active={path.startsWith('/visits')}>심방</a>{/if}
 					<a href="/orgs" class:active={path.startsWith('/orgs')}>조직</a>
 					{@render dd('통계', statMenu, inMenu(statMenu))}
-					{#if showAdmin}{@render dd('관리자', adminMenu, inMenu(adminMenu))}{/if}
+					{#if showAdmin}{@render dd('관리자', adminMenu, path === '/settings' || path === '/admin' || path === '/candidates')}{/if}
 
 					<div class="nav-tools">
 						<div class="perm">
@@ -164,7 +169,7 @@
 							{#if userOpen}
 								<div class="perm-panel">
 									<b>{me?.name}</b> <span class="tag">{me ? roleOf(me) : ''}</span>
-									<p class="muted">카카오 로그인 · 등급은 최고관리자가 '관리자 › 회원 · 권한'에서 정합니다.</p>
+									<p class="muted">카카오 로그인 · 등급은 최고관리자가 '관리자 › 사용자 설정'에서 정합니다.</p>
 									<hr />
 									<b style="font-size:.85rem">다른 회원으로 보기 (시험용)</b>
 									<p class="muted">등급마다 보이는 화면이 어떻게 다른지 확인할 수 있습니다.</p>

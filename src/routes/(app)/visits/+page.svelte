@@ -12,7 +12,7 @@
 	import { FULL_TIME_CLERGY, type VisitMethod } from '#lib/registry/types.ts';
 
 	const today = new Date().toISOString().slice(0, 10);
-	let tab = $state<'list' | 'cal' | 'notes' | 'new'>('list');
+	let tab = $state<'list' | 'cal' | 'notes' | 'new'>('cal');
 	let q = $state(page.url.searchParams.get('q') ?? '');
 	let kind = $state('');
 	let pastor = $state('');
@@ -104,8 +104,8 @@
 	<div class="warn">심방 메뉴는 A 등급(전임 교역자)만 볼 수 있습니다.</div>
 {:else}
 	<div class="tabs">
-		<button class:on={tab === 'list'} onclick={() => (tab = 'list')}>심방 목록</button>
 		<button class:on={tab === 'cal'} onclick={() => (tab = 'cal')}>캘린더 보기</button>
+		<button class:on={tab === 'list'} onclick={() => (tab = 'list')}>심방 목록</button>
 		<button class:on={tab === 'notes'} onclick={() => (tab = 'notes')}>{registry.t2} 특이사항</button>
 	</div>
 

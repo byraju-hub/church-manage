@@ -1,5 +1,10 @@
 <script lang="ts">
-	// 관리자 › 설정: 기본 설정(교회 정보·로고·직인·증명서 양식) · 교인구분 · 소그룹 편성 · 교회 조직표 · 연간 설정 · 코드표 · 백업
+	// 관리자 › 교회 설정(기본 설정 · 연간 설정 · 교회 조직표 · 소그룹 편성)
+	//        › 프로그램 설정(교인구분 · 코드표 · 확인 목록 · 백업)
+	// 같은 화면에서 주소의 ?tab= 으로 탭을 고르고, 탭이 속한 묶음의 탭만 보여 줌
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
+	import CandidatesPanel from '#lib/components/CandidatesPanel.svelte';
 	import YearSettingsPanel from '#lib/components/YearSettingsPanel.svelte';
 	import BasicSettingsPanel from '#lib/components/BasicSettingsPanel.svelte';
 	import BackupPanel from '#lib/components/BackupPanel.svelte';
@@ -9,9 +14,17 @@
 	import NameChips from '#lib/components/NameChips.svelte';
 	import { MAX_CATEGORY_DEPTH, OFFICE_STATUS_OPTIONS, rankChoices, rankLabel, type OfficeName } from '#lib/registry/types.ts';
 
-	const tabs = ['기본 설정', '연간 설정', '교회 조직표', '소그룹 편성', '교인구분', '코드표', '백업'];
+	const GROUPS = [
+		{ title: '교회 설정', tabs: ['기본 설정', '연간 설정', '교회 조직표', '소그룹 편성'] },
+		{ title: '프로그램 설정', tabs: ['교인구분', '코드표', '확인 목록', '백업'] }
+	];
+	const tab = $derived(GROUPS.some((g) => g.tabs.includes(page.url.searchParams.get('tab') ?? '')) ? page.url.searchParams.get('tab')! : '기본 설정');
+	const group = $derived(GROUPS.find((g) => g.tabs.includes(tab))!);
+	function setTab(t: string) {
+		msg = '';
+		goto(`/settings?tab=${encodeURIComponent(t)}`, { replaceState: true, reset: false });
+	}
 	let newComm = $state('');
-	let tab = $state('기본 설정');
 	let msg = $state('');
 	let addFor = $state<string | null>(null);
 	let addName = $state('');
@@ -54,11 +67,11 @@
 	const committees = $derived(registry.d.orgUnits.filter((o) => !o.parent_id).sort((a, b) => a.sort_order - b.sort_order));
 </script>
 
-<h1>설정 <span class="tag">사이트 관리자</span></h1>
+<h1>{group.title} <span class="tag">사이트 관리자</span></h1>
 {#if !registry.perms.admin}
 	<div class="warn">사이트 관리자 권한이 필요합니다. (최고관리자에게 사이트 관리자 권한을 받아야 합니다)</div>
 {:else}
-	<div class="tabs">{#each tabs as t}<button class:on={tab === t} onclick={() => { tab = t; msg = ''; }}>{registry.tr(t)}</button>{/each}</div>
+	<div class="tabs">{#each group.tabs as t}<button class:on={tab === t} onclick={() => setTab(t)}>{registry.tr(t)}</button>{/each}</div>
 	{#if msg}<div class="warn">{msg}</div>{/if}
 
 	{#if tab === '교인구분'}
@@ -180,6 +193,8 @@
 		</div>
 	{:else if tab === '기본 설정'}
 		<BasicSettingsPanel />
+	{:else if tab === '확인 목록'}
+		<CandidatesPanel />
 	{:else if tab === '백업'}
 		<BackupPanel />
 	{:else if tab === '연간 설정'}
