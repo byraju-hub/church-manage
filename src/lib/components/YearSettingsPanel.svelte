@@ -77,7 +77,7 @@
 
 <section class="card">
 	<div class="card-head"><h2>공동체별 출생 연도</h2><span class="sub">비워 두면 '이전' / '이후'로 끝이 없습니다</span></div>
-	<table class="sm ys-t">
+	<div class="tw"><table class="sm ys-t">
 		<thead><tr><th>공동체</th><th>출생 연도 (부터)</th><th>(까지)</th><th>표시</th></tr></thead>
 		<tbody>
 			{#each Object.keys(s.communities) as k}
@@ -88,7 +88,7 @@
 					<td><span class="tag">{bornText(r)}</span></td></tr>
 			{/each}
 		</tbody>
-	</table>
+	</table></div>
 	<p class="chk-line">{#if commMis.length}<button type="button" class="linkish" onclick={() => (showComm = !showComm)}>기준과 맞지 않는 공동체 소속 {commMis.length}명 {showComm ? '접기' : '보기'}</button>{:else}<span class="muted">모든 공동체 소속이 기준에 맞습니다.</span>{/if}</p>
 	{#if showComm && commMis.length}<p class="mis">{#each commMis as { p, s: x }, i}{i ? ', ' : ''}<a href="/{p.id}">{p.name}</a> <small class="muted">({p.birth_date?.slice(0, 4)} · {x.community.replace(' 공동체', '')})</small>{/each}</p>{/if}
 </section>
@@ -97,7 +97,7 @@
 	<div class="card-head"><h2>전도회별 출생 연도</h2><span class="sub">남전도회 {males.length}개 · 여전도회 {females.length}개</span></div>
 	<div class="soc-grid">
 		{#each [males, females] as list}
-			<table class="sm ys-t">
+			<div class="tw"><table class="sm ys-t">
 				<thead><tr><th>전도회</th><th>부터</th><th>까지</th><th>표시</th></tr></thead>
 				<tbody>
 					{#each list as k}
@@ -108,7 +108,7 @@
 							<td class="muted" style="font-size:.8rem">{bornText(r)}</td></tr>
 					{/each}
 				</tbody>
-			</table>
+			</table></div>
 		{/each}
 	</div>
 	<p class="chk-line">{#if socMis.length}<button type="button" class="linkish" onclick={() => (showSoc = !showSoc)}>기준과 맞지 않는 전도회 소속 {socMis.length}명 {showSoc ? '접기' : '보기'}</button>{:else}<span class="muted">모든 전도회 소속이 기준에 맞습니다.</span>{/if}</p>
@@ -118,7 +118,7 @@
 <section class="card">
 	<div class="card-head"><h2>교육부서 학년 기준 · 부서 이동</h2><span class="sub">학년은 '올해 - 출생 연도'로 셉니다 (7 = 초1, 13 = 중1, 16 = 고1)</span></div>
 	<div class="row" style="margin-bottom:.6rem"><span class="muted">진급(부서 이동) 날짜</span><input type="date" bind:value={s.promoteDate} style="width:auto" /></div>
-	<table class="sm ys-t">
+	<div class="tw"><table class="sm ys-t">
 		<thead><tr><th>부서</th><th>시작 학년</th><th>끝 학년</th><th>{year}년 출생 연도</th></tr></thead>
 		<tbody>
 			{#each s.edu as e}
@@ -128,7 +128,7 @@
 					<td class="muted" style="font-size:.82rem">{year - e.to < 1900 || e.dept === '장년' ? `${year - e.from}년 이전` : `${year - e.to}~${year - e.from}년`}</td></tr>
 			{/each}
 		</tbody>
-	</table>
+	</table></div>
 	<div class="move-box">
 		<div class="row" style="justify-content:space-between">
 			<b>이 기준으로 부서를 옮겨야 할 교인 {moves.length}명</b>
@@ -138,14 +138,14 @@
 			</div>
 		</div>
 		{#if showMove && moves.length}
-			<table class="sm" style="margin-top:.5rem">
+			<div class="tw"><table class="sm" style="margin-top:.5rem">
 				<thead><tr><th>이름</th><th>생년월일</th><th>학년</th><th>지금</th><th></th><th>옮길 부서</th></tr></thead>
 				<tbody>
 					{#each moves.slice(0, 60) as m (m.p.id)}
 						<tr><td><a href="/{m.p.id}">{m.p.name}</a></td><td>{m.p.birth_date}</td><td>{gradeLabel(year - +m.p.birth_date!.slice(0, 4))}</td><td>{m.from}</td><td>→</td><td><b>{m.to}</b></td></tr>
 					{/each}
 				</tbody>
-			</table>
+			</table></div>
 			{#if moves.length > 60}<p class="muted" style="font-size:.8rem">외 {moves.length - 60}명</p>{/if}
 		{/if}
 		<p class="muted" style="font-size:.8rem;margin:.5rem 0 0">진급 날짜가 되면 한 번 눌러 주세요. 교인구분 2단계(예: 유초등부 → 중고등부)와 교육부서가 함께 바뀌고, 출석 상태(예배출석·가끔출석 등)는 그대로 둡니다. 청년부 기준을 넘으면 장년으로 옮깁니다.</p>
@@ -164,7 +164,11 @@
 <div class="row" style="justify-content:flex-end;margin-bottom:1rem"><button type="button" onclick={save} disabled={!canEdit}>{year}년 설정 저장</button></div>
 
 <style>
+	/* 휴대폰에서 표가 넘치면 옆으로 밀어서 봄 */
+	.tw { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+	.tw table { min-width: 520px; }
 	.ys-t input, .ys-t select { width: 7.5rem; padding: 0.3rem 0.5rem; }
+	@media (max-width: 720px) { .ys-t input, .ys-t select { width: 6rem; } .ys-t th, .ys-t td { white-space: nowrap; } }
 	.ys-t select { padding-right: 1.9rem; }
 	.soc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
 	@media (max-width: 900px) { .soc-grid { grid-template-columns: 1fr; } }
