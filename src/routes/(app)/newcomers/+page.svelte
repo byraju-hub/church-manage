@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { registry } from '#lib/registry/store.svelte.ts';
-	import { ageOf } from '#lib/registry/derive.ts';
+	import { ageOf, ageText } from '#lib/registry/derive.ts';
 	import { COMMUNITY_DEFS, fixCat } from '#lib/registry/config.ts';
 	import type { Person } from '#lib/registry/types.ts';
 
@@ -93,7 +93,7 @@
 						<a href="/{x.p.id}"><b>{x.p.name}</b></a>
 						<span class="dday" class:today={x.days > 60 && st !== '정착 완료'}>{x.days}일째</span>
 					</div>
-					<small class="muted">등록 {x.reg} · 만 {ageOf(x.p.birth_date) ?? '-'}세{guide(x.p) ? ` · 인도 ${guide(x.p)}` : ''}</small>
+					<small class="muted">등록 {x.reg} · {ageText(x.p.birth_date)}{guide(x.p) ? ` · 인도 ${guide(x.p)}` : ''}</small>
 					{#if s.smallGroup}<small class="muted">{s.community} › {s.smallGroup}</small>{/if}
 					{#if registry.perms.edit}
 						{#if st === '등록'}<button class="ghost sm" onclick={() => startEdu(x.p)}>새가족 교육 시작</button>

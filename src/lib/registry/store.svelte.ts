@@ -14,8 +14,10 @@ import { wasPresent, wasPresentGroup, sampleOthers } from './attendance.mock.ts'
 import { isoDate, koreanHolidays, type CalItem } from './calendar.ts';
 import { extractCareEvents, type CareEvent } from './care-events.ts';
 import { MAX_CATEGORY_DEPTH, parseRank } from './types.ts';
-import { fixCat } from './config.ts';
 import { groupOpinions } from './generate.ts';
+import { defaultSettings, eduDeptFor, inRange, type YearSettings } from './year-settings.ts';
+import { ageCfg } from './age-mode.svelte.ts';
+import { catId, fixCat, type L2Code } from './config.ts';
 
 const KEY = 'church-registry-proto-v16';
 
@@ -67,6 +69,7 @@ interface Data {
 	groupAttendance?: Record<string, Record<string, T.AttendanceMark>>; // 2) 주일 오후 소그룹 모임 출석 (홈페이지 출석부에서 가져옴)
 	smsTemplates?: SmsTemplate[]; // 문자 보내기의 자주 쓰는 문구 (모든 A 등급이 함께 씀)
 	certRequests?: T.CertRequest[]; // 홈페이지에서 들어온 증명서 신청 (관리자 승인 후 직인 발급)
+	yearSettings?: Record<string, YearSettings>; // 연간 설정 (연도 → 설정)
 	users: T.AppUser[];
 	grades: T.GradeDef[];
 }
@@ -162,6 +165,10 @@ class Registry {
 	d = $state<Data>(load());
 	userId = $state<string>(loadUser());
 	saveError = $state('');
+	constructor() {
+		// 올해 연간 설정의 나이 계산 방식을 화면 전체에 적용
+		ageCfg.mode = this.settingsFor(new Date().getFullYear()).ageMode;
+	}
 
 	private save() {
 		if (!hasLS) return;
@@ -188,6 +195,52 @@ class Registry {
 	}
 	get perms(): T.Perms { return this.permsOf(this.me); }
 	get isSuper(): boolean { return !!this.me?.is_super && this.me.status === '사용'; }
+
+	// ---- 연간 설정 ----
+	// 저장된 연도 설정이 없으면 기본값(2026년 기준을 그 해에 맞춘 값)
+	settingsFor(year: number): YearSettings { return this.d.yearSettings?.[year] ?? defaultSettings(year); }
+	get ys(): YearSettings { return this.settingsFor(new Date().getFullYear()); }
+	saveYearSettings(s: YearSettings) {
+		if (!this.isSuper && !this.perms.admin) return;
+		this.d.yearSettings = { ...(this.d.yearSettings ?? {}), [s.year]: structuredClone($state.snapshot(s)) as YearSettings };
+		if (s.year === new Date().getFullYear()) ageCfg.mode = s.ageMode;
+		this.log('설정', `${s.year}년 연간 설정 저장`);
+	}
+	// 공동체·전도회 기준(출생 연도)과 맞지 않는 교인
+	communityMismatch(s = this.ys) {
+		return this.d.people.map((p) => ({ p, s: this.summary(p) })).filter(({ p, s: x }) => {
+			const r = x.community && s.communities[x.community];
+			return !!r && !!p.birth_date && !inRange(+p.birth_date.slice(0, 4), r) && x.memberCert;
+		});
+	}
+	societyMismatch(s = this.ys) {
+		return this.d.people.filter((p) => {
+			const r = p.mission_society && s.societies[p.mission_society];
+			return !!r && !!p.birth_date && !inRange(+p.birth_date.slice(0, 4), r) && this.summary(p).memberCert;
+		});
+	}
+	// 교육부서 이동(진급) 대상: 교인 › (교육부서·청년부) 중 학교 나이 기준과 지금 부서가 다른 사람
+	eduMoves(s = this.ys) {
+		const EDU = ['영아부', '유치부', '유초등부', '중고등부', '청년부'];
+		return this.d.people.map((p) => ({ p, s: this.summary(p) }))
+			.filter(({ p, s: x }) => x.memberCert && x.cat1 === '교인' && EDU.includes(x.cat2) && !!p.birth_date)
+			.map(({ p, s: x }) => ({ p, from: x.cat2, to: eduDeptFor(+p.birth_date!.slice(0, 4), s) }))
+			.filter((m) => m.to && m.to !== m.from) as { p: T.Person; from: string; to: string }[];
+	}
+	applyEduMoves(list: { p: T.Person; to: string }[]) {
+		if (!this.isSuper && !this.perms.admin) return 0;
+		const CODE: Record<string, L2Code> = { 장년: 'a', 청년부: 'y', 중고등부: 'h', 유초등부: 'e', 유치부: 'k', 영아부: 'b' };
+		let n = 0;
+		for (const { p, to } of list) {
+			const l3 = (p.category_id?.split('.')[2] ?? 'a') as 'a' | 's' | 'n' | 'l';
+			const code = CODE[to];
+			if (!code) continue;
+			this.updatePerson(p.id, { category_id: catId('m', code, l3), edu_dept: to === '장년' ? null : (to as T.EduDept) });
+			n++;
+		}
+		this.log('설정', `교육부서 이동 ${n}명`);
+		return n;
+	}
 
 	// ---- 홈페이지 증명서 신청 ----
 	// [실제 시스템] 홈페이지(교인 로그인)에서 신청하면 cert_requests 표에 '대기'로 들어오고,

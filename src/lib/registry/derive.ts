@@ -3,6 +3,7 @@ import type {
 	Category, FaithEvent, FaithKind, OfficeName, OfficeStatus, OfficeTerm, Person, StatusEvent, StatusKind
 } from './types.ts';
 import { OFFICE_NAMES } from './types.ts';
+import { ageCfg } from './age-mode.svelte.ts';
 
 export interface CurrentStatus {
 	status: StatusKind | null;
@@ -101,12 +102,21 @@ export function categoryPath(cats: Category[], id: string | null): Category[] {
 	return out;
 }
 
+// 나이 계산 방식은 '관리자 › 설정 › 연간 설정'에서 정함 (만 나이 · 한국 나이 · 연 나이). 화면 전체가 이 값을 따름
 export function ageOf(birth: string | null, today = new Date()): number | null {
 	if (!birth) return null;
 	const [y, m, d] = birth.split('-').map(Number);
+	if (ageCfg.mode === '연 나이') return today.getFullYear() - y;
+	if (ageCfg.mode === '한국 나이') return today.getFullYear() - y + 1;
 	let age = today.getFullYear() - y;
 	if (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && today.getDate() < d)) age--;
 	return age;
+}
+// 화면에 쓰는 나이 글: 만 나이면 '만 70세', 그 밖에는 '71세'
+export function ageText(birth: string | null): string {
+	const a = ageOf(birth);
+	if (a === null) return '-';
+	return ageCfg.mode === '만 나이' ? `만 ${a}세` : `${a}세`;
 }
 
 export function fullAddress(p: Person, household?: { address: string | null } | null): string {

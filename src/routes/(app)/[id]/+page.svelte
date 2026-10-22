@@ -6,7 +6,7 @@
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
 	import VisitAnalyzer, { type Analysis } from '#lib/components/VisitAnalyzer.svelte';
 	import CarePreview from '#lib/components/CarePreview.svelte';
-	import { ageOf, officeWithKind } from '#lib/registry/derive.ts';
+	import { ageOf, ageText, officeWithKind } from '#lib/registry/derive.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import {
 		STATUS_KINDS, FAITH_KINDS, POSITIONS, ORDAINED, parseRank, rankChoices, rankLabel, CONSENT_KINDS, VISIT_KINDS, FULL_TIME_CLERGY,
@@ -142,7 +142,7 @@
 					<tbody>
 						<tr><th>교인구분</th><td>{s.category || '-'}</td><th>교번</th><td>{v(p.reg_no)}</td></tr>
 						<tr><th>이름</th><td>{p.name}{p.name_note ? ` (${p.name_note})` : ''}</td><th>성별</th><td>{p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : '-'}</td></tr>
-						<tr><th>생년월일</th><td>{v(p.birth_date)} ({p.birth_lunar ? '음력' : '양력'}) · 만 {ageOf(p.birth_date) ?? '-'}세</td><th>앱 가입</th><td>{p.has_account ? '가입' : '미가입'}</td></tr>
+						<tr><th>생년월일</th><td>{v(p.birth_date)} ({p.birth_lunar ? '음력' : '양력'}) · {ageText(p.birth_date)}</td><th>앱 가입</th><td>{p.has_account ? '가입' : '미가입'}</td></tr>
 						<tr><th>휴대폰</th><td>{v(p.phone)}{p.sms_opt_out ? ' (문자 수신 거부)' : ''}</td><th>집전화</th><td>{v(hh?.home_phone)}</td></tr>
 						<tr><th>주소</th><td colspan="3">{[p.address_zip, p.address1, p.address2].filter(Boolean).join(' ') || (hh?.address ? `${hh.address} (세대 주소)` : '-')}</td></tr>
 						<tr><th>소그룹</th><td>{s.community ? `${s.community} › ${s.smallGroup}` : '-'}</td><th>전도회</th><td>{v(p.mission_society)}</td></tr>

@@ -3,7 +3,7 @@
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
 	import ExportButtons from '#lib/components/ExportButtons.svelte';
-	import { ageOf, fullAddress, officeTitle } from '#lib/registry/derive.ts';
+	import { ageOf, ageText, fullAddress, officeTitle } from '#lib/registry/derive.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import { withPdfStyle } from '#lib/pdf-style.ts';
 
@@ -211,7 +211,7 @@
 							<td rowspan="5" class="photo-cell">{#if p.photo}<img src={p.photo} alt="" />{:else}<span>사진</span>{/if}</td>
 							<th>이름</th><td>{p.name}{p.name_note ? ` (${p.name_note})` : ''}</td><th>교번</th><td>{v(p.reg_no)}</td>
 						</tr>
-						<tr><th>생년월일</th><td>{ymd(p.birth_date)} ({p.birth_lunar ? '음력' : '양력'}) · 만 {ageOf(p.birth_date) ?? ''}세</td><th>성별</th><td>{p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : ''}</td></tr>
+						<tr><th>생년월일</th><td>{ymd(p.birth_date)} ({p.birth_lunar ? '음력' : '양력'}) · {ageText(p.birth_date)}</td><th>성별</th><td>{p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : ''}</td></tr>
 						<tr><th>휴대폰</th><td>{v(p.phone)}</td><th>집전화</th><td>{v(hh?.home_phone)}</td></tr>
 						<tr><th>주소</th><td colspan="3">{fullAddress(p, hh)}</td></tr>
 						<tr><th>직업 / 직장</th><td>{[p.occupation, p.workplace].filter(Boolean).join(' / ')}</td><th>결혼</th><td>{v(p.marital_status)}{p.wedding_date ? ` · ${ymd(p.wedding_date)}` : ''}</td></tr>

@@ -1,12 +1,13 @@
 <script lang="ts">
 	// 관리자 › 설정: 교인구분 · 소그룹 편성 · 교회 조직표(회의 의장·서기 포함) · 코드표
+	import YearSettingsPanel from '#lib/components/YearSettingsPanel.svelte';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
 	import NameChips from '#lib/components/NameChips.svelte';
 	import { CLERGY_TITLES, FULL_TIME_CLERGY, MAX_CATEGORY_DEPTH, MISSION_SOCIETIES, OFFICE_STATUS_OPTIONS, VISIT_KINDS, rankChoices, rankLabel, type OfficeName } from '#lib/registry/types.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 
-	const tabs = ['교인구분', '소그룹 편성', '교회 조직표', '코드표'];
+	const tabs = ['교인구분', '소그룹 편성', '교회 조직표', '연간 설정', '코드표'];
 	let tab = $state('교인구분');
 	let msg = $state('');
 	let addFor = $state<string | null>(null);
@@ -158,6 +159,8 @@
 				</tbody>
 			</table>
 		</div>
+	{:else if tab === '연간 설정'}
+		<YearSettingsPanel />
 	{:else if tab === '교회 조직표'}
 		<div class="card">
 			<h2>회의 의장 · 서기</h2>
@@ -224,7 +227,7 @@
 			<section class="card">
 				<h2>교역자 직책</h2>
 				<p>{CLERGY_TITLES.join(' · ')}</p>
-				<p class="muted">심방 기록을 볼 수 있는 전임 교역자: <b style="color:var(--text)">{FULL_TIME_CLERGY.join(' · ')}</b> (교육전도사 제외)</p>
+				<p class="muted">심방 기록을 볼 수 있는 전임 교역자: <b style="color:var(--text)">{FULL_TIME_CLERGY.join(' · ')}</b></p>
 				<h2 style="margin-top:1.2rem">전도회</h2>
 				<p class="muted" style="margin:0">{MISSION_SOCIETIES.join(' · ')}</p>
 				<h2 style="margin-top:1.2rem">심방 구분 <span class="tag part">디모데 목록 기준</span></h2>

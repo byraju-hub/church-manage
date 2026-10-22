@@ -1,7 +1,7 @@
 <script lang="ts">
 	// 대시보드 통합 검색창: 교인·소그룹·세대·심방·메모·조직을 한 번에 찾음
 	import { registry } from '#lib/registry/store.svelte.ts';
-	import { ageOf } from '#lib/registry/derive.ts';
+	import { ageText } from '#lib/registry/derive.ts';
 
 	let q = $state('');
 	let focused = $state(false);
@@ -33,7 +33,7 @@
 					<a class="gs-row" href="/{p.id}">
 						<span class="avatar">{p.name.slice(0, 1)}</span>
 						<span class="grow"><b>{p.name}{p.name_note ? ` (${p.name_note})` : ''} {s.title}</b>
-							<small>{s.category || s.status} · {s.smallGroup ? `${s.community} ${s.smallGroup}` : '소그룹 없음'} · {p.phone ?? '전화 없음'} · 만 {ageOf(p.birth_date) ?? '-'}세</small></span>
+							<small>{s.category || s.status} · {s.smallGroup ? `${s.community} ${s.smallGroup}` : '소그룹 없음'} · {p.phone ?? '전화 없음'} · {ageText(p.birth_date)}</small></span>
 					</a>
 				{/each}
 				{#if r.total > r.people.length}<a class="gs-more" href="/members?q={encodeURIComponent(q)}">교인 {r.total}명 모두 보기 →</a>{/if}

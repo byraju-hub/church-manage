@@ -72,7 +72,10 @@
 	// (재적 상태가 아니라 교인구분 3단계를 기준으로 함. 불출석으로 분류된 사람은 이미 아는 경우라 뺌)
 	// [실제 시스템] 출석부의 주일 출석 기록에서 마지막 출석일을 구해 같은 규칙으로 고릅니다.
 	const LONG = recentSundays(26, today); // 최근 반년 주일
-	const twoMonthsAgo = (() => { const d = new Date(t0); d.setMonth(d.getMonth() - 2); return d; })();
+	// 장기 결석 기준(주)과 새가족 기간(일)은 '관리자 › 설정 › 연간 설정'에서 정함
+	const absentWeeks = $derived(registry.ys.absentWeeks);
+	const newcomerDays = $derived(registry.ys.newcomerDays);
+	const twoMonthsAgo = $derived.by(() => { const d = new Date(t0); d.setDate(d.getDate() - absentWeeks * 7); return d; });
 	const absent = $derived(
 		rows
 			.filter(({ s }) => s.cat1 === '교인' && (s.cat3 === '예배출석' || s.cat3 === '가끔출석'))
@@ -133,7 +136,7 @@
 	// ---- 새가족 (등록 60일 이내) ----
 	const newcomers = $derived(
 		rows
-			.filter(({ s }) => s.registered && s.status === '재적' && (+t0 - +new Date(s.registered)) / 864e5 <= 60 && (+t0 - +new Date(s.registered)) >= 0)
+			.filter(({ s }) => s.registered && s.status === '재적' && (+t0 - +new Date(s.registered)) / 864e5 <= newcomerDays && (+t0 - +new Date(s.registered)) >= 0)
 			.sort((a, b) => (b.s.registered ?? '').localeCompare(a.s.registered ?? ''))
 	);
 
@@ -180,6 +183,7 @@
 		<small>{dateLabel}</small>
 		<h1>부평동부교회 현황</h1>
 		<p>재적 교인 {joined}명 · 이번 주일 출석 {latest.n}명({rate}%)</p>
+		{#if registry.ys.motto}<p class="motto">{registry.ys.year} 표어 · {registry.ys.motto}{registry.ys.verse ? ` (${registry.ys.verse})` : ''}</p>{/if}
 	</div>
 	<div class="actions">
 		<a class="btn light" href="/members">교인 목록</a>
@@ -220,7 +224,7 @@
 	{/if}
 	<a class="kpi" href="#absent">
 		<span class="ico rose">{@render icon('alert')}</span>
-		<div><b>{absent.length}</b><span>장기 결석자 (2달 이상)</span></div>
+		<div><b>{absent.length}</b><span>장기 결석자 ({absentWeeks}주 이상)</span></div>
 	</a>
 	<a class="kpi" href="/documents?doc=생일 명단">
 		<span class="ico amber">{@render icon('gift')}</span>
@@ -337,7 +341,7 @@
 	</section>
 
 	<section class="card" id="absent">
-		<div class="card-head"><h2>{@render hIcon('bell')}장기 결석 알림</h2><span class="sub">예배출석·가끔출석 교인 중 2달 이상 결석 · {absent.length}명</span></div>
+		<div class="card-head"><h2>{@render hIcon('bell')}장기 결석 알림</h2><span class="sub">예배출석·가끔출석 교인 중 {absentWeeks}주 이상 결석 · {absent.length}명</span></div>
 		<div style="max-height:430px;overflow:auto;padding-right:.45rem">
 		{#each absent as a (a.p.id)}
 			<div class="li">
@@ -361,7 +365,7 @@
 
 <div class="dash-grid even" style={registry.perms.visit ? undefined : 'grid-template-columns:1fr'}>
 	<section class="card">
-		<div class="card-head"><h2>{@render hIcon('user-plus')}새가족</h2><span class="sub">등록 후 60일 이내 · {newcomers.length}명</span></div>
+		<div class="card-head"><h2>{@render hIcon('user-plus')}새가족</h2><span class="sub">등록 후 {newcomerDays}일 이내 · {newcomers.length}명</span></div>
 		<div style="max-height:430px;overflow:auto;padding-right:.45rem">
 		{#each newcomers as { p, s } (p.id)}
 			<div class="li">
@@ -373,7 +377,7 @@
 				<span class="dday">{s.faith}</span>
 			</div>
 		{:else}
-			<p class="empty">최근 60일 안에 등록한 새가족이 없습니다.</p>
+			<p class="empty">최근 {newcomerDays}일 안에 등록한 새가족이 없습니다.</p>
 		{/each}
 		</div>
 		<p style="margin:.7rem 0 0"><a href="/newcomers">새가족 정착 현황 보기 →</a></p>

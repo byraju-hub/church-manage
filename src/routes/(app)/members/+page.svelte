@@ -2,7 +2,7 @@
 	// 교인 목록: 검색(기본·복수·항목별)과 필터, 왼쪽 목록 · 오른쪽 상세, 내려받기
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
-	import { ageOf, officeWithKind, officeKindTitle } from '#lib/registry/derive.ts';
+	import { ageOf, ageText, officeWithKind, officeKindTitle } from '#lib/registry/derive.ts';
 	import { MISSION_SOCIETIES } from '#lib/registry/types.ts';
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
 	import ExportButtons from '#lib/components/ExportButtons.svelte';
@@ -255,7 +255,7 @@
 			</div>
 			<dl class="compact">
 				<dt>교인구분</dt><dd>{s.category || '-'}</dd>
-				<dt>생년월일</dt><dd>{p.birth_date ?? '-'}{p.birth_lunar ? ' (음력)' : ''} · 만 {ageOf(p.birth_date) ?? '-'}세 · {p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : '-'}</dd>
+				<dt>생년월일</dt><dd>{p.birth_date ?? '-'}{p.birth_lunar ? ' (음력)' : ''} · {ageText(p.birth_date)} · {p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : '-'}</dd>
 				<dt>휴대폰</dt><dd>{p.phone ?? '-'}{p.sms_opt_out ? ' (문자 수신 거부)' : ''}</dd>
 				<dt>집전화</dt><dd>{hh?.home_phone ?? '-'}</dd>
 				<dt>주소</dt><dd>{[p.address1, p.address2].filter(Boolean).join(' ') || hh?.address || '-'}</dd>

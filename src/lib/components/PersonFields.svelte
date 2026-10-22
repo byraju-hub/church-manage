@@ -5,7 +5,7 @@
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
 	import HeadRelation from '#lib/components/HeadRelation.svelte';
 	import PhotoCropper from '#lib/components/PhotoCropper.svelte';
-	import { ageOf, categoryPath, formatMobile } from '#lib/registry/derive.ts';
+	import { ageOf, ageText, categoryPath, formatMobile } from '#lib/registry/derive.ts';
 	import { EDU_DEPTS, MARITAL_STATUSES, MISSION_SOCIETIES, NAME_NOTES } from '#lib/registry/types.ts';
 
 	// f: 교인 카드의 칸들(빈 칸은 빈 문자열). 등록 화면과 카드 수정 화면이 함께 씀
@@ -74,7 +74,7 @@
 		{/if}
 		<label><span class="lt">생년월일<b class="req">*</b></span><input type="date" required bind:value={f.birth_date} /></label>
 		<label>양력 / 음력<select bind:value={f.birth_lunar}><option value={false}>양력</option><option value={true}>음력</option></select></label>
-		<label><span class="lt">나이 <small class="hint">(자동)</small></span><input value={age === null ? '' : `만 ${age}세`} readonly tabindex="-1" /></label>
+		<label><span class="lt">나이 <small class="hint">(자동)</small></span><input value={age === null ? '' : ageText(f.birth_date)} readonly tabindex="-1" /></label>
 		<label><span class="lt">성별<b class="req">*</b></span><select required bind:value={f.gender}><option value="">선택</option><option value="M">남</option><option value="F">여</option></select></label>
 		<label>
 			<span class="row" style="justify-content:space-between;flex-wrap:nowrap"><span>휴대폰<b class="req">*</b></span>
