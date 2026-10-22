@@ -101,9 +101,10 @@
 		생년월일: (p) => p.birth_date ?? '', 나이: (p) => String(ageOf(p.birth_date) ?? ''), 휴대폰: (p) => p.phone ?? '',
 		주소: (p) => [p.address1, p.address2].filter(Boolean).join(' ') || registry.householdOf(p.id)?.address || '',
 		직분: (_, s) => s.title, 상태: (_, s) => s.status, 교인구분: (_, s) => s.category, 전도회: (p) => p.mission_society ?? '', 신급: (_, s) => s.faith, 공동체: (_, s) => s.community,
-		소그룹: (_, s) => s.smallGroup, 등록일: (_, s) => s.registered ?? ''
+		소그룹: (_, s) => s.smallGroup, 등록일: (_, s) => s.registered ?? '', 차량번호: (p) => p.car_number ?? ''
 	};
-	let picked = $state<string[]>(['이름', '휴대폰', '직분', '상태', '신급']);
+	// 처음에는 모든 칸을 골라 둠
+	let picked = $state<string[]>(Object.keys(COLS));
 
 	// 고른 순서가 아니라 위 칸 순서대로, 제목 줄 굵게·회색, 모든 칸 가운데 정렬·테두리
 	let xlBusy = $state(false);
@@ -117,7 +118,7 @@
 				cols.map((c) => ({ value: c, fontWeight: 'bold' as const, backgroundColor: '#E9ECEF', ...st })),
 				...rows.map(({ p, s }) => cols.map((c) => ({ value: COLS[c](p, s), ...st })))
 			];
-			const W: Record<string, number> = { 이름: 10, 동명이인구분: 8, 성별: 6, 생년월일: 12, 나이: 6, 휴대폰: 15, 주소: 40, 직분: 10, 상태: 8, 교인구분: 24, 전도회: 10, 신급: 8, 공동체: 12, 소그룹: 12, 등록일: 12 };
+			const W: Record<string, number> = { 이름: 10, 동명이인구분: 8, 성별: 6, 생년월일: 12, 나이: 6, 휴대폰: 15, 주소: 40, 직분: 10, 상태: 8, 교인구분: 24, 전도회: 10, 신급: 8, 공동체: 12, 소그룹: 12, 등록일: 12, 차량번호: 12 };
 			await writeXlsxFile(data, { sheet: '교인 목록', columns: cols.map((c) => ({ width: W[c] ?? 12 })), stickyRowsCount: 1 }).toFile(`교인목록-${new Date().toISOString().slice(0, 10)}.xlsx`);
 			registry.log('내려받기', `${rows.length}명 · ${cols.join('/')}`);
 		} finally {
