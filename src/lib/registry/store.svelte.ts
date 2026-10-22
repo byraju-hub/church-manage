@@ -338,20 +338,28 @@ class Registry {
 	}
 
 	// ---- 검색 (대시보드 검색창: 무엇이든) ----
-	search(q: string) {
+	// 교인 한 사람에 대해 '무엇이든' 찾을 글 (대시보드 통합 검색 · 교인 목록 기본 검색이 함께 씀)
+	personHay(p: T.Person): string {
+		const s = this.summary(p);
+		const hh = this.householdOf(p.id);
+		return [p.name, p.name_note, p.phone, p.address1, p.address2, hh?.address, hh?.no, p.occupation, p.workplace, p.car_number, p.note, p.previous_church, p.reg_no, p.email, s.title, s.status, s.faith,
+			s.community, s.smallGroup, s.category, p.mission_society, p.edu_dept, p.clergy_title, p.guide_name, p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : ''].filter(Boolean).join(' ').toLowerCase();
+	}
+	// 낱말을 띄어 쓰면 모두 들어 있는 사람만 (숫자 3자리 이상은 전화·차량 번호처럼 숫자만 비교)
+	matcher(q: string): ((hay: string) => boolean) | null {
 		const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+		if (!terms.length) return null;
 		const digits = (s: string) => s.replace(/\D/g, '');
+		return (hay: string) => terms.every((t) => hay.includes(t) || (digits(t).length >= 3 && digits(hay).includes(digits(t))));
+	}
+	search(q: string) {
 		const empty = { people: [] as T.Person[], groups: [] as T.SmallGroup[], households: [] as T.Household[], visits: [] as T.Visit[], notes: [] as { p: T.Person; body: string; kind: string }[], orgs: [] as T.OrgUnit[], total: 0 };
-		if (!terms.length) return empty;
-		const hit = (hay: string) => terms.every((t) => hay.includes(t) || (digits(t).length >= 3 && digits(hay).includes(digits(t))));
+		const hit = this.matcher(q);
+		if (!hit) return empty;
 		const people: T.Person[] = [];
 		let total = 0;
 		for (const p of this.d.people) {
-			const s = this.summary(p);
-			const hh = this.householdOf(p.id);
-			const hay = [p.name, p.name_note, p.phone, p.address1, p.address2, hh?.address, p.occupation, p.workplace, p.car_number, p.note, p.previous_church, p.reg_no, p.email, s.title, s.status, s.faith,
-				s.community, s.smallGroup, s.category, p.mission_society, p.edu_dept, p.clergy_title, p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : ''].filter(Boolean).join(' ').toLowerCase();
-			if (hit(hay)) { total++; if (people.length < 8) people.push(p); }
+			if (hit(this.personHay(p))) { total++; if (people.length < 8) people.push(p); }
 		}
 		const groups = this.d.smallGroups.filter((g) => hit(`${g.community} ${g.name} ${g.place ?? ''} ${this.person(g.leader_id ?? '')?.name ?? ''}`.toLowerCase())).slice(0, 6);
 		const households = this.d.households.filter((h) => hit(`${h.no} ${h.address ?? ''} ${h.home_phone ?? ''}`.toLowerCase())).slice(0, 5);

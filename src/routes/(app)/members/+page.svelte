@@ -39,6 +39,7 @@
 	const digits = (x: string) => x.replace(/\D/g, '');
 	// 복수 검색: 쉼표·줄바꿈으로 여러 사람을 한꺼번에
 	const chipIds = $derived(new Set(chips.filter((c) => c.id).map((c) => c.id!)));
+	const basicHit = $derived(mode === 'basic' ? registry.matcher(q) : null);
 	function matchText(p: any): boolean {
 		if (mode === 'multi') return !chips.length || chipIds.has(p.id);
 		const t = q.trim();
@@ -52,7 +53,8 @@
 			const words = t.toLowerCase().split(/\s+/);
 			return words.every((w) => fieldsPicked.some((f) => hay[f].toLowerCase().includes(w) || (digits(w).length >= 4 && digits(hay[f]).includes(digits(w)))));
 		}
-		return p.name.includes(t) || (digits(t).length >= 4 && digits(p.phone ?? '').includes(digits(t)));
+		// 기본 검색: 대시보드 통합 검색처럼 이름 · 전화 · 소그룹 · 직분 · 주소 · 직업 · 차량 번호 · 메모 등 무엇이든
+		return !!basicHit?.(registry.personHay(p));
 	}
 	const l1opts = $derived(registry.childrenOf(null));
 	const l2opts = $derived([...new Set(registry.d.categories.filter((c) => c.parent_id && registry.d.categories.find((x) => x.id === c.parent_id)?.parent_id === null && (!c1 || registry.d.categories.find((x) => x.id === c.parent_id)?.name === c1)).map((c) => c.name))]);
@@ -177,7 +179,7 @@
 </script>
 
 <div class="row page-head" style="justify-content:space-between">
-	<h1>교인 목록 <small class="muted">({rows.length}명)</small></h1>
+	<div class="row" style="gap:.7rem"><h1>교인 목록 <small class="muted">({rows.length}명)</small></h1><a class="btn ghost sm" href="/members/columns">교인 목록 항목 설정</a></div>
 	<div class="row" style="gap:.5rem">
 		{#if canSms}
 			<button type="button" class="sms-btn" onclick={() => (smsOpen = true)} disabled={!rows.length} title="검색 결과 {rows.length}명에게 문자 보내기">
@@ -205,7 +207,14 @@
 				<p class="muted" style="margin:.3rem 0 0;font-size:.8rem">교적에 있는 이름이 그대로 쓰입니다. 같은 이름이 한 명이면 바로 들어가고, 여러 명이면 목록에서 고릅니다. 이름 목록을 붙여 넣어도 됩니다.</p>
 			</div>
 		{:else}
-			<input type="search" placeholder={mode === 'fields' ? '아래에서 고른 항목 안에서 찾습니다 (공백으로 여러 단어)' : '이름 · 전화번호 검색'} bind:value={q} onchange={runSearch} />
+			{#if mode === 'basic'}
+				<div class="gs-box m-search">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+					<input type="search" placeholder="무엇이든 검색하세요! (이름 · 전화 · 소그룹 · 직분 · 주소 · 직업 · 차량 번호 · 메모 등)" aria-label="교인 검색" bind:value={q} onchange={runSearch} />
+				</div>
+			{:else}
+				<input type="search" placeholder="아래에서 고른 항목 안에서 찾습니다 (공백으로 여러 단어)" bind:value={q} onchange={runSearch} />
+			{/if}
 		{/if}
 	</div>
 	{#if mode === 'fields'}
@@ -380,6 +389,7 @@
 	/* 문자 보내기 버튼: 초록 → 하늘색, 말풍선 아이콘과 인원 */
 	.sms-btn { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.62rem 1rem; border: 0; border-radius: 12px; color: #fff; font-weight: 700; background: linear-gradient(135deg, #14b4ae, #4558ae); box-shadow: 0 6px 16px rgba(20, 180, 174, 0.28); }
 	.sms-btn:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(20, 180, 174, 0.35); }
+	.m-search { flex: 1; min-width: 0; box-shadow: none; }
 	.sms-btn svg { width: 20px; height: 20px; fill: #fff; }
 	.sms-btn svg circle { fill: #14b4ae; }
 	.sms-btn .cnt { padding: 0.05rem 0.5rem; border-radius: 999px; background: rgba(255, 255, 255, 0.25); font-size: 0.78rem; }
