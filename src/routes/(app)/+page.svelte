@@ -7,7 +7,7 @@
 
 	const today = new Date();
 	const WEEKS = recentSundays(8, today);
-	const dateLabel = today.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+	const weekday = today.toLocaleDateString('ko-KR', { weekday: 'long' });
 	const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
 	const rows = $derived(registry.d.people.map((p) => ({ p, s: registry.summary(p) })));
@@ -180,8 +180,8 @@
 
 <section class="hero">
 	<div>
-		{#if registry.ys.motto}<p class="motto">{registry.ys.year} 표어 · {registry.ys.motto}{registry.ys.verse ? ` (${registry.ys.verse})` : ''}</p>{/if}
-		<small>{dateLabel}</small>
+		{#if registry.ys.motto}<p class="motto">{registry.ys.year}년 - <span class="motto-text">{registry.ys.motto}</span>{registry.ys.verse ? ` (${registry.ys.verse})` : ''}</p>{/if}
+		<small><b class="d-num">{today.getMonth() + 1}</b>월 <b class="d-num">{today.getDate()}</b>일 {weekday}</small>
 		<h1>{registry.churchInfo.name} 현황</h1>
 		<p>재적 교인 {joined}명 · 이번 주일 출석 {latest.n}명({rate}%)</p>
 	</div>
