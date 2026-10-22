@@ -1,6 +1,7 @@
 <script lang="ts">
-	// 관리자 › 설정 › 연간 설정: 해마다 새로 정하는 기준을 한곳에서
+	// 관리자 › 교회 설정 › 연간 설정: 해마다 새로 정하는 기준과 연간 계획표를 한곳에서
 	import { registry } from '#lib/registry/store.svelte.ts';
+	import PlanImport from '#lib/components/PlanImport.svelte';
 	import { AGE_MODES, GRADE_OPTIONS, bornText, gradeLabel, type BornRange, type YearSettings } from '#lib/registry/year-settings.ts';
 
 	const thisYear = new Date().getFullYear();
@@ -9,6 +10,13 @@
 	const withSocieties = (x: YearSettings): YearSettings => { for (const k of registry.codes.missionSocieties) x.societies[k] ??= { from: 1900, to: 2100 }; return x; };
 	let s = $state<YearSettings>(withSocieties(structuredClone(registry.settingsFor(thisYear))));
 	let msg = $state('');
+	// 연간 계획표: 등록하면 안내를 띄우고 올리기 칸을 처음 상태로
+	let planMsg = $state('');
+	let planKey = $state(0);
+	function planDone(first: string | null, count: number) {
+		planMsg = `일정 ${count}건을 대시보드 캘린더에 등록했습니다.${first ? ` (첫 일정 ${first})` : ''}`;
+		planKey++;
+	}
 	// 연도를 바꾸면 그 해 설정을 불러옴
 	function load(y: number) { year = y; s = withSocieties(structuredClone($state.snapshot(registry.settingsFor(y))) as YearSettings); msg = ''; }
 	function copyPrev() {
@@ -76,6 +84,17 @@
 		<p class="muted" style="font-size:.8rem;margin:.5rem 0 0">교인 목록 · 교적 카드 · 검색 · 문서 등 나이가 나오는 모든 화면에 적용됩니다.</p>
 	</section>
 </div>
+
+<!-- 연간 계획표: 엑셀로 올리면 교회 절기 · 사역 일정 · 성례 일정이 대시보드 캘린더에 들어감 (저장 버튼과 따로 바로 등록) -->
+<section class="card">
+	<div class="card-head"><h2>연간 계획표 등록</h2><span class="sub">엑셀로 올린 일정은 대시보드 캘린더에 바로 들어갑니다</span></div>
+	{#if planMsg}<p class="ok" style="margin:0 0 .7rem">{planMsg}</p>{/if}
+	{#if canEdit}
+		{#key planKey}<PlanImport initYear={year} ondone={planDone} />{/key}
+	{:else}
+		<p class="muted" style="margin:0">연간 계획표는 최고관리자·사이트 관리자만 올릴 수 있습니다.</p>
+	{/if}
+</section>
 
 <section class="card">
 	<div class="card-head"><h2>{registry.t1}별 출생 연도</h2><span class="sub">비워 두면 '이전' / '이후'로 끝이 없습니다</span></div>

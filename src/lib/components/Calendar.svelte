@@ -4,7 +4,6 @@
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { EVENT_KINDS, type EventKind } from '#lib/registry/types.ts';
 	import { KIND_COLOR, KIND_LABEL, isoDate, isHoliday, type CalItem } from '#lib/registry/calendar.ts';
-	import PlanImport from '#lib/components/PlanImport.svelte';
 
 	let { only = null }: { only?: EventKind[] | null } = $props();
 	const now = new Date();
@@ -96,23 +95,10 @@
 		if (!on.includes(form.kind)) on = [...on, form.kind];
 		form = null;
 	}
-	// 연간 계획 엑셀 올리기: 등록 후 첫 일정이 있는 달로 옮기고 세 종류가 모두 보이게
-	let importing = $state(false);
-	function imported(first: string | null) {
-		importing = false;
-		if (first) { const [yy, mo] = first.split('-').map(Number); y = yy; m = mo; sel = first; }
-		on = [...new Set([...on, ...editKinds])];
-	}
 	function removeForm() {
 		if (form?.id && confirm(`'${form.title}' 일정을 지웁니다.`)) { registry.removeEvent(form.id); form = null; }
 	}
 </script>
-
-<style>
-	.xl-btn { padding: 0.3rem 0.45rem; }
-	.xl-btn svg { width: 20px; height: 20px; display: block; }
-	.xl-btn:hover, .xl-btn.on { background: #ebf7f0; border-color: #1d6f42; }
-</style>
 
 <div class="cal">
 	<div class="cal-top">
@@ -121,10 +107,7 @@
 			<h3>{y}년 {m}월</h3>
 			<button type="button" class="ghost sm" onclick={() => go(1)} aria-label="다음 달">›</button>
 			<button type="button" class="ghost sm" onclick={toToday}>오늘</button>
-			{#if canEdit}<button type="button" class="sm" onclick={openNew}>+ 일정 추가</button>
-				{#if registry.isSuper}<button type="button" class="ghost sm xl-btn" class:on={importing} onclick={() => { importing = !importing; form = null; }} title="엑셀로 연간 계획 올리기" aria-label="엑셀로 연간 계획 올리기">
-					<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="18" rx="3" fill="#1D6F42" /><path d="M7.5 7.5l4 4.5-4 4.5M16.5 7.5l-4 4.5 4 4.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" /></svg>
-				</button>{/if}{/if}
+			{#if canEdit}<button type="button" class="sm" onclick={openNew}>+ 일정 추가</button>{/if}
 		</div>
 		<div class="legend">
 			{#each kinds as k}
@@ -146,10 +129,6 @@
 			</button>
 		{/each}
 	</div>
-
-	{#if importing && registry.isSuper}
-		<PlanImport onclose={() => (importing = false)} ondone={imported} />
-	{/if}
 
 	{#if form}
 		<form class="cal-detail cal-form" bind:this={formEl} onsubmit={saveForm}>
