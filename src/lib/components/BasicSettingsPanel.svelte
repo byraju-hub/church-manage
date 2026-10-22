@@ -9,7 +9,6 @@
 	let msg = $state('');
 	let err = $state('');
 	const can = $derived(registry.canSetup);
-	const defaultPastor = $derived(registry.d.people.find((p) => p.clergy_title === '담임목사')?.name ?? '');
 
 	function saveInfo() {
 		if (!info.name.trim()) { err = '교회 이름을 적어 주세요.'; return; }
@@ -37,6 +36,23 @@
 			err = '그림을 읽지 못했습니다.';
 		}
 	}
+	// 도로명 주소 검색: 고르면 주소가 들어가고, 이어서 상세주소(층·호)를 적을 수 있게 커서를 둠
+	let addrInput = $state<HTMLInputElement>();
+	function searchAddress() {
+		err = '';
+		const open = () => new (window as any).daum.Postcode({
+			oncomplete: (d: any) => {
+				info.address = (d.roadAddress || d.jibunAddress) + ' ';
+				setTimeout(() => { addrInput?.focus(); addrInput?.setSelectionRange(info.address.length, info.address.length); });
+			}
+		}).open();
+		if ((window as any).daum?.Postcode) return open();
+		const sc = document.createElement('script');
+		sc.src = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+		sc.onload = open;
+		sc.onerror = () => (err = '주소 검색 서비스에 연결할 수 없습니다. 직접 입력해 주세요. (인터넷 연결이 필요합니다)');
+		document.head.appendChild(sc);
+	}
 	function clearImg(kind: 'logo' | 'seal') {
 		info[kind] = null;
 		registry.saveSite({ churchInfo: info }, `기본 설정 · ${kind === 'logo' ? '로고' : '직인'} 지움`);
@@ -54,13 +70,15 @@
 		<label><span class="lt">교회 이름<span class="req">*</span></span><input bind:value={info.name} placeholder="예: 부평동부교회" /></label>
 		<label>교단<input bind:value={info.denomination} placeholder="예: 대한예수교장로회" /></label>
 		<label>창립일<input type="date" bind:value={info.founded} /></label>
-		<label class="wide">주소<input bind:value={info.address} placeholder="교회 주소" /></label>
+		<label class="wide"><span class="lt">주소 <small class="hint">(검색해서 고른 뒤 상세주소를 이어 적으세요)</small></span>
+			<span class="row" style="flex-wrap:nowrap"><input bind:this={addrInput} bind:value={info.address} placeholder="주소 검색 버튼을 누르세요" /><button type="button" class="ghost" onclick={searchAddress} disabled={!can}>주소 검색</button></span>
+		</label>
 		<label>대표 전화<input bind:value={info.phone} placeholder="032-000-0000" /></label>
 		<label>팩스<input bind:value={info.fax} /></label>
 		<label>이메일<input type="email" bind:value={info.email} /></label>
 		<label>홈페이지<input bind:value={info.homepage} placeholder="https://" /></label>
 		<label>서명 직함<input bind:value={info.pastorLabel} placeholder="담임목사" /></label>
-		<label><span class="lt">서명 이름 <small class="hint">(비우면 교적의 담임목사: {defaultPastor || '없음'})</small></span><input bind:value={info.pastorName} placeholder={defaultPastor} /></label>
+		<label><span class="lt">서명 이름 <small class="hint">(비우면 교적의 담임목사)</small></span><input bind:value={info.pastorName} /></label>
 	</div>
 	<!-- 모임 이름 (2단계): 화면 전체의 '공동체'·'소그룹'이 이 이름으로 바뀜 -->
 	<div class="units">
