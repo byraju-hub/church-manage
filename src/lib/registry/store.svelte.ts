@@ -11,7 +11,8 @@ import * as seed from './seed.ts';
 import type * as T from './types.ts';
 import { categoryPath, currentFaith, currentOffice, currentStatus, officeTitle, registeredOn } from './derive.ts';
 import { wasPresent, wasPresentGroup, sampleOthers } from './attendance.mock.ts';
-import { isoDate, type CalItem } from './calendar.ts';
+import { isoDate, koreanHolidays, type CalItem } from './calendar.ts';
+import { extractCareEvents, type CareEvent } from './care-events.ts';
 import { MAX_CATEGORY_DEPTH, parseRank } from './types.ts';
 import { fixCat } from './config.ts';
 
@@ -93,6 +94,13 @@ function migrate(d: Data): Data {
 	if (d.categories?.some((c) => /^m\.[^a]\.n$/.test(c.id))) {
 		d.categories = d.categories.filter((c) => !/^m\.[^a]\.n$/.test(c.id));
 		for (const p of d.people ?? []) p.category_id = fixCat(p.category_id);
+	}
+	// 일정 종류 이름 바꿈: '교회 기념일' → '교회 절기'
+	for (const e of d.events ?? []) {
+		if ((e.kind as string) === '교회 기념일') e.kind = '교회 절기';
+		if ((e.kind as string) === '성도 기념일') e.kind = '성도';
+		// 특별 주일·창립기념은 사역 일정으로
+		if (e.kind === '교회 절기' && /어린이주일|어버이주일|창립/.test(e.title)) e.kind = '사역 일정';
 	}
 	return d;
 }
@@ -365,41 +373,35 @@ class Registry {
 		const mm = String(month).padStart(2, '0');
 		const last = new Date(year, month, 0).getDate();
 		const nameOf = (id: string | null | undefined) => (id ? this.person(id)?.name ?? '' : '');
-		// [샘플 전용] 가상 데이터가 많아 달력이 빽빽하므로, 생일·결혼기념일·심방·가상 일정은 3분의 1만 보여 줍니다.
+		// [샘플 전용] 가상 데이터가 많아 달력이 빽빽하므로, 생일·심방·가상 일정은 3분의 1만 보여 줍니다.
 		//   실제 시스템에서는 이 거르기(sample)를 빼세요. 직접 등록한 일정은 거르지 않습니다.
 		const sample = (key: string) => {
 			let h = 0;
 			for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) | 0;
 			return Math.abs(h) % 3 === 0;
 		};
-		if (kinds.has('생일') || kinds.has('성도 기념일')) {
-			const seenWedding = new Set<string>();
+		if (kinds.has('생일')) {
 			for (const p of this.d.people) {
 				if (!sample(p.id)) continue;
 				if (!this.statusOf(p.id).length) continue;
 				const s = this.summary(p);
 				if (!s.memberCert) continue;
-				if (kinds.has('생일') && p.birth_date && p.birth_date.slice(5, 7) === mm) {
+				if (p.birth_date && p.birth_date.slice(5, 7) === mm) {
 					const d = Math.min(+p.birth_date.slice(8, 10), last);
 					out.push({ date: `${year}-${mm}-${String(d).padStart(2, '0')}`, kind: '생일', title: `${p.name}${s.title ? ' ' + s.title : ''}`, sub: p.birth_lunar ? '음력 생일' : '양력 생일', person_id: p.id, href: `/${p.id}` });
-				}
-				if (kinds.has('성도 기념일') && p.wedding_date && p.wedding_date.slice(5, 7) === mm) {
-					const hh = this.householdOf(p.id);
-					const key = `${hh?.id ?? p.id}|${p.wedding_date}`;
-					if (seenWedding.has(key)) continue;
-					seenWedding.add(key);
-					const d = Math.min(+p.wedding_date.slice(8, 10), last);
-					out.push({ date: `${year}-${mm}-${String(d).padStart(2, '0')}`, kind: '성도 기념일', title: `${p.name} 결혼 ${year - +p.wedding_date.slice(0, 4)}주년`, sub: '결혼기념일', person_id: p.id, href: `/${p.id}` });
 				}
 			}
 		}
 		const monthStart = `${year}-${mm}-01`, monthEnd = `${year}-${mm}-${String(last).padStart(2, '0')}`;
+		// 한국 공휴일 (계산값, 저장하지 않음). 성탄절은 교회 절기로도 나오므로 공휴일 줄은 빼고 날짜만 빨갛게
+		if (kinds.has('공휴일'))
+			for (const h of koreanHolidays(year)) if (h.date >= monthStart && h.date <= monthEnd && h.title !== '성탄절') out.push({ date: h.date, kind: '공휴일', title: h.title.replace(/ · 성탄절|성탄절 · /, '') });
 		for (const e of this.d.events) {
 			if (!kinds.has(e.kind)) continue;
 			const end = e.end_date ?? e.date;
 			if (end < monthStart || e.date > monthEnd) continue;
-			// 가상으로 만든 반복 일정(대청소·기도회·당회 등)과 성도 기념일만 거름. 교회 절기·성례는 그대로
-			if (/^ev\d+$/.test(e.id) && (e.kind === '사역 일정' || e.kind === '성도 기념일') && !sample(e.id)) continue;
+			// 가상으로 만든 반복 일정(대청소·기도회·당회 등)과 성도만 거름. 교회 절기·성례는 그대로
+			if (/^ev\d+$/.test(e.id) && (e.kind === '사역 일정' || e.kind === '성도') && !sample(e.id)) continue;
 			const who = nameOf(e.person_id);
 			out.push({ date: e.date, end_date: e.end_date, kind: e.kind, title: who ? `${who} ${e.title}` : e.title, sub: e.note ?? undefined, event_id: e.id, person_id: e.person_id, href: e.person_id ? `/${e.person_id}` : undefined });
 		}
@@ -581,15 +583,52 @@ class Registry {
 			this.save();
 		}
 	}
+	// 심방 내용에서 뽑은 일정의 '누구'를 세대 안에서 찾기.
+	// 이름(민준 → 김민준)이나 '자녀·아들·딸'(해당 자녀가 한 명일 때)로 찾으면 그 교인의 일정으로,
+	// 못 찾으면 심방받은 본인의 일정으로 넣고 제목에 적힌 말을 붙임 (예: 홍길동 · 자녀 입대)
+	resolveCare(personId: string, list: CareEvent[]): (CareEvent & { person_id: string; label: string })[] {
+		const self = this.person(personId);
+		const hh = this.householdOf(personId);
+		const fam = hh ? this.membersOfHousehold(hh.id).filter((m) => m.person_id !== personId) : [];
+		const famName = (m: T.HouseholdMember) => (m.person_id ? this.person(m.person_id)?.name ?? m.name : m.name);
+		const pick = (who: string): T.HouseholdMember | undefined => {
+			const byName = fam.filter((m) => { const n = famName(m); return n === who || (n.length >= 3 && n.slice(1) === who); });
+			if (byName.length === 1) return byName[0];
+			const kids = fam.filter((m) => m.relation === '자녀' || m.relation === '손자녀');
+			const g = (m: T.HouseholdMember) => (m.person_id ? this.person(m.person_id)?.gender : null);
+			const myRel = hh ? this.membersOfHousehold(hh.id).find((m) => m.person_id === personId)?.relation : undefined;
+			if (/아내|남편|배우자/.test(who)) { const sp = fam.filter((m) => (myRel === '배우자' ? m.relation === '본인' : m.relation === '배우자')); return sp.length === 1 ? sp[0] : undefined; }
+			const pool = /아들|손자/.test(who) ? kids.filter((m) => g(m) === 'M') : /딸|손녀/.test(who) ? kids.filter((m) => g(m) === 'F') : /자녀|막내|손주/.test(who) ? kids : [];
+			return pool.length === 1 ? pool[0] : undefined;
+		};
+		return list.map((c) => {
+			const m = c.who ? pick(c.who) : undefined;
+			if (m?.person_id) return { ...c, person_id: m.person_id, label: `${famName(m)} ${c.title}` };
+			const title = c.who ? `${m ? famName(m) : c.who} ${c.title}` : c.title;
+			return { ...c, title, person_id: personId, label: `${self?.name ?? ''} ${title}` };
+		});
+	}
+	// 심방 기록. 내용·후속 조치에 '22일 입원, 23일 수술'처럼 날짜가 적힌 일은 캘린더 '성도' 일정으로 자동 등록하고, 등록한 일정을 돌려줌
 	addVisit(v: Omit<T.Visit, 'id'>) {
 		this.d.visits.unshift({ ...v, id: uid() });
-		this.log('심방 기록', this.person(v.person_id)?.name ?? '');
+		const name = this.person(v.person_id)?.name ?? '';
+		this.log('심방 기록', name);
+		const found = this.resolveCare(v.person_id, extractCareEvents(`${v.content}\n${v.follow_up ?? ''}`, v.visit_date))
+			.filter((c) => !this.d.events.some((e) => e.kind === '성도' && e.person_id === c.person_id && e.date === c.date && e.title === c.title));
+		for (const c of found) this.d.events.push({ id: uid(), kind: '성도', date: c.date, end_date: c.end_date, title: c.title, person_id: c.person_id, note: `${name} 심방 기록에서 자동 등록 (${v.visit_date})` });
+		if (found.length) this.log('일정 등록', `성도 일정 ${found.map((c) => `${c.date.slice(5)} ${c.label}`).join(', ')}`);
+		return found;
 	}
-	// 캘린더 일정 (교회 기념일 · 사역 일정 · 성례 일정)
+	// 캘린더 일정 (교회 절기 · 사역 일정 · 성례 일정)
 	// [실제 시스템] events 표에 저장. 수정 권한이 있는 회원만 등록·수정·삭제
 	addEvent(e: Omit<T.ChurchEvent, 'id'>) {
 		this.d.events.push({ ...e, id: uid() });
 		this.log('일정 등록', `${e.date} ${e.title}`);
+	}
+	// 연간 계획 엑셀에서 여러 건을 한꺼번에 등록
+	addEvents(list: Omit<T.ChurchEvent, 'id'>[]) {
+		for (const e of list) this.d.events.push({ ...e, id: uid() });
+		this.log('일정 등록', `연간 계획 엑셀 ${list.length}건`);
 	}
 	updateEvent(id: string, patch: Partial<Omit<T.ChurchEvent, 'id'>>) {
 		const e = this.d.events.find((x) => x.id === id);

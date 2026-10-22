@@ -89,9 +89,9 @@
 	.btns { gap: 0.5rem; flex-wrap: nowrap; }
 	.btn.disabled { opacity: 0.6; pointer-events: none; }
 	.scan-body { display: flex; gap: 0.9rem; align-items: flex-start; margin-top: 0.8rem; }
-	.scan-body img { width: 120px; max-height: 160px; object-fit: contain; border-radius: 8px; border: 1px solid var(--line-strong); background: #f6f8fc; flex: none; }
+	.scan-body img { width: 120px; max-height: 160px; object-fit: contain; border-radius: 8px; border: 1px solid var(--line-strong); background: #f5f6fb; flex: none; }
 	.small { font-size: 0.82rem; margin-top: 0.3rem !important; }
-	.ok { color: #2f9e44; font-weight: 600; }
-	.bad { color: #e0245e; font-weight: 600; }
-	.warn-t { color: #e8590c; }
+	.ok { color: var(--teal-600); font-weight: 600; }
+	.bad { color: var(--orange-600); font-weight: 600; }
+	.warn-t { color: var(--orange-600); }
 </style>

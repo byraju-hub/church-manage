@@ -68,7 +68,7 @@
 {/each}
 
 <style>
-	.att { color: #e8590c; font-weight: 700; } /* 이번 주 출석: 주황색으로 눈에 띄게 */
+	.att { color: var(--orange-600); font-weight: 700; } /* 이번 주 출석: 주황색으로 눈에 띄게 */
 	.comm { table-layout: fixed; width: 100%; }
 	.comm :is(th, td) { text-align: center; } /* 표 안 내용은 모두 가운데 정렬 */
 	.c-g { width: 22%; } .c-l { width: 15%; } .c-p { width: 33%; } .c-n { width: 15%; }

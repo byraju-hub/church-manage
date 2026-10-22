@@ -3,7 +3,8 @@
 	import { tick } from 'svelte';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { EVENT_KINDS, type EventKind } from '#lib/registry/types.ts';
-	import { KIND_COLOR, isoDate, type CalItem } from '#lib/registry/calendar.ts';
+	import { KIND_COLOR, KIND_LABEL, isoDate, isHoliday, type CalItem } from '#lib/registry/calendar.ts';
+	import PlanImport from '#lib/components/PlanImport.svelte';
 
 	let { only = null }: { only?: EventKind[] | null } = $props();
 	const now = new Date();
@@ -11,12 +12,13 @@
 	let m = $state(now.getMonth() + 1);
 	// 처음 보여 줄 항목 (only 는 화면마다 고정이라 처음 값만 씀)
 	// svelte-ignore state_referenced_locally
-	let on = $state<EventKind[]>(only ? [...only] : [...EVENT_KINDS]);
-	const kinds = $derived(only ?? EVENT_KINDS);
+	// 공휴일은 어느 화면에서나 버튼 맨 끝에 둠
+	let on = $state<EventKind[]>(only ? [...only, '공휴일'] : [...EVENT_KINDS]);
+	const kinds = $derived<EventKind[]>(only ? [...only, '공휴일'] : EVENT_KINDS);
 	let sel = $state<string | null>(isoDate(now));
 
-	const items = $derived(registry.calendarItems(y, m, new Set(on)));
-	const order = (k: EventKind) => (k === '생일' ? 99 : EVENT_KINDS.indexOf(k));
+	const items = $derived(registry.calendarItems(y, m, new Set<string>(on)));
+	const order = (k: EventKind) => (k === '공휴일' ? -1 : k === '생일' ? 99 : EVENT_KINDS.indexOf(k));
 
 	// 날짜별로 묶기 (여러 날에 걸친 일정은 해당 달 안의 모든 날에 표시)
 	const byDate = $derived.by(() => {
@@ -58,14 +60,13 @@
 		sel = null;
 	}
 	function toToday() { y = now.getFullYear(); m = now.getMonth() + 1; sel = todayIso; }
-	// 항목을 누르면 그 항목만 보이고, 같은 항목을 한 번 더 누르면(또는 '전체'를 누르면) 모두 보입니다.
+	// 항목을 누르면 그 항목만 보이고, 같은 항목을 한 번 더 누르면 모두 보입니다.
 	const solo = $derived(on.length === 1 ? on[0] : null);
 	function pick(k: EventKind) { on = solo === k ? [...kinds] : [k]; }
-	function all() { on = [...kinds]; }
 
-	// 일정 추가·수정 (교회 기념일 · 사역 일정 · 성례 일정)
-	type EditKind = '교회 기념일' | '사역 일정' | '성례 일정';
-	const EDIT_KINDS: EditKind[] = ['교회 기념일', '사역 일정', '성례 일정'];
+	// 일정 추가·수정 (교회 절기 · 사역 일정 · 성례 일정)
+	type EditKind = '교회 절기' | '사역 일정' | '성례 일정';
+	const EDIT_KINDS: EditKind[] = ['교회 절기', '사역 일정', '성례 일정'];
 	const editKinds = $derived(EDIT_KINDS.filter((k) => kinds.includes(k)));
 	const canEdit = $derived(registry.perms.edit && editKinds.length > 0);
 	let formEl = $state<HTMLFormElement | null>(null);
@@ -95,10 +96,23 @@
 		if (!on.includes(form.kind)) on = [...on, form.kind];
 		form = null;
 	}
+	// 연간 계획 엑셀 올리기: 등록 후 첫 일정이 있는 달로 옮기고 세 종류가 모두 보이게
+	let importing = $state(false);
+	function imported(first: string | null) {
+		importing = false;
+		if (first) { const [yy, mo] = first.split('-').map(Number); y = yy; m = mo; sel = first; }
+		on = [...new Set([...on, ...editKinds])];
+	}
 	function removeForm() {
 		if (form?.id && confirm(`'${form.title}' 일정을 지웁니다.`)) { registry.removeEvent(form.id); form = null; }
 	}
 </script>
+
+<style>
+	.xl-btn { padding: 0.3rem 0.45rem; }
+	.xl-btn svg { width: 20px; height: 20px; display: block; }
+	.xl-btn:hover, .xl-btn.on { background: #ebf7f0; border-color: #1d6f42; }
+</style>
 
 <div class="cal">
 	<div class="cal-top">
@@ -107,12 +121,14 @@
 			<h3>{y}년 {m}월</h3>
 			<button type="button" class="ghost sm" onclick={() => go(1)} aria-label="다음 달">›</button>
 			<button type="button" class="ghost sm" onclick={toToday}>오늘</button>
-			{#if canEdit}<button type="button" class="sm" onclick={openNew}>+ 일정 추가</button>{/if}
+			{#if canEdit}<button type="button" class="sm" onclick={openNew}>+ 일정 추가</button>
+				{#if registry.isSuper}<button type="button" class="ghost sm xl-btn" class:on={importing} onclick={() => { importing = !importing; form = null; }} title="엑셀로 연간 계획 올리기" aria-label="엑셀로 연간 계획 올리기">
+					<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="18" rx="3" fill="#1D6F42" /><path d="M7.5 7.5l4 4.5-4 4.5M16.5 7.5l-4 4.5 4 4.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" /></svg>
+				</button>{/if}{/if}
 		</div>
 		<div class="legend">
-			<button type="button" class="chip" class:sel={on.length === kinds.length} onclick={all}>전체</button>
 			{#each kinds as k}
-				<button type="button" class="chip" class:off={!on.includes(k)} class:sel={solo === k} onclick={() => pick(k)} style="--c:{KIND_COLOR[k]}"><i></i>{k}</button>
+				<button type="button" class="chip" class:off={!on.includes(k)} class:sel={solo === k} onclick={() => pick(k)} style="--c:{KIND_COLOR[k]}" title={k}><i></i>{KIND_LABEL[k]}</button>
 			{/each}
 		</div>
 	</div>
@@ -121,7 +137,7 @@
 		{#each ['일', '월', '화', '수', '목', '금', '토'] as w, i}<div class="dow" class:sun={i === 0}>{w}</div>{/each}
 		{#each cells.slice(0, weeks * 7) as c (c.iso)}
 			{@const list = c.inMonth ? byDate.get(c.iso) ?? [] : []}
-			<button type="button" class="day" class:out={!c.inMonth} class:today={c.iso === todayIso} class:sel={c.iso === sel} class:sun={c.dow === 0} onclick={() => c.inMonth && (sel = c.iso)}>
+			<button type="button" class="day" class:out={!c.inMonth} class:today={c.iso === todayIso} class:sel={c.iso === sel} class:sun={c.dow === 0 || (on.includes('공휴일') && isHoliday(c.iso))} onclick={() => c.inMonth && (sel = c.iso)}>
 				<span class="n">{c.day}</span>
 				{#each list.slice(0, 3) as it}
 					<span class="ev" style="--c:{KIND_COLOR[it.kind]}" title={it.title}>{it.title}</span>
@@ -130,6 +146,10 @@
 			</button>
 		{/each}
 	</div>
+
+	{#if importing && registry.isSuper}
+		<PlanImport onclose={() => (importing = false)} ondone={imported} />
+	{/if}
 
 	{#if form}
 		<form class="cal-detail cal-form" bind:this={formEl} onsubmit={saveForm}>
@@ -144,7 +164,7 @@
 			<div class="row" style="margin-top:.7rem">
 				<button type="submit" class="sm">저장</button>
 				<button type="button" class="ghost sm" onclick={() => (form = null)}>취소</button>
-				{#if form.id}<button type="button" class="ghost sm" style="margin-left:auto;color:#e0245e" onclick={removeForm}>삭제</button>{/if}
+				{#if form.id}<button type="button" class="ghost sm" style="margin-left:auto;color:var(--orange-600)" onclick={removeForm}>삭제</button>{/if}
 			</div>
 		</form>
 	{/if}

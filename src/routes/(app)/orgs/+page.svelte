@@ -129,7 +129,7 @@
 	.meet td, .meet th { text-align: center; }
 	.org-grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem; align-items: start; }
 	.org-grid2 .card { margin: 0; padding: 0; }
-	.cm-head { display: flex; align-items: center; gap: 0.7rem; padding: 0.85rem 1rem; background: linear-gradient(120deg, #2a50c8, #4a78f5); color: #fff; }
+	.cm-head { display: flex; align-items: center; gap: 0.7rem; padding: 0.85rem 1rem; background: linear-gradient(120deg, #34489e, #4f6cb8); color: #fff; }
 	.cm-head h3 { margin: 0; font-size: 1.02rem; }
 	.cm-head small { opacity: 0.92; font-size: 0.82rem; }
 	.cm-head a { color: #fff; text-decoration: underline; text-underline-offset: 2px; }

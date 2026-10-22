@@ -211,8 +211,8 @@
 
 <style>
 	/* 출석률 색: 80% 이상 초록 / 50~79% 연한 주황 / 50% 미만 연한 회색 (--c 바탕색, --t 글자색) */
-	.hi { --c: #2f9e44; --t: #2f9e44; } .mid { --c: #ffa94d; --t: #fd7e14; } .lo { --c: #ced4da; --t: #9aa1a9; }
-	.lead { --c: #1c7ed6; --t: #1c7ed6; } /* 인도자는 출석률과 상관없이 파랑 */
+	.hi { --c: var(--teal-600); --t: var(--teal-600); } .mid { --c: #ffa94d; --t: #fd7e14; } .lo { --c: #ced4da; --t: #9aa1a9; }
+	.lead { --c: #7d8fd6; --t: #7d8fd6; } /* 인도자는 출석률과 상관없이 파랑 */
 	small.hi, small.mid, small.lo, .legend-att span[class] { color: var(--t); font-weight: 700; }
 	.pick { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
 	.pick select { width: auto; min-width: 11rem; }
@@ -239,7 +239,7 @@
 	.nb { white-space: nowrap; }
 	.keep { break-inside: avoid; overflow: hidden; }
 	/* 항목 고르기 창 */
-	.dlg-back { position: fixed; inset: 0; z-index: 70; background: rgba(20, 28, 45, 0.4); }
+	.dlg-back { position: fixed; inset: 0; z-index: 70; background: rgba(30, 37, 69, 0.4); }
 	.dlg { position: fixed; z-index: 71; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100vw - 32px)); margin: 0; }
 	.cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
 	.chk { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; cursor: pointer; }

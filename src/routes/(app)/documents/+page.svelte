@@ -276,15 +276,15 @@
 
 <style>
 	.sheet-wrap { overflow-x: auto; padding: 0.5rem 0 2rem; }
-	.sheet { width: 190mm; min-height: 270mm; margin: 0 auto; background: #fff; color: #111; padding: 12mm 12mm 14mm; box-shadow: 0 6px 28px rgba(27, 36, 51, 0.14); border: 1px solid #dfe3ec; font-size: 10.5pt; line-height: 1.5; }
+	.sheet { width: 190mm; min-height: 270mm; margin: 0 auto; background: #fff; color: #111; padding: 12mm 12mm 14mm; box-shadow: 0 6px 28px rgba(30, 37, 69, 0.14); border: 1px solid #dfe3ec; font-size: 10.5pt; line-height: 1.5; }
 	.doc-head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2.5px solid #111; padding-bottom: 6px; margin-bottom: 10px; font-size: 9pt; color: #444; }
 	.doc-head h2 { margin: 0; font-size: 18pt; letter-spacing: 0.3em; color: #111; }
-	h4 { margin: 14px 0 5px; font-size: 10.5pt; padding-left: 7px; border-left: 4px solid #2a50c8; }
+	h4 { margin: 14px 0 5px; font-size: 10.5pt; padding-left: 7px; border-left: 4px solid #2b3e95; }
 	.dt { width: 100%; border-collapse: collapse; border: 1px solid #000; }
 	.dt th, .dt td { border: 1px solid #000; padding: 5px 7px; font-size: 9.5pt; text-align: left; vertical-align: middle; background: #fff; color: #111; }
-	.dt th { background: #eef1f7; font-weight: 700; white-space: nowrap; width: 1%; }
-	.dt.list th { width: auto; text-align: center; background: #e4e9f4; }
-	.dt.zebra tbody tr:nth-child(even) td { background: #f6f8fc; }
+	.dt th { background: #f0f2fa; font-weight: 700; white-space: nowrap; width: 1%; }
+	.dt.list th { width: auto; text-align: center; background: #e0e4f4; }
+	.dt.zebra tbody tr:nth-child(even) td { background: #f5f6fb; }
 	.dt tbody tr:hover { background: none; }
 	.dt .c { text-align: center; color: #555; }
 	/* 교인 요람 · 생일 명단 · 직분자 명단(zebra), 교회 조직표(meet-t · keep): 표 내용 가운데 정렬 */
@@ -296,7 +296,7 @@
 	.meet-t { margin-bottom: 12px; }
 	.org-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
 	.org-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-	.cm-th { background: #2a50c8 !important; color: #fff !important; text-align: left !important; font-size: 10pt !important; }
+	.cm-th { background: #2b3e95 !important; color: #fff !important; text-align: left !important; font-size: 10pt !important; }
 	.cm-th span { float: right; font-weight: 500; font-size: 9pt; }
 	.foot-note { margin-top: 14px; font-size: 8.5pt; color: #666; border-top: 1px solid #ccc; padding-top: 6px; }
 	.cert { padding: 6mm 4mm; }

@@ -59,7 +59,7 @@
 <style>
 	.picker { position: relative; }
 	.picked { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; padding: 0.35rem 0.6rem; border: 1px solid var(--line-strong); border-radius: 10px; background: #fff; font-weight: 400; color: var(--text); }
-	.pop { position: fixed; z-index: 80; max-height: 50vh; overflow: auto; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 30px rgba(27, 36, 51, 0.18); padding: 0.3rem; }
+	.pop { position: fixed; z-index: 80; max-height: 50vh; overflow: auto; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 30px rgba(30, 37, 69, 0.18); padding: 0.3rem; }
 	.pop.up { transform: translateY(-100%); }
 	.opt { display: block; width: 100%; text-align: left; font-weight: 500; color: var(--text); background: transparent; box-shadow: none; border-radius: 9px; padding: 0.45rem 0.6rem; }
 	.opt:hover { background: var(--primary-50); transform: none; box-shadow: none; filter: none; color: var(--text); }

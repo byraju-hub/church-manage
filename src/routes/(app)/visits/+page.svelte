@@ -6,6 +6,7 @@
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
 	import VisitAnalyzer, { type Analysis } from '#lib/components/VisitAnalyzer.svelte';
+	import CarePreview from '#lib/components/CarePreview.svelte';
 	import { FULL_TIME_CLERGY, VISIT_KINDS, type VisitMethod } from '#lib/registry/types.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 
@@ -34,10 +35,15 @@
 	let f = $state({ person: page.url.searchParams.get('person') ?? '', date: page.url.searchParams.get('date') ?? today, kind: page.url.searchParams.get('kind') ?? '일반', method: '대면' as VisitMethod, pastor: '', scripture: '', hymn: '', content: '', follow: '' });
 	let companions = $state<Chip[]>([]);
 	const nn = (x: string) => (x.trim() === '' ? null : x.trim());
+	// 등록 후 안내: 심방 내용에서 자동으로 넣은 성도 일정
+	let savedMsg = $state('');
 	function submit(e: SubmitEvent) {
 		e.preventDefault();
 		if (!f.person) return;
-		registry.addVisit({ person_id: f.person, visit_date: f.date, kind: f.kind, method: f.method, pastor: f.pastor || clergy[0]?.name || '담당 교역자', companions: companions.length ? companions.map((c) => c.name).join(', ') : null, scripture: nn(f.scripture), hymn: nn(f.hymn), content: f.content, follow_up: nn(f.follow) });
+		const name = nameOf(f.person);
+		const added = registry.addVisit({ person_id: f.person, visit_date: f.date, kind: f.kind, method: f.method, pastor: f.pastor || clergy[0]?.name || '담당 교역자', companions: companions.length ? companions.map((c) => c.name).join(', ') : null, scripture: nn(f.scripture), hymn: nn(f.hymn), content: f.content, follow_up: nn(f.follow) });
+		const md = (iso: string) => `${+iso.slice(5, 7)}/${+iso.slice(8, 10)}`;
+		savedMsg = `${name} 심방을 등록했습니다.` + (added.length ? ` 캘린더 성도 일정에 ${added.map((c) => `${md(c.date)}${c.end_date ? `~${md(c.end_date)}` : ''} ${c.label}`).join(', ')}을(를) 함께 넣었습니다.` : '');
 		f.person = ''; f.content = ''; f.follow = ''; f.scripture = ''; f.hymn = ''; companions = [];
 		tab = 'list';
 	}
@@ -85,6 +91,7 @@
 	</div>
 
 	{#if tab === 'list'}
+		{#if savedMsg}<p class="ok row" style="justify-content:space-between">{savedMsg}<button type="button" class="ghost xs" onclick={() => (savedMsg = '')}>닫기</button></p>{/if}
 		<div class="card">
 			<div class="toolbar"><input type="search" placeholder="교인 이름 · 내용 · 말씀 · 동행자 검색" bind:value={q} /></div>
 			<div class="toolbar">
@@ -153,8 +160,8 @@
 			<div class="wide"><VisitAnalyzer onresult={applyAnalysis} /></div>
 			<label>말씀<input bind:value={f.scripture} placeholder="시편 23편" /></label>
 			<label>찬송<input bind:value={f.hymn} placeholder="찬 305장" /></label>
-			<label class="wide">심방 내용<textarea rows="5" bind:value={f.content} required></textarea></label>
-			<label class="wide">후속 조치<input bind:value={f.follow} /></label>
+			<label class="wide"><span class="lt">심방 내용 <small class="hint">(예: 22일 입원, 23일 수술 과 같이 날짜와 함께 기록하면 캘린더의 성도 일정에 자동으로 입력이 됩니다.)</small></span><small class="hint">*자동 등록 해당 문구 : 입원 · 퇴원 · 수술 · 시술 · 검사 · 항암 · 치료 · 출산 · 돌잔치 · 결혼식 · 장례 · 입관 · 발인 · 이사 · 개업 · 입대 · 전역 · 제대 · 입학 · 졸업 · 출국 · 귀국 등</small><textarea rows="5" bind:value={f.content} required></textarea></label>
+			<label class="wide">후속 조치<input bind:value={f.follow} /><CarePreview text={`${f.content}\n${f.follow}`} base={f.date} person={f.person} /></label>
 			<div class="wide row"><button type="submit" disabled={!f.person}>등록</button><button type="button" class="ghost" onclick={() => (tab = 'list')}>취소</button></div>
 		</form>
 	{/if}

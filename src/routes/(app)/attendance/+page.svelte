@@ -132,31 +132,31 @@
 	.att-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.1rem; }
 	.att-bar select { width: auto; flex: none; }
 	.sum { white-space: nowrap; }
-	.sum b { color: #2f9e44; font-size: 1.1rem; }
+	.sum b { color: var(--teal-600); font-size: 1.1rem; }
 	.total { display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
 	.total label { font-weight: 600; font-size: 0.9rem; }
 	.total input { width: 5.5rem; text-align: right; }
 	.split-sum { font-size: 0.88rem; }
 	.split-sum b { color: var(--text); }
-	.warn-sm { color: #e0245e; font-size: 0.82rem; }
+	.warn-sm { color: var(--orange-600); font-size: 0.82rem; }
 	/* 교인구분 3단계 체크 (날짜 줄 아래 한 줄) */
 	.cats { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.6rem; padding-top: 0.7rem; border-top: 1px solid var(--line); }
 	.cats-h { font-size: 0.88rem; font-weight: 600; }
 	.cat-ck { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.75rem; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
-	.cat-ck.on { border-color: #2f9e44; background: #ebfbee; color: #237032; }
+	.cat-ck.on { border-color: var(--teal-600); background: var(--teal-50); color: var(--teal-600); }
 	.cat-ck input { width: auto; margin: 0; }
 	.cat-ck small { color: var(--muted); font-weight: 500; }	.att { table-layout: fixed; min-width: 640px; }
 	.att td { vertical-align: middle; }
 	.att td:nth-child(-n + 5) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	.att tr.first td { border-top: 2px solid var(--line-strong); }
-	.att tr.on td { background: #ebfbee; }
+	.att tr.on td { background: var(--teal-50); }
 	.att td input:not([type]) { padding: 0.35rem 0.55rem; font-size: 0.85rem; }
 	/* 출석 스위치 (켜짐: 초록) */
 	.switch { position: relative; display: inline-block; width: 44px; height: 26px; cursor: pointer; }
 	.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
 	.switch i { position: absolute; inset: 0; border-radius: 999px; background: #dee2ea; transition: background 0.15s; pointer-events: none; }
 	.switch i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); transition: transform 0.15s; }
-	.switch input:checked + i { background: #2f9e44; }
+	.switch input:checked + i { background: var(--teal-600); }
 	.switch input:checked + i::after { transform: translateX(18px); }
 	.switch input:focus-visible + i { outline: 2px solid var(--primary); outline-offset: 2px; }
 	.switch input:disabled { cursor: not-allowed; }

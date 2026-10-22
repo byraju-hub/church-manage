@@ -377,10 +377,10 @@
 	td.ck input, th.ck input { width: auto; cursor: pointer; }
 	tr.checked td { background: var(--primary-50); }
 	/* 문자 보내기 버튼: 초록 → 하늘색, 말풍선 아이콘과 인원 */
-	.sms-btn { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.62rem 1rem; border: 0; border-radius: 12px; color: #fff; font-weight: 700; background: linear-gradient(135deg, #22c55e, #0ea5e9); box-shadow: 0 6px 16px rgba(14, 165, 233, 0.28); }
-	.sms-btn:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(14, 165, 233, 0.35); }
+	.sms-btn { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.62rem 1rem; border: 0; border-radius: 12px; color: #fff; font-weight: 700; background: linear-gradient(135deg, #14b4ae, #4558ae); box-shadow: 0 6px 16px rgba(20, 180, 174, 0.28); }
+	.sms-btn:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(20, 180, 174, 0.35); }
 	.sms-btn svg { width: 20px; height: 20px; fill: #fff; }
-	.sms-btn svg circle { fill: #10b3c9; }
+	.sms-btn svg circle { fill: #14b4ae; }
 	.sms-btn .cnt { padding: 0.05rem 0.5rem; border-radius: 999px; background: rgba(255, 255, 255, 0.25); font-size: 0.78rem; }
 	.on-bulk { background: var(--primary-50); border-color: var(--primary); color: var(--primary-600); }
 </style>

@@ -554,7 +554,7 @@ export function generate(reservedNames: string[] = [], opts: { targetActive?: nu
 		affiliations.push({ id: eid('af'), person_id: p.id, org: d.name, role: pick(['부원', '부원', '팀원', '부장', '총무']), start_date: dateIn(THIS_YEAR - ri(0, 8)), end_date: null });
 	}
 
-	// ---- 일정 (사역·성례·성도 기념일) : 지난해~내년 ----
+	// ---- 일정 (사역·성례·성도) : 지난해~내년 ----
 	let ne = 0;
 	const ev = (kind: T.ChurchEvent['kind'], date: string, title: string, end: string | null = null, person: string | null = null, note: string | null = null) =>
 		events.push({ id: `ev${++ne}`, kind, date, end_date: end, title, person_id: person, note });
@@ -571,16 +571,16 @@ export function generate(reservedNames: string[] = [], opts: { targetActive?: nu
 			ev('성례 일정', nthSunday(y, m, 1), '성찬식');
 		}
 		for (const s of churchSeasons(y)) {
-			ev('교회 기념일', s.date, s.title, s.end_date);
+			ev(/어린이주일|어버이주일|창립/.test(s.title) ? '사역 일정' : '교회 절기', s.date, s.title, s.end_date);
 			if (s.title === '부활주일' || s.title === '추수감사주일') ev('성례 일정', s.date, '세례식 (세례 대상자 명단 확인)');
 		}
 	}
 	for (let i = 0; i < 12; i++) {
 		const p = pick(activeIds);
 		const s = addDay(TODAY, ri(-12, 30));
-		ev('성도 기념일', s, pick(['수술(입원)', '입원', '수술(입원)']), addDay(s, ri(3, 10)), p.id);
+		ev('성도', s, pick(['수술(입원)', '입원', '수술(입원)']), addDay(s, ri(3, 10)), p.id);
 	}
-	for (let i = 0; i < 6; i++) ev('성도 기념일', addDay(TODAY, ri(2, 35)), pick(['돌잔치', '회갑', '이사 감사예배', '개업 감사예배']), null, pick(activeIds).id);
+	for (let i = 0; i < 6; i++) ev('성도', addDay(TODAY, ri(2, 35)), pick(['돌잔치', '회갑', '이사 감사예배', '개업 감사예배']), null, pick(activeIds).id);
 
 	// '불출석'은 장년에만 있으므로 다른 2단계의 불출석은 장기결석자로
 	for (const p of people) p.category_id = fixCat(p.category_id);

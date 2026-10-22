@@ -1,9 +1,9 @@
 <script lang="ts">
-	// 명단: 생일·결혼기념일, 직분자, 학습·세례 대상자, 교세 통계 (공동체·소그룹별 명단은 '공동체' 메뉴로 옮김)
+	// 명단: 생일, 직분자, 학습·세례 대상자, 교세 통계 (공동체·소그룹별 명단은 '공동체' 메뉴로 옮김)
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { ageOf } from '#lib/registry/derive.ts';
 
-	const tabs = ['생일·결혼기념일', '직분자 명단', '학습·세례 대상자', '교세 통계'];
+	const tabs = ['생일', '직분자 명단', '학습·세례 대상자', '교세 통계'];
 	let tab = $state(tabs[0]);
 	let mode = $state<'week' | 'month'>('month');
 
@@ -24,7 +24,6 @@
 		const out: { name: string; id: string; kind: string; date: string; d: number; lunar: boolean }[] = [];
 		for (const { p } of active) {
 			if (p.birth_date) { const md = p.birth_date.slice(5); const d = days(md); if (d <= lim) out.push({ name: p.name, id: p.id, kind: '생일', date: p.birth_date, d, lunar: p.birth_lunar }); }
-			if (p.wedding_date) { const md = p.wedding_date.slice(5); const d = days(md); if (d <= lim) out.push({ name: p.name, id: p.id, kind: '결혼기념일', date: p.wedding_date, d, lunar: false }); }
 		}
 		return out.sort((a, b) => a.d - b.d);
 	});
@@ -46,7 +45,7 @@
 <h1>명단</h1>
 <div class="tabs">{#each tabs as t}<button class:on={tab === t} onclick={() => (tab = t)}>{t}</button>{/each}</div>
 
-{#if tab === '생일·결혼기념일'}
+{#if tab === '생일'}
 	<div class="card">
 		<div class="row"><button class:ghost={mode !== 'week'} onclick={() => (mode = 'week')}>이번 주</button><button class:ghost={mode !== 'month'} onclick={() => (mode = 'month')}>이번 달(31일)</button></div>
 		<table class="sm"><thead><tr><th>이름</th><th>구분</th><th>날짜</th><th>며칠 뒤</th></tr></thead><tbody>

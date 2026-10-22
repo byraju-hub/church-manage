@@ -74,10 +74,10 @@
 </div>
 
 <style>
-	.crop-back { position: fixed; inset: 0; z-index: 100; background: rgba(20, 28, 45, 0.55); display: grid; place-items: center; padding: 1rem; }
+	.crop-back { position: fixed; inset: 0; z-index: 100; background: rgba(30, 37, 69, 0.55); display: grid; place-items: center; padding: 1rem; }
 	.crop-box { background: #fff; border-radius: 18px; padding: 1.2rem 1.4rem; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3); max-width: 340px; width: 100%; }
 	.crop-box h3 { margin: 0 0 0.2rem; }
-	.crop-frame { position: relative; overflow: hidden; margin: 0 auto; border-radius: 10px; background: #1b2433; touch-action: none; cursor: grab; outline: 2px solid var(--primary); }
+	.crop-frame { position: relative; overflow: hidden; margin: 0 auto; border-radius: 10px; background: #1e2545; touch-action: none; cursor: grab; outline: 2px solid var(--primary); }
 	.crop-frame:active { cursor: grabbing; }
 	.crop-frame img { position: absolute; left: 0; top: 0; max-width: none; user-select: none; -webkit-user-drag: none; }
 </style>

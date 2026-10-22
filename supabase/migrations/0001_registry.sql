@@ -263,7 +263,7 @@ create table registry.education_records (
 -- 생일·결혼기념일·심방 계획은 다른 표에서 계산. 교회 절기(부활주일 등)는 해마다 계산해 넣음
 create table registry.events (
   id uuid primary key default gen_random_uuid(),
-  kind text not null check (kind in ('성도 기념일','교회 기념일','사역 일정','성례 일정')),
+  kind text not null check (kind in ('성도','교회 절기','사역 일정','성례 일정')),
   event_date date not null, end_date date, title text not null,
   person_id uuid references registry.people(id), note text
 );

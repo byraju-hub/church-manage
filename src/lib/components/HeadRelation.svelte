@@ -51,11 +51,11 @@
 <style>
 	.hr-row { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; padding: 0.5rem 0.2rem; font-weight: 400; color: var(--text); }
 	.hr-label { font-weight: 700; font-size: 0.86rem; min-width: 9.2rem; color: var(--text); }
-	.req { color: #e0245e; margin-left: 0.1rem; }
+	.req { color: var(--orange-600); margin-left: 0.1rem; }
 	.hr-name { width: 7rem; background: #eceff5; font-weight: 600; }
 	.hr-q { width: 9rem; }
 	.hr-rel { width: 8rem; }
-	.hr-note { color: #2b3ccf; font-size: 0.82rem; font-weight: 600; }
+	.hr-note { color: var(--primary-600); font-size: 0.82rem; font-weight: 600; }
 	.hr-results { margin: 0.2rem 0 0.4rem 9.6rem; display: grid; gap: 2px; max-width: 30rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.25rem; background: #fff; }
 	.opt { display: block; text-align: left; font-weight: 500; color: var(--text); background: transparent; box-shadow: none; border-radius: 8px; padding: 0.4rem 0.6rem; }
 	.opt:hover { background: var(--primary-50); transform: none; box-shadow: none; filter: none; color: var(--text); }

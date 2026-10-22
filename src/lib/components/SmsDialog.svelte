@@ -172,40 +172,40 @@
 </div>
 
 <style>
-	.back { position: fixed; inset: 0; z-index: 70; background: rgba(20, 28, 45, 0.45); }
+	.back { position: fixed; inset: 0; z-index: 70; background: rgba(30, 37, 69, 0.45); }
 	.dlg { position: fixed; z-index: 71; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 40px); overflow: auto; margin: 0; }
 	.head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }
 	.head h3 { margin: 0; }
 	.head p { margin: 0.1rem 0 0; font-size: 0.85rem; }
 	.head .x { margin-left: auto; align-self: flex-start; }
 	.to { color: var(--primary-600); }
-	.ic { flex: none; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #22c55e, #0ea5e9); }
+	.ic { flex: none; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #14b4ae, #4558ae); }
 	.ic svg { width: 24px; height: 24px; fill: #fff; }
-	.ic circle { fill: #0ea5e9; }
+	.ic circle { fill: #14b4ae; }
 	.linkish { background: none; border: 0; padding: 0; color: var(--primary); font-size: 0.82rem; box-shadow: none; }
-	.out { margin: 0.4rem 0; padding: 0.6rem 0.8rem; border-radius: 10px; background: #f6f8fc; font-size: 0.82rem; }
+	.out { margin: 0.4rem 0; padding: 0.6rem 0.8rem; border-radius: 10px; background: #f5f6fb; font-size: 0.82rem; }
 	.out p { margin: 0.15rem 0; }
-	.tpl { margin-top: 0.6rem; padding: 0.65rem 0.75rem; border-radius: 12px; background: #f6f8fc; }
+	.tpl { margin-top: 0.6rem; padding: 0.65rem 0.75rem; border-radius: 12px; background: #f5f6fb; }
 	.tpl-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem; }
 	.tpl-h { font-weight: 700; font-size: 0.85rem; }
 	.chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 	.chip { padding: 0.28rem 0.7rem; border-radius: 999px; font-size: 0.82rem; font-weight: 600; background: #fff; color: var(--text); border: 1px solid var(--line); box-shadow: none; }
-	.chip:hover { border-color: #0ea5e9; color: #0b7fb5; transform: none; filter: none; }
-	.chip.sel { background: linear-gradient(135deg, #22c55e, #0ea5e9); color: #fff; border-color: transparent; }
+	.chip:hover { border-color: #14b4ae; color: #0c847f; transform: none; filter: none; }
+	.chip.sel { background: linear-gradient(135deg, #14b4ae, #4558ae); color: #fff; border-color: transparent; }
 	.tpl-manage { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-top: 0.55rem; }
 	.tpl-manage input { flex: 1 1 10rem; padding: 0.35rem 0.6rem; }
 	.danger { color: #c92a2a; border-color: #f1b0b0; }
-	.blank-warn { margin: 0.4rem 0 0; font-size: 0.8rem; color: #b45309; display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; }
-	.blank-warn span { padding: 0.05rem 0.4rem; border-radius: 6px; background: #fff4e0; }
+	.blank-warn { margin: 0.4rem 0 0; font-size: 0.8rem; color: #c24a17; display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; }
+	.blank-warn span { padding: 0.05rem 0.4rem; border-radius: 6px; background: #fff2eb; }
 	.lbl { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.7rem; font-weight: 600; font-size: 0.85rem; }
 	.lbl textarea { resize: vertical; font-size: 0.95rem; line-height: 1.5; }
 	.meta { display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem; }
 	.len { font-size: 0.8rem; color: var(--muted); }
 	.len.warn-t { color: #c92a2a; }
-	.preview { margin-top: 0.7rem; padding: 0.7rem 0.9rem; border-radius: 14px 14px 14px 4px; background: #e7f5ff; font-size: 0.9rem; }
+	.preview { margin-top: 0.7rem; padding: 0.7rem 0.9rem; border-radius: 14px 14px 14px 4px; background: #e8f7f6; font-size: 0.9rem; }
 	.preview span { font-size: 0.75rem; }
 	.preview p { margin: 0.2rem 0 0; white-space: pre-wrap; }
 	.note { font-size: 0.78rem; margin: 0.7rem 0 0.3rem; }
-	.send { background: linear-gradient(135deg, #22c55e, #0ea5e9); border: 0; color: #fff; }
+	.send { background: linear-gradient(135deg, #14b4ae, #4558ae); border: 0; color: #fff; }
 	.send:hover:not(:disabled) { filter: brightness(1.05); }
 </style>

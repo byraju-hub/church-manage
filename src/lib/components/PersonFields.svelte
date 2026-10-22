@@ -148,7 +148,7 @@
 
 <style>
 	.photo { width: 96px; height: 128px; border-radius: 10px; object-fit: cover; border: 1px solid var(--line-strong); flex: none; }
-	.photo.empty { display: grid; place-items: center; background: #f1f4fa; color: var(--muted); font-size: 0.72rem; font-weight: 500; }
+	.photo.empty { display: grid; place-items: center; background: var(--primary-50); color: var(--muted); font-size: 0.72rem; font-weight: 500; }
 	.mini { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.72rem; font-weight: 500; color: var(--muted); cursor: pointer; }
 	.mini input { width: 14px; height: 14px; }
 </style>

@@ -264,15 +264,16 @@ export interface AttendanceMark {
 }
 
 // ---- 일정 (대시보드 캘린더) ----
-export type EventKind = '생일' | '성도 기념일' | '교회 기념일' | '사역 일정' | '성례 일정' | '심방 계획';
-export const EVENT_KINDS: EventKind[] = ['생일', '성도 기념일', '교회 기념일', '사역 일정', '성례 일정', '심방 계획'];
+export type EventKind = '공휴일' | '생일' | '성도' | '교회 절기' | '사역 일정' | '성례 일정' | '심방 계획';
+// 캘린더 버튼 순서: 절기 · 성례 · 사역 · 심방 · 성도 · 생일 · 공휴일
+export const EVENT_KINDS: EventKind[] = ['교회 절기', '성례 일정', '사역 일정', '심방 계획', '성도', '생일', '공휴일'];
 export interface ChurchEvent {
 	id: string;
-	kind: Exclude<EventKind, '생일' | '심방 계획'>;
+	kind: Exclude<EventKind, '공휴일' | '생일' | '심방 계획'>;
 	date: string;
 	end_date: string | null;
 	title: string;
-	person_id: string | null; // 성도 기념일(수술·입원 등)
+	person_id: string | null; // 성도(수술·입원 등)
 	note: string | null;
 }
 

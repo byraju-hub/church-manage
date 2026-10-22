@@ -124,7 +124,7 @@
 	.ps small { color: var(--muted); font-weight: 600; }
 	.arrow { font-style: normal; color: var(--muted); font-size: 1.3rem; }
 	.pipe { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 0.8rem; overflow-x: auto; padding-bottom: 0.5rem; align-items: start; }
-	.pipe-col { background: #eef2fa; border-radius: 14px; padding: 0.7rem; max-height: 75vh; overflow: auto; }
+	.pipe-col { background: var(--primary-50); border-radius: 14px; padding: 0.7rem; max-height: 75vh; overflow: auto; }
 	.pipe-col h3 { margin: 0.1rem 0.2rem 0.6rem; font-size: 0.92rem; display: flex; justify-content: space-between; }
 	.pipe-col h3 span { color: var(--muted); }
 	.pcard { display: flex; flex-direction: column; gap: 0.3rem; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 0.65rem 0.7rem; margin-bottom: 0.5rem; box-shadow: var(--shadow-sm); }

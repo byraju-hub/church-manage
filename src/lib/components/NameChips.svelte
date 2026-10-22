@@ -65,21 +65,21 @@
 			</div>
 		</div>
 	{/each}
-	{#if missing}<p class="muted" style="margin:.3rem 0 0;font-size:.8rem;color:#b13a32">붉은 이름은 교적에 없습니다. 이름을 다시 확인해 주세요.</p>{/if}
+	{#if missing}<p class="muted" style="margin:.3rem 0 0;font-size:.8rem;color:#a83c10">붉은 이름은 교적에 없습니다. 이름을 다시 확인해 주세요.</p>{/if}
 	{#if allowFree && chips.some((c) => !c.id)}<p class="muted" style="margin:.3rem 0 0;font-size:.78rem">회색 이름은 교적에 없는 사람(교인 아님)으로 그대로 기록됩니다.</p>{/if}
 </div>
 
 <style>
 	.nc-box { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; padding: 0.35rem 0.5rem; border: 1px solid var(--line-strong); border-radius: 10px; background: #fff; }
-	.nc-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(53, 99, 233, 0.15); }
+	.nc-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(43, 62, 149, 0.15); }
 	.nc-box input { flex: 1; min-width: 9rem; border: 0; box-shadow: none; padding: 0.25rem 0.2rem; }
 	.nc-box input:focus { box-shadow: none; }
 	.nc-chip { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.15rem 0.2rem 0.15rem 0.6rem; font-size: 0.86rem; font-weight: 600; border-radius: 999px; background: var(--primary-100); color: var(--primary-600); }
 	.nc-chip a { color: inherit; }
-	.nc-chip.bad { background: #ffe6e3; color: #b13a32; }
+	.nc-chip.bad { background: var(--orange-100); color: #a83c10; }
 	.nc-chip.free { background: #eceff4; color: #4b5568; }
 	.nc-chip button { width: 1.2rem; height: 1.2rem; padding: 0; border-radius: 50%; background: transparent; color: inherit; box-shadow: none; font-size: 0.95rem; line-height: 1; }
 	.nc-chip button:hover { background: rgba(0, 0, 0, 0.1); transform: none; box-shadow: none; filter: none; color: inherit; }
-	.nc-pick { margin-top: 0.4rem; padding: 0.55rem 0.7rem; background: #fff6e8; border: 1px solid #f5d29a; border-radius: 10px; font-size: 0.86rem; font-weight: 400; color: var(--text); }
+	.nc-pick { margin-top: 0.4rem; padding: 0.55rem 0.7rem; background: var(--orange-50); border: 1px solid var(--orange-100); border-radius: 10px; font-size: 0.86rem; font-weight: 400; color: var(--text); }
 	.nc-cands { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.4rem; }
 </style>
