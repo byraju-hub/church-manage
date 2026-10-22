@@ -19,6 +19,18 @@ const pad = (n: number) => String(n).padStart(2, '0');
 type L2 = L2Code;
 type L3 = 'a' | 's' | 'n' | 'l';
 
+// 가상 '기타 의견': 소그룹 모임 전체에 대해 인도자가 적는 말 (특정 교인이 아님). 최근 주일 몇 번, 몇 개 소그룹만
+export function groupOpinions(groups: { name: string; leader_id: string | null; care?: boolean }[], nameOf: (id: string) => string): T.GroupNote[] {
+	const OP = ['다른 소그룹과 연합 모임으로 식사교제와 찬양 연습함.', '모임 장소를 교회 카페로 옮겨서 모임.', '새로 온 가정을 소개하고 함께 식사함.', '이번 주는 말씀 나눔 대신 중보기도 시간을 길게 가짐.', '다음 달 야외 모임 계획을 함께 정함.'];
+	const out: T.GroupNote[] = [];
+	const sunday = (weeksBack: number) => { const d = new Date(); d.setDate(d.getDate() - d.getDay() - 7 * weeksBack); return isoDate(d); };
+	groups.filter((g) => !g.care).forEach((g, i) => {
+		if (i % 4 !== 1) return;
+		out.push({ id: `gop-${i}`, person_id: null, small_group: g.name, date: sunday(1 + (i % 3)), body: OP[i % OP.length], author: (g.leader_id && nameOf(g.leader_id)) || '인도자' });
+	});
+	return out;
+}
+
 // opts.targetActive: 생성기가 만드는 재적 교인 수(시험용 인물 제외). opts.groupP: 공동체별(뿌리·줄기·열매) 소그룹 소속 비율
 export function generate(reservedNames: string[] = [], opts: { targetActive?: number; groupP?: [number, number, number] } = {}) {
 	const GROUP_P = opts.groupP ?? [0.96, 0.96, 0.96]; // 장년은 거의 모두 소그룹에 배정
@@ -496,6 +508,7 @@ export function generate(reservedNames: string[] = [], opts: { targetActive?: nu
 		const sg = smallGroups.find((x) => x.name === g.small_group);
 		groupNotes.push({ id: eid('gn'), person_id: p.id, small_group: g.small_group, date: daysAgo(ri(2, 70)), body: pick(GN), author: sg?.leader_id ? (byId.get(sg.leader_id)?.name ?? '인도자') : '인도자' });
 	}
+	groupNotes.push(...groupOpinions(smallGroups, (id) => byId.get(id)?.name ?? ''));
 	groupNotes.sort((a, b) => b.date.localeCompare(a.date));
 
 	// 결석이 이어지는 교인(소그룹 있는 사람 중 일부). 9주(약 2달) 이상이면 대시보드 장기 결석자로 잡힘

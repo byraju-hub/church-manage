@@ -3,6 +3,7 @@
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { recentSundays } from '#lib/registry/attendance.mock.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
+	import CommunityIcon from '#lib/components/CommunityIcon.svelte';
 
 	const WEEKS = recentSundays(8);
 	const latest = WEEKS[WEEKS.length - 1];
@@ -36,12 +37,13 @@
 </div>
 <p class="muted" style="margin-top:0">공동체와 소그룹 편성표입니다. 출석은 현재 운영 중인 홈페이지의 자료를 그대로 공유합니다.</p>
 
+
 {#each COMMUNITY_DEFS as c}
 	{@const t = sum(c.name)}
 	{@const k = sum(c.name, true)}
 	<div class="card" style="padding:0">
 		<div class="card-head" style="padding:1.1rem 1.3rem 0">
-			<div><h2>[ {c.name} ] <span class="tag">{c.born}</span></h2>
+			<div><h2><CommunityIcon name={c.name} />{c.name} <span class="tag">{c.born}</span></h2>
 				<span class="sub">재적 {t.t}명 · <b class="att">{WEEKS[7].slice(5).replace('-', '/')} 출석 {t.p}명 ({pct(t)}%)</b>{#if k.t}<span class="muted"> &nbsp;|&nbsp; 자녀돌봄 {k.t}명 · <b class="att">출석 {k.p}명 ({pct(k)}%)</b></span>{/if}</span></div>
 		</div>
 		<div style="overflow-x:auto">

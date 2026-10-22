@@ -7,6 +7,8 @@
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
 	import VisitAnalyzer, { type Analysis } from '#lib/components/VisitAnalyzer.svelte';
 	import CarePreview from '#lib/components/CarePreview.svelte';
+	import Pagination from '#lib/components/Pagination.svelte';
+	import { officeKindTitle } from '#lib/registry/derive.ts';
 	import { FULL_TIME_CLERGY, VISIT_KINDS, type VisitMethod } from '#lib/registry/types.ts';
 	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 
@@ -30,6 +32,16 @@
 			})
 			.sort((a, b) => b.visit_date.localeCompare(a.visit_date))
 	);
+
+	// 날짜는 26/11/27 처럼, 직분은 교인 목록과 같이 (시무권사 · 은퇴집사 …)
+	const ymd = (iso: string) => `${iso.slice(2, 4)}/${iso.slice(5, 7)}/${iso.slice(8, 10)}`;
+	const officeOf = (id: string) => { const p = registry.person(id); const o = p ? registry.summary(p).office : null; return p && o ? officeKindTitle(o, p.clergy_title) : ''; };
+	// 목록은 한 쪽에 30건씩, 아래 쪽 번호로 넘김. 찾기 조건이 바뀌면 1쪽으로
+	const PER = 30;
+	let vpage = $state(1);
+	let listTop = $state<HTMLElement | null>(null);
+	const pages = $derived(Math.max(1, Math.ceil(rows.length / PER)));
+	$effect(() => { void q; void kind; void pastor; void from; void to; vpage = 1; });
 
 	// 등록 폼
 	let f = $state({ person: page.url.searchParams.get('person') ?? '', date: page.url.searchParams.get('date') ?? today, kind: page.url.searchParams.get('kind') ?? '일반', method: '대면' as VisitMethod, pastor: '', scripture: '', hymn: '', content: '', follow: '' });
@@ -62,7 +74,7 @@
 		registry.d.groupNotes
 			.filter((n) => {
 				const t = nq.trim().toLowerCase();
-				if (t && !`${nameOf(n.person_id)} ${n.body} ${n.author}`.toLowerCase().includes(t)) return false;
+				if (t && !`${n.person_id ? nameOf(n.person_id) : '기타 의견'} ${n.body} ${n.author}`.toLowerCase().includes(t)) return false;
 				return (!ncomm || commOf(n.small_group) === ncomm) && (!ngroup || n.small_group === ngroup) && (!nfrom || n.date >= nfrom) && (!nto || n.date <= nto);
 			})
 			.sort((a, b) => b.date.localeCompare(a.date))
@@ -100,24 +112,26 @@
 				<span class="range"><span class="muted">날짜</span><input type="date" bind:value={from} aria-label="시작 날짜" /><span>~</span><input type="date" bind:value={to} aria-label="끝 날짜" /></span>
 			</div>
 		</div>
+		<p class="muted" style="margin:0 0 .5rem;scroll-margin-top:110px" bind:this={listTop}>모두 {rows.length.toLocaleString()}건{#if pages > 1} · {vpage} / {pages}쪽{/if}</p>
 		<div class="card" style="padding:0;overflow-x:auto">
 			<table class="sm vlist">
-				<thead><tr><th>날짜</th><th>구분</th><th>교인</th><th>담당</th><th>내용</th><th>후속 조치</th></tr></thead>
+				<thead><tr><th>날짜</th><th>구분</th><th>교인</th><th>직분</th><th>담당</th><th>내용</th><th>후속 조치</th></tr></thead>
 				<tbody>
-					{#each rows.slice(0, 200) as v (v.id)}
+					{#each rows.slice((vpage - 1) * PER, vpage * PER) as v (v.id)}
 						<tr>
-							<td style="white-space:nowrap">{v.visit_date}</td>
+							<td style="white-space:nowrap">{ymd(v.visit_date)}</td>
 							<td class="nw">{v.kind}<small class="muted">{v.method}</small></td>
 							<td class="nw"><a href="/{v.person_id}">{nameOf(v.person_id)}</a></td>
+							<td class="nw">{officeOf(v.person_id)}</td>
 							<td class="nw">{v.pastor}{#if v.companions}<small class="muted">동행 {v.companions}</small>{/if}</td>
-							<td style="min-width:220px">{v.content}{v.scripture ? ` · ${v.scripture}` : ''}{v.hymn ? ` · ${v.hymn}` : ''}</td>
+							<td class="vc" style="min-width:220px">{v.content}{v.scripture ? ` · ${v.scripture}` : ''}{v.hymn ? ` · ${v.hymn}` : ''}</td>
 							<td>{v.follow_up ?? '-'}</td>
 						</tr>
 					{:else}<tr><td colspan="7" class="muted">조건에 맞는 심방이 없습니다.</td></tr>{/each}
 				</tbody>
 			</table>
 		</div>
-		{#if rows.length > 200}<p class="muted">{rows.length}건 중 200건만 보여 줍니다. 조건을 좁혀 보세요.</p>{/if}
+		<Pagination bind:page={vpage} {pages} onchange={() => listTop?.scrollIntoView({ block: 'start', behavior: 'smooth' })} />
 	{:else if tab === 'cal'}
 		<div class="card"><Calendar only={['심방 계획']} /></div>
 		<p class="muted">달력에는 등록된 심방이 날짜별로 표시됩니다. 앞으로의 날짜로 등록하면 심방 계획으로 보입니다.</p>
@@ -132,16 +146,17 @@
 		</div>
 		<div class="card" style="padding:0;overflow-x:auto">
 			<table class="sm vlist">
-				<thead><tr><th>날짜</th><th>공동체</th><th>소그룹</th><th>교인</th><th>작성 인도자</th><th>특이사항</th></tr></thead>
+				<thead><tr><th>날짜</th><th>공동체</th><th>소그룹</th><th>작성</th><th>교인</th><th>특이사항</th></tr></thead>
 				<tbody>
 					{#each noteRows.slice(0, 200) as n (n.id)}
-						<tr>
-							<td style="white-space:nowrap">{n.date}</td>
-							<td style="white-space:nowrap">{commOf(n.small_group) || '-'}</td>
+						<tr class:opinion={!n.person_id}>
+							<td style="white-space:nowrap">{ymd(n.date)}</td>
+							<td style="white-space:nowrap">{commOf(n.small_group).replace(' 공동체', '') || '-'}</td>
 							<td style="white-space:nowrap"><a href="/communities/{encodeURIComponent(n.small_group)}">{n.small_group}</a></td>
-							<td style="white-space:nowrap"><a href="/{n.person_id}">{nameOf(n.person_id)}</a></td>
 							<td style="white-space:nowrap">{n.author}</td>
-							<td style="min-width:220px">{n.body}</td>
+							<!-- 교인이 없는 줄은 소그룹 모임 전체에 대한 '기타 의견' (적힌 내용이 있을 때만 줄이 생김) -->
+							<td style="white-space:nowrap">{#if n.person_id}<a href="/{n.person_id}">{nameOf(n.person_id)}</a>{:else}<span class="tag part">기타 의견</span>{/if}</td>
+							<td class="vc" style="min-width:220px">{n.body}</td>
 						</tr>
 					{:else}<tr><td colspan="6" class="muted">조건에 맞는 특이사항이 없습니다.</td></tr>{/each}
 				</tbody>
@@ -166,3 +181,8 @@
 		</form>
 	{/if}
 {/if}
+
+<style>
+	/* 소그룹 '기타 의견' 줄은 옅은 주황 바탕으로 구분 */
+	tr.opinion td { background: #fffaf6; }
+</style>

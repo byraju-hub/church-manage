@@ -31,7 +31,7 @@
 </script>
 
 <div class="row" style="justify-content:space-between">
-	<h1>세대 <small class="muted">({rows.length})</small></h1>
+	<h1>세대 목록 <small class="muted">({rows.length}세대)</small></h1>
 	{#if registry.perms.edit}<button onclick={create}>+ 세대 만들기</button>{/if}
 </div>
 <div class="toolbar"><input type="search" placeholder="세대번호·세대원 이름 검색" bind:value={q} /></div>

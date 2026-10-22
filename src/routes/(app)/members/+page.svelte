@@ -3,12 +3,11 @@
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { ageOf, officeWithKind, officeKindTitle } from '#lib/registry/derive.ts';
-	import { MISSION_SOCIETIES, OFFICE_NAMES, rankChoices, rankLabel, type FaithKind, type OfficeName } from '#lib/registry/types.ts';
-	import { categoryPath } from '#lib/registry/derive.ts';
-	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
+	import { MISSION_SOCIETIES } from '#lib/registry/types.ts';
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
 	import ExportButtons from '#lib/components/ExportButtons.svelte';
 	import SmsDialog from '#lib/components/SmsDialog.svelte';
+	import BulkEditPanel from '#lib/components/BulkEditPanel.svelte';
 
 	// 검색 방식: 기본(한 줄) / 복수(여러 명을 한꺼번에) / 항목별(칸을 골라서)
 	let mode = $state<'basic' | 'multi' | 'fields'>('basic');
@@ -143,39 +142,9 @@
 	let checked = $state<Set<string>>(new Set());
 	const checkedRows = $derived(rows.filter(({ p }) => checked.has(p.id)));
 	const allChecked = $derived(rows.length > 0 && checkedRows.length === rows.length);
-	function toggle(id: string) { const n = new Set(checked); if (n.has(id)) n.delete(id); else n.add(id); checked = n; bMsg = ''; }
-	function toggleAll() { checked = allChecked ? new Set() : new Set(rows.map(({ p }) => p.id)); bMsg = ''; }
-	let bk = $state<'category' | 'faith' | 'office' | 'group'>('category');
-	// 교인구분: 1 → 2 → 3단계 (고른 데까지 적용)
-	let bc1 = $state(''), bc2 = $state(''), bc3 = $state('');
-	const bCat = $derived(bc3 || bc2 || bc1);
-	let bFaith = $state<FaithKind>('세례');
-	let bOffice = $state<OfficeName>('서리집사');
-	let bRank = $state('서리');
-	$effect(() => { bRank = rankChoices(bOffice)[0]; });
-	let bDate = $state(new Date().toISOString().slice(0, 10));
-	let bEndOld = $state(true);
-	let bComm = $state('');
-	let bGroup = $state('');
-	let bMsg = $state('');
-	const bLabel = $derived(
-		bk === 'category' ? `교인구분을 '${categoryPath(registry.d.categories, bCat || null).map((c) => c.name).join(' › ')}'(으)로`
-		: bk === 'faith' ? `신급 '${bFaith}' 기록(${bDate || '날짜 미상'})을 추가`
-		: bk === 'office' ? `직분을 '${bOffice} · ${bRank}'(${bDate || '날짜 미상'})(으)로${bEndOld ? ' 바꾸고 지금 직분은 마침 처리' : ' 추가'}`
-		: bComm && bGroup ? `소그룹을 '${bComm} › ${bGroup}'(으)로` : '공동체·소그룹 소속을 없앰'
-	);
-	const bReady = $derived(checkedRows.length > 0 && (bk !== 'category' || !!bCat) && (bk !== 'group' || !bComm || !!bGroup));
-	function applyBulk() {
-		if (!bReady) return;
-		if (!confirm(`선택한 ${checkedRows.length}명의 ${bLabel} 바꿉니다.\n각 교인의 변경 이력에 남습니다. 계속할까요?`)) return;
-		const ids = checkedRows.map(({ p }) => p.id);
-		const n = registry.bulkEdit(ids, bk === 'category' ? { kind: 'category', category_id: bCat }
-			: bk === 'faith' ? { kind: 'faith', faith: bFaith, date: bDate || null }
-			: bk === 'office' ? { kind: 'office', office: bOffice, rank: bRank, date: bDate || null, endOld: bEndOld }
-			: { kind: 'group', community: bGroup ? bComm : '', small_group: bGroup });
-		bMsg = `${n}명을 바꿨습니다.${ids.length - n ? ` (이미 같은 값인 ${ids.length - n}명은 그대로)` : ''}`;
-		checked = new Set();
-	}
+	function toggle(id: string) { const n = new Set(checked); if (n.has(id)) n.delete(id); else n.add(id); checked = n; }
+	function toggleAll() { checked = allChecked ? new Set() : new Set(rows.map(({ p }) => p.id)); }
+
 </script>
 
 <div class="row page-head" style="justify-content:space-between">
@@ -198,7 +167,7 @@
 			<button type="button" class:on={mode === 'multi'} onclick={() => (mode = 'multi')}>복수 검색</button>
 			<button type="button" class:on={mode === 'fields'} onclick={() => (mode = 'fields')}>항목별 검색</button>
 		</div>
-		{#if registry.isSuper}<span style="flex:1"></span><button type="button" class="ghost sm" class:on-bulk={bulkOpen} onclick={() => { bulkOpen = !bulkOpen; if (!bulkOpen) { checked = new Set(); bMsg = ''; } }} aria-expanded={bulkOpen}>{bulkOpen ? '일괄 수정 닫기' : '일괄 수정'}</button>{/if}
+		{#if registry.isSuper}<span style="flex:1"></span><button type="button" class="ghost sm" class:on-bulk={bulkOpen} onclick={() => { bulkOpen = !bulkOpen; if (!bulkOpen) checked = new Set(); }} aria-expanded={bulkOpen}>{bulkOpen ? '일괄 수정 닫기' : '일괄 수정'}</button>{/if}
 	</div>
 	<div class="toolbar">
 		{#if mode === 'multi'}
@@ -243,44 +212,7 @@
 
 {#if bulkOn}
 	<!-- 일괄 수정: 목록에서 체크한 교인만 -->
-	<div class="card bulk" class:active={checkedRows.length > 0}>
-		<div class="bulk-top">
-			<b>일괄 수정</b>
-			<span class="muted">{checkedRows.length ? `${checkedRows.length}명 선택됨` : '아래 목록에서 교인을 체크하세요 (맨 위 체크는 검색 결과 전체)'}</span>
-			{#if checkedRows.length}<button type="button" class="ghost sm" onclick={() => (checked = new Set())}>선택 해제</button>{/if}
-			<span style="flex:1"></span><button type="button" class="ghost sm" onclick={() => { bulkOpen = false; checked = new Set(); bMsg = ''; }}>닫기</button>
-		</div>
-		<div class="toolbar" style="margin:.6rem 0 0">
-			<div class="seg" role="tablist" aria-label="일괄 수정 항목">
-				<button type="button" class:on={bk === 'category'} onclick={() => (bk = 'category')}>교인구분</button>
-				<button type="button" class:on={bk === 'faith'} onclick={() => (bk = 'faith')}>신급</button>
-				<button type="button" class:on={bk === 'office'} onclick={() => (bk = 'office')}>직분</button>
-				<button type="button" class:on={bk === 'group'} onclick={() => (bk = 'group')}>공동체·소그룹</button>
-			</div>
-		</div>
-		<div class="toolbar" style="margin:.6rem 0 0">
-			{#if bk === 'category'}
-				<select bind:value={bc1} onchange={() => { bc2 = ''; bc3 = ''; }} aria-label="1단계"><option value="">1단계 선택</option>{#each registry.childrenOf(null) as c}<option value={c.id}>{c.name}</option>{/each}</select>
-				{#if bc1 && registry.childrenOf(bc1).length}<select bind:value={bc2} onchange={() => (bc3 = '')} aria-label="2단계"><option value="">2단계 선택</option>{#each registry.childrenOf(bc1) as c}<option value={c.id}>{c.name}</option>{/each}</select>{/if}
-				{#if bc2 && registry.childrenOf(bc2).length}<select bind:value={bc3} aria-label="3단계"><option value="">3단계 선택</option>{#each registry.childrenOf(bc2) as c}<option value={c.id}>{c.name}</option>{/each}</select>{/if}
-			{:else if bk === 'faith'}
-				<select bind:value={bFaith} aria-label="신급">{#each ['학습', '세례', '유아세례', '입교'] as f}<option>{f}</option>{/each}</select>
-				<span class="muted">받은 날</span><input type="date" bind:value={bDate} />
-				<span class="muted" style="font-size:.8rem">같은 기록이 이미 있는 교인은 건너뜁니다.</span>
-			{:else if bk === 'office'}
-				<select bind:value={bOffice} aria-label="직분">{#each OFFICE_NAMES as o}<option>{o}</option>{/each}</select>
-				<select bind:value={bRank} aria-label="구분">{#each rankChoices(bOffice) as r}<option value={r}>{rankLabel(bOffice, r)}</option>{/each}</select>
-				<span class="muted">임직(시작)일</span><input type="date" bind:value={bDate} />
-				<label class="row" style="gap:.3rem"><input type="checkbox" bind:checked={bEndOld} />지금 직분은 마침 처리</label>
-			{:else}
-				<select bind:value={bComm} onchange={() => (bGroup = '')} aria-label="공동체"><option value="">소속 없음 (빼기)</option>{#each COMMUNITY_DEFS as c}<option>{c.name}</option>{/each}</select>
-				{#if bComm}<select bind:value={bGroup} aria-label="소그룹"><option value="">소그룹 선택</option>{#each registry.groupsIn(bComm) as g}<option>{g.name}</option>{/each}</select>{/if}
-			{/if}
-			<span style="flex:1"></span>
-			<button type="button" onclick={applyBulk} disabled={!bReady}>선택한 {checkedRows.length}명에 적용</button>
-		</div>
-		{#if bMsg}<p class="ok" style="margin:.6rem 0 0">{bMsg}</p>{/if}
-	</div>
+	<BulkEditPanel ids={checkedRows.map(({ p }) => p.id)} onclear={() => (checked = new Set())} onclose={() => { bulkOpen = false; checked = new Set(); }} />
 {/if}
 
 <div class="split">
@@ -380,9 +312,6 @@
 
 <style>
 	/* 일괄 수정 상자: 선택한 교인이 있으면 파란 테두리로 강조 */
-	.bulk { border: 1px dashed var(--line); }
-	.bulk.active { border: 1.5px solid var(--primary); background: var(--primary-50); }
-	.bulk-top { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
 	th.ck, td.ck { width: 2.2rem; text-align: center; padding-left: 0.6rem; padding-right: 0.2rem; }
 	td.ck input, th.ck input { width: auto; cursor: pointer; }
 	tr.checked td { background: var(--primary-50); }

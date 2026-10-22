@@ -188,10 +188,10 @@ export interface PersonGroup {
 	small_group: string; // 출석부의 소그룹
 }
 
-// 출석부에서 인도자가 쓰는 개별 특이사항
+// 출석부에서 인도자가 쓰는 개별 특이사항. person_id 가 없으면 그 주 소그룹 모임 전체에 대한 '기타 의견'
 export interface GroupNote {
 	id: string;
-	person_id: string;
+	person_id: string | null;
 	small_group: string;
 	date: string;
 	body: string;

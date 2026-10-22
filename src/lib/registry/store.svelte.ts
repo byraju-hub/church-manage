@@ -15,6 +15,7 @@ import { isoDate, koreanHolidays, type CalItem } from './calendar.ts';
 import { extractCareEvents, type CareEvent } from './care-events.ts';
 import { MAX_CATEGORY_DEPTH, parseRank } from './types.ts';
 import { fixCat } from './config.ts';
+import { groupOpinions } from './generate.ts';
 
 const KEY = 'church-registry-proto-v16';
 
@@ -94,6 +95,12 @@ function migrate(d: Data): Data {
 	if (d.categories?.some((c) => /^m\.[^a]\.n$/.test(c.id))) {
 		d.categories = d.categories.filter((c) => !/^m\.[^a]\.n$/.test(c.id));
 		for (const p of d.people ?? []) p.category_id = fixCat(p.category_id);
+	}
+	// 소그룹 '기타 의견'(교인 없이 모임 전체에 대한 의견) 샘플이 없으면 넣어 둠
+	if (d.groupNotes && !d.groupNotes.some((n) => !n.person_id)) {
+		const nm = (id: string) => d.people?.find((p) => p.id === id)?.name ?? '';
+		d.groupNotes.push(...groupOpinions(d.smallGroups ?? [], nm));
+		d.groupNotes.sort((a, b) => b.date.localeCompare(a.date));
 	}
 	// 일정 종류 이름 바꿈: '교회 기념일' → '교회 절기'
 	for (const e of d.events ?? []) {
@@ -367,7 +374,7 @@ class Registry {
 		const notes: { p: T.Person; body: string; kind: string }[] = [];
 		for (const n of this.d.notes) if (hit(n.body.toLowerCase())) { const p = this.person(n.person_id); if (p) notes.push({ p, body: n.body, kind: '담당자 메모' }); if (notes.length >= 4) break; }
 		// 인도자 특이사항은 건강 등 민감한 내용이 있어 심방 권한자만
-		if (this.perms.visit) for (const n of this.d.groupNotes) if (notes.length < 6 && hit(`${n.body} ${n.small_group}`.toLowerCase())) { const p = this.person(n.person_id); if (p) notes.push({ p, body: n.body, kind: `인도자 특이사항 · ${n.small_group}` }); }
+		if (this.perms.visit) for (const n of this.d.groupNotes) if (notes.length < 6 && hit(`${n.body} ${n.small_group}`.toLowerCase())) { const p = n.person_id ? this.person(n.person_id) : undefined; if (p) notes.push({ p, body: n.body, kind: `인도자 특이사항 · ${n.small_group}` }); }
 		const orgs = this.d.orgUnits.filter((o) => hit(o.name.toLowerCase())).slice(0, 5);
 		return { people, groups, households, visits, notes, orgs, total };
 	}

@@ -4,6 +4,7 @@
 	// 고른 칸과 보기 형식은 이 브라우저에 기억해 둠
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import ExportButtons from '#lib/components/ExportButtons.svelte';
+	import BulkEditPanel from '#lib/components/BulkEditPanel.svelte';
 	import { ageOf, officeKindTitle } from '#lib/registry/derive.ts';
 	import type { Person } from '#lib/registry/types.ts';
 
@@ -105,6 +106,15 @@
 	let shown = $state(300);
 	$effect(() => { void q; void status; void c1; void c2; void c3; shown = STEP; });
 
+	// 일괄 수정 (최고관리자만): 버튼을 누르면 체크칸이 생기고, 체크한 교인을 한꺼번에 바꿈
+	let bulkOpen = $state(false);
+	const bulkOn = $derived(bulkOpen && registry.isSuper);
+	let checked = $state<Set<string>>(new Set());
+	const checkedIds = $derived(rows.filter(({ p }) => checked.has(p.id)).map(({ p }) => p.id));
+	const allChecked = $derived(rows.length > 0 && checkedIds.length === rows.length);
+	function toggle(id: string) { const n = new Set(checked); if (n.has(id)) n.delete(id); else n.add(id); checked = n; }
+	function toggleAll() { checked = allChecked ? new Set() : new Set(rows.map(({ p }) => p.id)); }
+
 	// 엑셀: 보이는 칸 · 보이는 순서 그대로
 	let busy = $state(false);
 	async function excel() {
@@ -126,7 +136,7 @@
 </script>
 
 <div class="row page-head" style="justify-content:space-between">
-	<h1>교인 목록 <small class="muted">항목 설정 · {rows.length}명</small></h1>
+	<h1>교인 목록 항목 설정 <small class="muted">({rows.length}명)</small></h1>
 	<a class="btn ghost" href="/members">← 교인 목록</a>
 </div>
 
@@ -154,6 +164,7 @@
 			<button type="button" class="ghost sm" onclick={() => (asc = !asc)} title="순서 바꾸기">{asc ? '▲ 오름차순' : '▼ 내림차순'}</button>
 		</label>
 		<span style="flex:1"></span>
+		{#if registry.isSuper}<button type="button" class="ghost" class:on-bulk={bulkOpen} onclick={() => { bulkOpen = !bulkOpen; if (!bulkOpen) checked = new Set(); }} aria-expanded={bulkOpen}>{bulkOpen ? '일괄 수정 닫기' : '일괄 수정'}</button>{/if}
 		{#if registry.perms.export}<ExportButtons onexcel={excel} disabled={!rows.length || !cols.length} {busy} />{/if}
 	</div>
 	{#if setOpen}
@@ -168,6 +179,10 @@
 	{/if}
 </div>
 
+{#if bulkOn}
+	<BulkEditPanel ids={checkedIds} onclear={() => (checked = new Set())} onclose={() => { bulkOpen = false; checked = new Set(); }} />
+{/if}
+
 <div class="card" style="padding:0">
 	<p class="result-count"><span class="rc-mark">◎</span> 검색 결과 총 <b>{rows.length.toLocaleString()}</b>명{#if rows.length > shown}<span class="muted"> · 지금 {shown.toLocaleString()}명까지 보임</span>{/if}</p>
 	{#if view === 'list'}
@@ -175,6 +190,7 @@
 			<table class="sm ctable">
 				<thead>
 					<tr>
+						{#if bulkOn}<th class="ck"><input type="checkbox" checked={allChecked} indeterminate={checkedIds.length > 0 && !allChecked} onchange={toggleAll} aria-label="검색 결과 전체 선택" title="검색 결과 {rows.length}명 전체 선택" /></th>{/if}
 						<th class="no">번호</th>
 						{#each cols as c (c.label)}
 							<th>{#if c.photo}{c.label}{:else}<button type="button" class="sort" class:on={sortBy === c.label} onclick={() => sortOn(c.label)} title="{c.label}(으)로 정렬">{c.label}<i>{sortBy === c.label ? (asc ? '▲' : '▼') : '↕'}</i></button>{/if}</th>
@@ -183,14 +199,15 @@
 				</thead>
 				<tbody>
 					{#each rows.slice(0, shown) as { p, s }, i (p.id)}
-						<tr>
+						<tr class:checked={checked.has(p.id)}>
+							{#if bulkOn}<td class="ck"><input type="checkbox" checked={checked.has(p.id)} onchange={() => toggle(p.id)} aria-label="{p.name} 선택" /></td>{/if}
 							<td class="no">{i + 1}</td>
 							{#each cols as c (c.label)}
 								<td class:ph-cell={c.photo}>{#if c.photo}{#if p.photo}<img class="ph-s" src={p.photo} alt="{p.name} 사진" />{:else}<span class="ph-s none">{p.name.slice(0, 1)}</span>{/if}{:else if c.label === '이름'}<a href="/{p.id}"><b>{p.name}</b></a>{:else}{c.get(p, s)}{/if}</td>
 							{/each}
 						</tr>
 					{:else}
-						<tr><td colspan={cols.length + 1} class="empty">해당하는 교인이 없습니다.</td></tr>
+						<tr><td colspan={cols.length + (bulkOn ? 2 : 1)} class="empty">해당하는 교인이 없습니다.</td></tr>
 					{/each}
 				</tbody>
 			</table>
@@ -198,8 +215,8 @@
 	{:else}
 		<!-- 카드 보기: 왼쪽 번호 · 사진 · 이름, 오른쪽에 고른 항목을 세 묶음으로 -->
 		{#each rows.slice(0, shown) as { p, s }, i (p.id)}
-			<div class="pcard">
-				<div class="pc-no">{i + 1}</div>
+			<div class="pcard" class:checked={checked.has(p.id)}>
+				<div class="pc-no">{#if bulkOn}<input type="checkbox" checked={checked.has(p.id)} onchange={() => toggle(p.id)} aria-label="{p.name} 선택" />{/if}{i + 1}</div>
 				<div class="pc-left">
 					{#if showPhoto}
 						{#if p.photo}<img class="ph-l" src={p.photo} alt="{p.name} 사진" />{:else}<span class="ph-l none">{p.name.slice(0, 1)}</span>{/if}
@@ -221,6 +238,11 @@
 <style>
 	.m-search { flex: 1; min-width: 0; box-shadow: none; }
 	.rc-mark { color: var(--orange); }
+	.on-bulk { background: var(--primary-50); border-color: var(--primary); color: var(--primary-600); }
+	.ctable th.ck, .ctable td.ck { width: 2.2rem; text-align: center; }
+	.ck input, .pc-no input { width: auto; cursor: pointer; }
+	.pc-no { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+	tr.checked td, .pcard.checked { background: var(--primary-50); }
 	.result-count { margin: 0; padding: 0.8rem 1.3rem; border-bottom: 1px solid var(--line); font-size: 0.92rem; }
 	.result-count b { color: var(--primary-600); font-size: 1.05rem; }
 	.result-count .muted { font-size: 0.82rem; }

@@ -1,8 +1,9 @@
 <script lang="ts">
-	// 소그룹 상세: 출석 추이, 인도자 특이사항(심방 권한자만), 구성원 8주 출석
+	// 소그룹 상세: 출석 추이, 인도자 특이사항(심방 권한자만), 구성원 명단(이름 · 직분 · 생년월일 · 나이 · 휴대폰)과 8주 출석
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { recentSundays } from '#lib/registry/attendance.mock.ts';
+	import { ageOf, officeKindTitle } from '#lib/registry/derive.ts';
 
 	const WEEKS = recentSundays(8);
 	const g = $derived(registry.groupDef(decodeURIComponent(page.params.group!)));
@@ -46,11 +47,16 @@
 		</section>
 		{#if registry.perms.visit}
 		<section class="card">
-			<div class="card-head"><h2>인도자 특이사항</h2><span class="sub">출석부에서 인도자가 적는 개별 메모 · A 등급만</span></div>
+			<div class="card-head"><h2>인도자 특이사항</h2><span class="sub">(출석부에서 인도자가 적는 개별 메모)</span></div>
 			{#each notes.slice(0, 8) as n (n.id)}
 				<div class="li">
-					<span class="avatar warm">{nameOf(n.person_id).slice(0, 1)}</span>
-					<div class="grow"><b><a href="/{n.person_id}">{nameOf(n.person_id)}</a></b><small>{n.date} · {n.author} — {n.body}</small></div>
+					{#if n.person_id}
+						<span class="avatar warm">{nameOf(n.person_id).slice(0, 1)}</span>
+						<div class="grow"><b><a href="/{n.person_id}">{nameOf(n.person_id)}</a></b><small>{n.date} · {n.author} — {n.body}</small></div>
+					{:else}
+						<span class="avatar">모</span>
+						<div class="grow"><b><span class="tag part" style="margin:0">기타 의견</span></b><small>{n.date} · {n.author} — {n.body}</small></div>
+					{/if}
 				</div>
 			{:else}<p class="empty">적힌 특이사항이 없습니다.</p>{/each}
 			{#if registry.perms.edit}
@@ -64,19 +70,24 @@
 	</div>
 
 	<div class="card" style="padding:0;overflow-x:auto">
-		<table class="sm">
-			<thead><tr><th>이름</th><th>직분</th><th>신급</th><th>휴대폰</th>{#each WEEKS as d}<th style="text-align:center">{md(d)}</th>{/each}</tr></thead>
+		<table class="sm" style="table-layout:fixed;min-width:860px">
+			<!-- 칸 너비 비율: 이름 15 · 직분 11 · 생년월일 10 · 나이 5 · 휴대폰 13 · 주일 8칸이 나머지를 똑같이 (휴대폰에서는 옆으로 밀어서 봄) -->
+			<colgroup><col style="width:15%" /><col style="width:11%" /><col style="width:10%" /><col style="width:5%" /><col style="width:13%" />{#each WEEKS as _}<col style="width:{46 / WEEKS.length}%" />{/each}</colgroup>
+			<thead><tr><th>이름</th><th>직분</th><th>생년월일</th><th style="text-align:center">나이</th><th>휴대폰</th>{#each WEEKS as d}<th style="text-align:center">{md(d)}</th>{/each}</tr></thead>
 			<tbody>
 				{#each members as { p, s } (p.id)}
 					<tr>
-						<td><a href="/{p.id}">{p.name}</a>{#if p.id === g.leader_id}<span class="tag now">인도자</span>{/if}</td>
-						<td>{s.title || '-'}</td><td>{s.faith}</td><td>{p.phone ?? '-'}</td>
+						<td class="nw"><a href="/{p.id}">{p.name}</a>{#if p.id === g.leader_id}<span class="tag now">인도자</span>{/if}</td>
+						<td class="nw">{s.office ? officeKindTitle(s.office, p.clergy_title) : '-'}</td>
+						<td class="nw">{p.birth_date ?? '-'}{p.birth_lunar ? ' (음)' : ''}</td>
+						<td style="text-align:center">{ageOf(p.birth_date) ?? '-'}</td>
+						<td class="nw">{p.phone ?? '-'}</td>
 						{#each WEEKS as d, i}
 							{@const ok = registry.groupAttended(p.id, d, WEEKS.length - 1 - i)}
 							<td style="text-align:center"><span class="pdot" class:on={ok}></span></td>
 						{/each}
 					</tr>
-				{:else}<tr><td colspan="12" class="muted">소속 교인이 없습니다.</td></tr>{/each}
+				{:else}<tr><td colspan="13" class="muted">소속 교인이 없습니다.</td></tr>{/each}
 			</tbody>
 		</table>
 	</div>

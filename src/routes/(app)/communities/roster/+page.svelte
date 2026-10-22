@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 소그룹별 명단: 2026년 편성표 순서(뿌리 → 줄기 → 열매, 소그룹도 편성표 순서), 마지막에 미지정자.
+	// 소그룹별 명단: 2026년 편성표 순서(뿌리 → 줄기 → 열매, 소그룹도 편성표 순서), 마지막에 미지정자(장년 예배·가끔출석 중 공동체 없는 사람).
 	// 각 명단은 가나다순, 올해(1월 1일 ~ 지난 주일) 소그룹 모임 출석률로 색 구분 (80% 이상 / 50~79% / 50% 미만), 인도자는 파랑
 	// 올해 등록한 사람은 등록일 이후 주일만 셈
 	import { registry } from '#lib/registry/store.svelte.ts';
@@ -8,6 +8,7 @@
 	import { ageOf } from '#lib/registry/derive.ts';
 	import { tick } from 'svelte';
 	import { withPdfStyle } from '#lib/pdf-style.ts';
+	import CommunityIcon from '#lib/components/CommunityIcon.svelte';
 	import ExportButtons from '#lib/components/ExportButtons.svelte';
 
 	const active = $derived(registry.d.people.map((p) => ({ p, s: registry.summary(p) })).filter(({ s }) => s.memberCert));
@@ -35,7 +36,8 @@
 			const groups = registry.groupsIn(c.name).map((g) => grp(g.name, rows.filter((x) => x.s.community === c.name && x.s.smallGroup === g.name))).filter((g) => g.xs.length);
 			if (groups.length) out.push({ community: c.name, groups });
 		}
-		const rest = rows.filter((x) => !used.has(x));
+		// 미지정: 교인 › 장년 › 예배출석·가끔출석 중 공동체 배정이 안 된 사람만 (교육부서·청년·장기결석자 등은 빼고)
+		const rest = rows.filter((x) => !used.has(x) && !x.s.community && x.s.cat1 === '교인' && x.s.cat2 === '장년' && (x.s.cat3 === '예배출석' || x.s.cat3 === '가끔출석'));
 		if (rest.length) out.push({ community: '미지정', groups: [grp('소그룹 미지정자', rest)] });
 		return out;
 	});
@@ -80,11 +82,19 @@
 		: c === '나이' ? (ageOf(p.birth_date) ?? '') + ''
 		: c === '휴대폰' ? p.phone ?? ''
 		: leaders.has(p.id) ? '인도자' : '';
+	// 이름·직분만 고르면(상자 보기) A3 가로로, 표로 뽑으면 A4 세로로 인쇄
+	function printNow() {
+		const st = document.createElement('style');
+		st.textContent = tableMode ? '' : '@page { size: A3 landscape; margin: 20mm 18mm; }';
+		document.head.append(st);
+		window.addEventListener('afterprint', () => st.remove(), { once: true });
+		window.print();
+	}
 	async function go() {
 		const what = ask;
 		ask = null;
 		await tick();
-		if (what === '인쇄') { registry.log('출력', `소그룹별 명단 인쇄 · ${scope} · ${tableCols.join('·')}`); window.print(); }
+		if (what === '인쇄') { registry.log('출력', `소그룹별 명단 인쇄 · ${scope} · ${tableCols.join('·')}`); printNow(); }
 		else if (what === 'PDF 저장') await pdf();
 		else if (what === '엑셀') await excel();
 	}
@@ -118,7 +128,7 @@
 		try {
 			const html2pdf = (await import('html2pdf.js')).default;
 			// 문서처럼 보이도록 상하좌우 여백을 넉넉히 (mm: 위, 왼쪽, 아래, 오른쪽)
-			const opts = { margin: [20, 18, 20, 18], filename: fileName, image: { type: 'jpeg', quality: 0.96 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.grp-head', '.keep'] } };
+			const opts = { margin: [20, 18, 20, 18], filename: fileName, image: { type: 'jpeg', quality: 0.96 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: tableMode ? 'a4' : 'a3', orientation: tableMode ? 'portrait' : 'landscape' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.grp-head', '.keep'] } };
 			const el = sheet;
 			await withPdfStyle(el, () => html2pdf().set(opts as unknown as Record<string, never>).from(el).save());
 			registry.log('출력', `소그룹별 명단 PDF · ${scope} · ${tableCols.join('·')}`);
@@ -162,7 +172,7 @@
 	<span class="hi">● 80% 이상</span> <span class="mid">● 50~79%</span> <span class="lo">● 50% 미만</span> <span class="lead">● 인도자</span>
 	<span>(이름 옆 숫자는 개인 출석률)</span></p>
 {#each shown as c}
-	<h2 style="margin:1.2rem 0 .5rem">[ {c.community} ]</h2>
+	<h2 class="comm-h"><CommunityIcon name={c.community} />{c.community}</h2>
 	{#each c.groups as g}
 		<div class="card"><h3 style="margin:0 0 .5rem">{g.name} <span class="muted">({g.xs.length}명)</span> <small class="{band(g.rate)}">평균 출석률 {g.rate}%</small></h3>
 			<div class="names">
@@ -174,8 +184,8 @@
 </div>
 
 <!-- 출력·PDF용 명단: 화면에는 보이지 않고, 출력·PDF 저장 때만 씀. 색 구분 없이 가나다순 표 -->
-<div class="print-wrap">
-	<div class="sheet" bind:this={sheet}>
+<div class="print-wrap" class:a3={!tableMode}>
+	<div class="sheet" class:a3={!tableMode} bind:this={sheet}>
 		<div class="sh-title">
 			<h1>{sheetTitle}</h1>
 			<p>{shownCount}명 · {today} 기준</p>
@@ -210,6 +220,7 @@
 </div>
 
 <style>
+	.comm-h { margin: 1.4rem 0 0.6rem; font-size: 1.32rem; }
 	/* 출석률 색: 80% 이상 초록 / 50~79% 연한 주황 / 50% 미만 연한 회색 (--c 바탕색, --t 글자색) */
 	.hi { --c: var(--teal-600); --t: var(--teal-600); } .mid { --c: #ffa94d; --t: #fd7e14; } .lo { --c: #ced4da; --t: #9aa1a9; }
 	.lead { --c: #7d8fd6; --t: #7d8fd6; } /* 인도자는 출석률과 상관없이 파랑 */
@@ -224,6 +235,8 @@
 
 	/* 출력·PDF용 표: 화면에서는 화면 밖에 둠 (PDF 만들 때 그려져 있어야 해서 display:none 대신) */
 	.print-wrap { position: fixed; left: -10000px; top: 0; width: 174mm; height: 0; overflow: hidden; }
+	/* A3 가로(420mm - 좌우 여백 36mm) */
+	.print-wrap.a3, .sheet.a3 { width: 384mm; }
 	.sheet { width: 174mm; background: #fff; color: #111; font-size: 10pt; font-family: 'Pretendard', 'Malgun Gothic', sans-serif; }
 	.sh-title { text-align: center; margin-bottom: 6mm; padding-bottom: 3mm; border-bottom: 2px solid #111; }
 	.sh-title h1 { font-size: 18pt; margin: 0 0 1.5mm; letter-spacing: 0.08em; }
