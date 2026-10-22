@@ -30,13 +30,24 @@ export interface YearSettings {
 	newcomerDays: number; // 새가족으로 보는 기간 (일)
 }
 
-// 학교 나이 → 학년 이름 (7 = 초1 … 18 = 고3)
-export function gradeLabel(n: number): string {
-	if (n <= 6) return `${n}세 (미취학)`;
-	if (n <= 12) return `초${n - 6}`;
-	if (n <= 15) return `중${n - 12}`;
-	if (n <= 18) return `고${n - 15}`;
+// 학교 나이(올해 - 출생 연도, 7 = 초1)를 고른 나이 계산 방식의 나이로 보여 줌
+// 연 나이: 초1 = 7세 · 한국 나이: 초1 = 8세 · 만 나이: 초1 = 만 6~7세 (생일 전·후)
+// 0은 어느 방식이든 0세 (영아부는 태아부터라 시작이 늘 0세). 저장하는 값은 늘 학교 나이라 방식을 바꿔도 부서 기준은 그대로
+export function ageInMode(n: number, mode: AgeMode = '연 나이'): string {
+	if (n <= 0) return '0세';
+	if (mode === '한국 나이') return `${n + 1}세`;
+	if (mode === '만 나이') return `만 ${n - 1}~${n}세`;
 	return `${n}세`;
+}
+// 학교 나이 → 학년 이름 (7 = 초1 … 18 = 고3). 나이는 고른 방식으로 함께 적음
+export function gradeLabel(n: number, mode: AgeMode = '연 나이'): string {
+	const a = ageInMode(n, mode);
+	if (n <= 0) return '0세 (태아 포함)';
+	if (n <= 6) return `${a} (미취학)`;
+	if (n <= 12) return `초${n - 6} (${a})`;
+	if (n <= 15) return `중${n - 12} (${a})`;
+	if (n <= 18) return `고${n - 15} (${a})`;
+	return a;
 }
 export const GRADE_OPTIONS = Array.from({ length: 46 }, (_, i) => i); // 0 ~ 45
 

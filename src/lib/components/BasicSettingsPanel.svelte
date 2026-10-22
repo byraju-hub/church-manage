@@ -140,8 +140,9 @@
 </section>
 
 <style>
-	.units { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.6rem 1.2rem; margin-top: 1rem; padding: 0.8rem 0.9rem; border-radius: 12px; background: var(--primary-50); }
-	.units label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.82rem; font-weight: 600; color: var(--muted); }
+	.units { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.2rem; margin-top: 1rem; padding: 0.8rem 0.9rem; border-radius: 12px; background: var(--primary-50); }
+	/* '1단계' 글자 옆에 드롭다운이 한 줄로 */
+	.units label { display: flex; flex-direction: row; align-items: center; gap: 0.45rem; font-size: 0.82rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
 	.units select { width: auto; }
 	.img-box { display: grid; place-items: center; min-height: 120px; padding: 0.8rem; border: 1px dashed var(--line-strong); border-radius: 12px; background: #fff; }
 	.img-box img { max-width: 100%; object-fit: contain; }

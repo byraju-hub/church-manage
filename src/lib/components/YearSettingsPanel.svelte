@@ -2,7 +2,7 @@
 	// 관리자 › 교회 설정 › 연간 설정: 해마다 새로 정하는 기준과 연간 계획표를 한곳에서
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PlanImport from '#lib/components/PlanImport.svelte';
-	import { AGE_MODES, GRADE_OPTIONS, bornText, gradeLabel, type BornRange, type YearSettings } from '#lib/registry/year-settings.ts';
+	import { AGE_MODES, GRADE_OPTIONS, ageInMode, bornText, gradeLabel, type BornRange, type YearSettings } from '#lib/registry/year-settings.ts';
 
 	const thisYear = new Date().getFullYear();
 	let year = $state(thisYear);
@@ -138,15 +138,15 @@
 </section>
 
 <section class="card">
-	<div class="card-head"><h2>교육부서 학년 기준 · 부서 이동</h2><span class="sub">학년은 '올해 - 출생 연도'로 셉니다 (7 = 초1, 13 = 중1, 16 = 고1)</span></div>
+	<div class="card-head"><h2>교육부서 학년 기준 · 부서 이동</h2><span class="sub">위에서 고른 {s.ageMode} 기준 · 초1 = {ageInMode(7, s.ageMode)}, 중1 = {ageInMode(13, s.ageMode)}, 고1 = {ageInMode(16, s.ageMode)} · 영아부는 태아부터라 0세 시작</span></div>
 	<div class="row" style="margin-bottom:.6rem"><span class="muted">진급(부서 이동) 날짜</span><input type="date" bind:value={s.promoteDate} style="width:auto" /></div>
 	<div class="tw"><table class="sm ys-t">
 		<thead><tr><th>부서</th><th>시작 학년</th><th>끝 학년</th><th>{year}년 출생 연도</th></tr></thead>
 		<tbody>
 			{#each s.edu as e}
 				<tr><td><b>{e.dept}</b></td>
-					<td><select bind:value={e.from}>{#each GRADE_OPTIONS as g}<option value={g}>{gradeLabel(g)}</option>{/each}</select></td>
-					<td>{#if e.dept === '장년'}<span class="muted">이후 모두</span>{:else}<select bind:value={e.to}>{#each GRADE_OPTIONS as g}<option value={g}>{gradeLabel(g)}</option>{/each}</select>{/if}</td>
+					<td><select bind:value={e.from}>{#each GRADE_OPTIONS as g}<option value={g}>{gradeLabel(g, s.ageMode)}</option>{/each}</select></td>
+					<td>{#if e.dept === '장년'}<span class="muted">이후 모두</span>{:else}<select bind:value={e.to}>{#each GRADE_OPTIONS as g}<option value={g}>{gradeLabel(g, s.ageMode)}</option>{/each}</select>{/if}</td>
 					<td class="muted" style="font-size:.82rem">{year - e.to < 1900 || e.dept === '장년' ? `${year - e.from}년 이전` : `${year - e.to}~${year - e.from}년`}</td></tr>
 			{/each}
 		</tbody>
@@ -164,7 +164,7 @@
 				<thead><tr><th>이름</th><th>생년월일</th><th>학년</th><th>지금</th><th></th><th>옮길 부서</th></tr></thead>
 				<tbody>
 					{#each moves.slice(0, 60) as m (m.p.id)}
-						<tr><td><a href="/{m.p.id}">{m.p.name}</a></td><td>{m.p.birth_date}</td><td>{gradeLabel(year - +m.p.birth_date!.slice(0, 4))}</td><td>{m.from}</td><td>→</td><td><b>{m.to}</b></td></tr>
+						<tr><td><a href="/{m.p.id}">{m.p.name}</a></td><td>{m.p.birth_date}</td><td>{gradeLabel(year - +m.p.birth_date!.slice(0, 4), s.ageMode)}</td><td>{m.from}</td><td>→</td><td><b>{m.to}</b></td></tr>
 					{/each}
 				</tbody>
 			</table></div>
