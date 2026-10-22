@@ -233,7 +233,7 @@
 </div>
 
 <section class="card">
-	<div class="card-head"><h2>{@render hIcon('calendar')}캘린더</h2><span class="sub">* 색상별로 항목을 구분하고, 항목을 누르면 해당 내용만 표시됩니다.</span></div>
+	<div class="card-head"><h2>{@render hIcon('calendar')}캘린더</h2><span class="sub">(색상별로 항목을 구분하고, 항목을 누르면 해당 내용만 표시됩니다.)</span></div>
 	<Calendar />
 </section>
 

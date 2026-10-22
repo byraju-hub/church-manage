@@ -140,7 +140,7 @@
 		</div>
 		<Pagination bind:page={vpage} {pages} onchange={() => listTop?.scrollIntoView({ block: 'start', behavior: 'smooth' })} />
 	{:else if tab === 'cal'}
-		<div class="card"><Calendar only={['심방 계획']} /></div>
+		<div class="card"><Calendar only={['심방 계획', '성도']} /></div>
 		<p class="muted">달력에는 등록된 심방이 날짜별로 표시됩니다. 앞으로의 날짜로 등록하면 심방 계획으로 보입니다.</p>
 	{:else if tab === 'notes'}
 		<div class="card">

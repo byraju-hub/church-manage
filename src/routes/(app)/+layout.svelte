@@ -102,8 +102,8 @@
 	const path = $derived(page.url.pathname);
 	const PROGRAM_TABS =['교인구분', '코드표', '확인 목록', '백업'];
 	const adminMenu: Item[] = $derived([
-		{ href: '/settings', label: '교회 설정', hint: `기본 설정 · 연간 설정 · 조직표 · ${registry.t2} 편성` },
-		{ href: '/admin', label: '사용자 설정', hint: '사용자 목록 · 가입 신청 · 등급 · 접속 기록' },
+		{ href: '/settings', label: '교회 설정', hint: `기본 · 연간 · 조직표 · ${registry.t2}` },
+		{ href: '/admin', label: '사용자 설정', hint: '목록 · 가입 · 등급 · 기록' },
 		{ href: `/settings?tab=${encodeURIComponent('교인구분')}`, label: '프로그램 설정', hint: '교인구분 · 코드표 · 확인 목록 · 백업' }
 	]);
 	// 교회 설정과 프로그램 설정은 같은 화면(/settings)이라 탭으로 어느 쪽인지 가림

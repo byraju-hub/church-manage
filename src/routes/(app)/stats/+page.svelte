@@ -20,6 +20,24 @@
 		return { name: d, total: l.length, weekly: attend(l) };
 	}));
 	const maxAdult = $derived(Math.max(1, ...adultWeekly));
+	// 교육부서 합계 · 전체(장년 + 교육부서)
+	const eduTotal = $derived(depts.reduce((s, d) => s + d.total, 0));
+	const eduWeekly = $derived(WEEKS.map((_, i) => depts.reduce((s, d) => s + d.weekly[i], 0)));
+	const allWeekly = $derived(WEEKS.map((_, i) => adultWeekly[i] + eduWeekly[i]));
+
+	// 꺾은선 그래프: 주마다 점. 세 줄(전체 · 장년 · 교육부서)을 한 축에
+	const CW = 900, CH = 300, PL = 44, PR = 130, PT = 16, PB = 30;
+	const series = $derived([
+		{ name: '전체', color: 'var(--primary)', data: allWeekly },
+		{ name: '장년', color: 'var(--teal-600)', data: adultWeekly },
+		{ name: '교육부서', color: '#e8590c', data: eduWeekly }
+	]);
+	const yStep = $derived(Math.max(...allWeekly) > 200 ? 100 : 50);
+	const yMax = $derived(Math.ceil(Math.max(10, ...allWeekly) / yStep) * yStep);
+	const xAt = (i: number) => PL + (i * (CW - PL - PR)) / (WEEKS.length - 1);
+	const yAt = (v: number) => PT + (CH - PT - PB) * (1 - v / yMax);
+	const yTicks = $derived(Array.from({ length: yMax / yStep + 1 }, (_, i) => i * yStep));
+	let hover = $state<number | null>(null);
 	const pct = (n: number, t: number) => (t ? Math.round((n * 100) / t) : 0);
 
 	// ---- 소그룹 출석 ----
@@ -69,12 +87,44 @@
 			{/each}
 		</section>
 	</div>
+	<section class="card">
+		<div class="card-head"><div><h2>주일 출석 추이</h2><span class="sub">최근 8주 · 장년 주일 오전예배 + 교육부서 · 점에 마우스를 올리면 그 주 인원</span></div>
+			<div class="lg">{#each series as s}<span><i style="background:{s.color}"></i>{s.name}</span>{/each}</div>
+		</div>
+		<div class="line-wrap">
+			<svg viewBox="0 0 {CW} {CH}" class="line" role="img" aria-label="최근 8주 주일 출석 꺾은선 그래프 (전체 · 장년 · 교육부서)">
+				{#each yTicks as t}
+					<line x1={PL} x2={CW - PR} y1={yAt(t)} y2={yAt(t)} class="grid" />
+					<text x={PL - 8} y={yAt(t) + 4} text-anchor="end" class="ax">{t}</text>
+				{/each}
+				{#each WEEKS as d, i}<text x={xAt(i)} y={CH - 8} text-anchor="middle" class="ax">{md(d)}</text>{/each}
+				{#if hover !== null}<line x1={xAt(hover)} x2={xAt(hover)} y1={PT} y2={CH - PB} class="cross" />{/if}
+				{#each series as s}
+					<polyline points={s.data.map((v, i) => `${xAt(i)},${yAt(v)}`).join(' ')} fill="none" stroke={s.color} stroke-width="2" stroke-linejoin="round" />
+					{#each s.data as v, i}<circle cx={xAt(i)} cy={yAt(v)} r={hover === i ? 5.5 : 4} fill={s.color} stroke="#fff" stroke-width="2" />{/each}
+					<text x={xAt(WEEKS.length - 1) + 10} y={yAt(s.data[s.data.length - 1]) + 4} class="end">{s.name} {s.data[s.data.length - 1]}</text>
+				{/each}
+				<!-- 마우스 영역: 주마다 세로 띠 -->
+				{#each WEEKS as _, i}
+					<rect x={xAt(i) - (CW - PL - PR) / (WEEKS.length - 1) / 2} y={PT} width={(CW - PL - PR) / (WEEKS.length - 1)} height={CH - PT - PB} fill="transparent" role="presentation" onmouseenter={() => (hover = i)} onmouseleave={() => (hover = null)} />
+				{/each}
+			</svg>
+			{#if hover !== null}
+				<div class="tip" style="left:{(xAt(hover) / CW) * 100}%">
+					<b>{md(WEEKS[hover])} 주일</b>
+					{#each series as s}<span><i style="background:{s.color}"></i>{s.name} <b>{s.data[hover]}</b>명</span>{/each}
+				</div>
+			{/if}
+		</div>
+	</section>
 	<div class="card" style="padding:0;overflow-x:auto">
 		<table class="sm">
 			<thead><tr><th>구분</th><th>재적</th>{#each WEEKS as d}<th style="text-align:right">{md(d)}</th>{/each}</tr></thead>
 			<tbody>
+				<tr class="sumrow"><td><b>전체 (장년 + 교육부서)</b></td><td><b>{adult.length + eduTotal}</b></td>{#each allWeekly as n}<td style="text-align:right"><b>{n}</b></td>{/each}</tr>
 				<tr><td><b>장년</b></td><td>{adult.length}</td>{#each adultWeekly as n}<td style="text-align:right">{n}</td>{/each}</tr>
-				{#each depts as d}<tr><td>{d.name}</td><td>{d.total}</td>{#each d.weekly as n}<td style="text-align:right">{n}</td>{/each}</tr>{/each}
+				<tr><td><b>교육부서 합계</b></td><td>{eduTotal}</td>{#each eduWeekly as n}<td style="text-align:right">{n}</td>{/each}</tr>
+				{#each depts as d}<tr><td style="padding-left:1.4rem">{d.name}</td><td>{d.total}</td>{#each d.weekly as n}<td style="text-align:right">{n}</td>{/each}</tr>{/each}
 			</tbody>
 		</table>
 	</div>
@@ -139,3 +189,19 @@
 		</section>
 	</div>
 {/if}
+
+<style>
+	/* 주일 출석 꺾은선 그래프 */
+	.lg { display: flex; gap: 0.9rem; font-size: 0.85rem; color: var(--muted); }
+	.lg span { display: inline-flex; align-items: center; gap: 0.3rem; }
+	.lg i, .tip i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+	.line-wrap { position: relative; }
+	.line { width: 100%; height: auto; display: block; }
+	.line .grid { stroke: var(--line); stroke-width: 1; }
+	.line .cross { stroke: var(--line-strong); stroke-dasharray: 3 3; }
+	.line .ax { font-size: 11px; fill: var(--muted); }
+	.line .end { font-size: 12px; font-weight: 700; fill: var(--text); }
+	.tip { position: absolute; top: 0; transform: translateX(-50%); background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 0.45rem 0.65rem; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1); font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.15rem; pointer-events: none; white-space: nowrap; }
+	.tip span { display: inline-flex; align-items: center; gap: 0.3rem; }
+	.sumrow td { background: var(--primary-50); }
+</style>

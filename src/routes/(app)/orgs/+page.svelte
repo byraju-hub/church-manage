@@ -5,7 +5,8 @@
 	import ExportButtons from '#lib/components/ExportButtons.svelte';
 
 	// 순서: 교회 조직표가 맨 앞이고, 상단 메뉴 '조직'을 누르면 교회 조직표가 먼저 보임
-	const tabs = ['교회 조직표', '당회', '시무집사회', '시무권사회', '남전도회', '여전도회'];
+	const tabs = ['교회 조직표', '당회', '시무집사회', '시무권사회', '서리집사', '남전도회', '여전도회'];
+	const YEAR = new Date().getFullYear();
 	let tab = $state('교회 조직표');
 	let pickedSociety = $state('1남전도회');
 	let pickedOrg = $state('');
@@ -55,8 +56,23 @@
 	});
 	const STATUS_ORDER = ['원로', '은퇴', '협동', '휴직', '명예', '전입'];
 	const restList = $derived(others(office).sort((a, b) => STATUS_ORDER.indexOf(a.t.rank_status) - STATUS_ORDER.indexOf(b.t.rank_status) || a.p.name.localeCompare(b.p.name, 'ko')));
-	const restTitle = $derived(tab === '당회' ? '시무장로 외 장로 명단' : '그 밖의 구분');
-	const restHint = $derived(tab === '당회' ? '원로 · 은퇴 · 협동 · 휴직' : '은퇴 · 원로 · 명예 · 협동 · 전입');
+	const restTitle = $derived(tab === '당회' ? '시무장로 외 장로 명단' : tab === '시무집사회' ? '시무집사 외 집사 명단' : '시무권사 외 권사 명단');
+	const restHint = $derived(tab === '당회' ? '원로 · 은퇴 · 협동 · 휴직' : tab === '시무집사회' ? '은퇴 · 협동 · 전입' : '은퇴 · 협동 · 전입 · 명예');
+
+	// 서리집사: 올해 임명된(끝나지 않은) 서리·명예집사를 남자 서리집사 · 남자 명예집사 · 여자 서리집사로 나눔
+	const deaconBoxes = $derived.by(() => {
+		const terms = registry.d.officeTerms.filter((t) => t.office === '서리집사' && !t.end_date);
+		const pick = (status: string, gender: 'M' | 'F') => {
+			const ids = new Set(terms.filter((t) => t.rank_status === status).map((t) => t.person_id));
+			return [...ids].map((id) => registry.person(id)).filter((p) => !!p && p.gender === gender && registry.summary(p).memberCert)
+				.map((p) => ({ p: p!, s: registry.summary(p!) })).sort((a, b) => a.p.name.localeCompare(b.p.name, 'ko'));
+		};
+		return [
+			{ title: '남자 서리집사', list: pick('서리', 'M') },
+			{ title: '남자 명예집사', list: pick('명예', 'M') },
+			{ title: '여자 서리집사', list: pick('서리', 'F') }
+		];
+	});
 	const memberTitle = $derived(office === '시무집사' ? '시무집사' : office === '장로' ? '시무장로' : '시무권사');
 
 	// ---- 인쇄 · 엑셀 · PDF: 지금 탭의 명단 (전도회는 그 탭의 전도회 전체) ----
@@ -72,6 +88,13 @@
 			}));
 		}
 		if (tab === '교회 조직표') return [];
+		if (tab === '서리집사') {
+			return deaconBoxes.map((b) => ({
+				title: `${YEAR}년 ${b.title} (총 ${b.list.length}명)`,
+				heads: ['번호', '이름', registry.t1, registry.t2],
+				rows: b.list.map(({ p, s }, i) => [i + 1, p.name, s.community || '', s.smallGroup || ''])
+			}));
+		}
 		const heads = ['번호', '이름', '직분', '비고', '임직일', '임직교회'];
 		const out: Sec[] = [{ title: `${tab} (${officeList.length}명)`, heads, rows: officeList.map(({ t, p }, i) => [i + 1, p.name, memberTitle, roles.get(p.id) ?? '', t.start_date ?? '', t.church ?? '본 교회']) }];
 		if (restList.length) out.push({ title: `${restTitle} (${restList.length}명)`, heads, rows: restList.map(({ t, p }, i) => [i + 1, p.name, `${t.rank_status}${office === '시무집사' ? '집사' : office}`, '', t.start_date ?? '', t.church ?? '본 교회']) });
@@ -92,7 +115,7 @@
 			const heads = ['구분', ...sections[0].heads];
 			const data = [
 				heads.map((h) => ({ value: h, fontWeight: 'bold' as const, backgroundColor: '#E9ECEF', ...border })),
-				...sections.flatMap((sec) => sec.rows.map((r) => [{ value: sec.title.replace(/ \(\d+명\)$/, ''), ...border }, ...r.map((v) => (typeof v === 'number' ? { value: v, type: Number, ...border } : { value: v, ...border }))]))
+				...sections.flatMap((sec) => sec.rows.map((r) => [{ value: sec.title.replace(/ \((총 )?\d+명\)$/, ''), ...border }, ...r.map((v) => (typeof v === 'number' ? { value: v, type: Number, ...border } : { value: v, ...border }))]))
 			];
 			await writeXlsxFile(data, { sheet: tab, columns: heads.map((h) => ({ width: h === '번호' || h === '나이' ? 6 : h === '비고' ? 22 : 13 })), stickyRowsCount: 1 }).toFile(`${fileBase}.xlsx`);
 			registry.log('내려받기', `조직 · ${tab} 엑셀`);
@@ -116,7 +139,7 @@
 </script>
 
 <div class="no-print">
-<h1>교회 조직표</h1>
+<h1>{tab === '서리집사' ? `${YEAR}년 서리집사` : tab}</h1>
 <div class="tabs">{#each tabs as t}<button class:on={tab === t} onclick={() => (tab = t)}>{t}</button>{/each}</div>
 
 {#if tab !== '교회 조직표'}
@@ -144,6 +167,18 @@
 			</tbody></table>
 		</div>
 	{/if}
+{:else if tab === '서리집사'}
+	<div class="deacon-grid">
+		{#each deaconBoxes as b}
+			<section class="card deacon">
+				<h2>{YEAR}년 {b.title}</h2>
+				<div class="dnames">
+					{#each b.list as { p } (p.id)}<a href="/{p.id}">{p.name}</a>{:else}<span class="muted">없음</span>{/each}
+				</div>
+				<p class="dtotal">총 <b>{b.list.length}</b>명</p>
+			</section>
+		{/each}
+	</div>
 {:else if tab === '남전도회' || tab === '여전도회'}
 	{@const names = tab === '남전도회' ? males : females}
 	<div class="card">
@@ -229,6 +264,12 @@
 </div>
 
 <style>
+	.deacon-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; align-items: start; }
+	.deacon-grid .card { margin: 0; }
+	.deacon h2 { margin: 0 0 0.8rem; font-size: 1.05rem; }
+	.dnames { display: flex; flex-wrap: wrap; gap: 0.35rem 0.9rem; line-height: 1.7; }
+	.dtotal { margin: 0.9rem 0 0; padding-top: 0.6rem; border-top: 1px solid var(--line); text-align: right; color: var(--muted); }
+	.dtotal b { color: var(--text); }
 	.out-row { display: flex; justify-content: flex-end; margin: -0.4rem 0 0.8rem; }
 	.role { display: block; margin: 0.15rem 0 0.1rem; font-style: normal; font-size: 0.8rem; font-weight: 600; color: var(--primary); }
 	.print-wrap { position: fixed; left: -10000px; top: 0; width: 174mm; height: 0; overflow: hidden; }

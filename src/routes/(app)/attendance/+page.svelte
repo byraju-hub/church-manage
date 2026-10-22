@@ -112,7 +112,7 @@
 	</div>
 	<div class="att-search">
 		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
-		<input type="search" bind:value={q} placeholder="이름 · 직분 · {registry.t2} · {registry.t1} 검색 (예: 김 권사, 만나)" aria-label="출석 명단 검색" />
+		<input type="search" bind:value={q} placeholder="이름 · 직분 · {registry.t2} · {registry.t1} 검색" aria-label="출석 명단 검색" />
 		{#if q.trim()}<span class="muted" style="font-size:.85rem;white-space:nowrap">검색 결과 <b>{shownRows.length}</b>명</span>{/if}
 	</div>
 </div>
