@@ -80,6 +80,12 @@
 			.sort((a, b) => b.date.localeCompare(a.date))
 	);
 
+	// 특이사항도 한 쪽에 30건씩, 조건이 바뀌면 1쪽으로
+	let npage = $state(1);
+	let noteTop = $state<HTMLElement | null>(null);
+	const npages = $derived(Math.max(1, Math.ceil(noteRows.length / PER)));
+	$effect(() => { void nq; void ncomm; void ngroup; void nfrom; void nto; npage = 1; });
+
 	// 녹음·문서 분석 결과를 입력 칸에 채움
 	function applyAnalysis(r: Analysis) {
 		if (r.kind) f.kind = r.kind;
@@ -91,7 +97,10 @@
 	}
 </script>
 
-<h1>심방</h1>
+<div class="row page-head" style="justify-content:space-between">
+	<h1>심방</h1>
+	{#if registry.perms.visit && registry.perms.edit}<button type="button" onclick={() => (tab = 'new')}>+ 심방 등록</button>{/if}
+</div>
 {#if !registry.perms.visit}
 	<div class="warn">심방 메뉴는 A 등급(전임 교역자)만 볼 수 있습니다.</div>
 {:else}
@@ -99,7 +108,6 @@
 		<button class:on={tab === 'list'} onclick={() => (tab = 'list')}>심방 목록</button>
 		<button class:on={tab === 'cal'} onclick={() => (tab = 'cal')}>캘린더 보기</button>
 		<button class:on={tab === 'notes'} onclick={() => (tab = 'notes')}>소그룹 특이사항</button>
-		{#if registry.perms.edit}<button class:on={tab === 'new'} onclick={() => (tab = 'new')}>+ 심방 등록</button>{/if}
 	</div>
 
 	{#if tab === 'list'}
@@ -144,11 +152,12 @@
 				<span class="range"><span class="muted">날짜</span><input type="date" bind:value={nfrom} aria-label="시작 날짜" /><span>~</span><input type="date" bind:value={nto} aria-label="끝 날짜" /></span>
 			</div>
 		</div>
+		<p class="muted" style="margin:0 0 .5rem;scroll-margin-top:110px" bind:this={noteTop}>모두 {noteRows.length.toLocaleString()}건{#if npages > 1} · {npage} / {npages}쪽{/if} (홈페이지 출석부에서 소그룹 인도자가 적은 특이사항을 모아 보여 줍니다.)</p>
 		<div class="card" style="padding:0;overflow-x:auto">
 			<table class="sm vlist">
 				<thead><tr><th>날짜</th><th>공동체</th><th>소그룹</th><th>작성</th><th>교인</th><th>특이사항</th></tr></thead>
 				<tbody>
-					{#each noteRows.slice(0, 200) as n (n.id)}
+					{#each noteRows.slice((npage - 1) * PER, npage * PER) as n (n.id)}
 						<tr class:opinion={!n.person_id}>
 							<td style="white-space:nowrap">{ymd(n.date)}</td>
 							<td style="white-space:nowrap">{commOf(n.small_group).replace(' 공동체', '') || '-'}</td>
@@ -162,7 +171,7 @@
 				</tbody>
 			</table>
 		</div>
-		<p class="muted">홈페이지 출석부에서 소그룹 인도자가 적은 특이사항을 모아 보여 줍니다. 건강 등 민감한 내용이 있어 A 등급만 볼 수 있습니다.{noteRows.length > 200 ? ` (${noteRows.length}건 중 200건만 표시)` : ''}</p>
+		<Pagination bind:page={npage} pages={npages} onchange={() => noteTop?.scrollIntoView({ block: 'start', behavior: 'smooth' })} />
 	{:else}
 		<form class="card form" onsubmit={submit}>
 			<h2 class="wide">심방 등록</h2>

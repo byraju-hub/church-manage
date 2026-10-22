@@ -21,6 +21,21 @@
 	let busy = $state(false);
 	let sheet = $state<HTMLElement | null>(null);
 
+	// 홈페이지 증명서 신청: 관리자가 승인한 신청만 직인이 들어감. 교적 관리에서 바로 뽑는 증명서는 늘 직인이 들어감
+	let reqId = $state<string | null>(null);
+	const req = $derived(reqId ? registry.certRequests.find((r) => r.id === reqId) : undefined);
+	const sealOk = $derived(!req || req.status === '승인');
+	// 진짜 직인은 이 컴퓨터의 static/private 에만 있음 (저장소·공개 사이트에 없음) → 없으면 '견본' 직인
+	let sealSrc = $state('/private/church-seal.png');
+	const pendingReqs = $derived(registry.certRequests.filter((r) => r.status === '대기').length);
+	const reqName = (id: string) => registry.person(id)?.name ?? '';
+	function openReq(r: { id: string; kind: '교인증명서' | '세례증명서'; person_id: string; purpose: string }) {
+		doc = r.kind; personId = r.person_id; purpose = r.purpose; reqId = r.id;
+	}
+	// 화면에서 다른 문서·교인을 고르면 신청과의 연결을 끊음
+	$effect(() => { if (req && (req.person_id !== personId || req.kind !== doc)) reqId = null; });
+	const purposeOpts = $derived([...new Set(['제출용', '이명용', '학교 제출용', '직장 제출용', '기타', purpose])]);
+
 	const CHURCH = '부평동부교회';
 	const now = new Date();
 	const todayKo = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
@@ -136,7 +151,7 @@
 		<div class="toolbar">
 			{#if needsPerson}
 				<div style="flex:1 1 320px;max-width:420px"><PersonPicker bind:value={personId} placeholder="교인 이름 검색" /></div>
-				{#if doc !== '교적부'}<label class="row" style="gap:.4rem"><span class="muted">용도</span><select bind:value={purpose} style="width:auto">{#each ['제출용', '이명용', '학교 제출용', '직장 제출용', '기타'] as x}<option>{x}</option>{/each}</select></label>{/if}
+				{#if doc !== '교적부'}<label class="row" style="gap:.4rem"><span class="muted">용도</span><select bind:value={purpose} style="width:auto">{#each purposeOpts as x}<option>{x}</option>{/each}</select></label>{/if}
 			{:else if doc === '생일 명단'}
 				<label class="row" style="gap:.4rem"><span class="muted">월</span><select bind:value={month} style="width:auto">{#each Array.from({ length: 12 }, (_, i) => i + 1) as m}<option value={m}>{m}월</option>{/each}</select></label>
 			{:else if doc === '교인 요람'}
@@ -148,6 +163,40 @@
 		</div>
 		{#if doc === '교인 요람' && consentOnly}<p class="muted" style="margin:0;font-size:.82rem">요람에는 '요람 공개'에 동의한 사람만 나옵니다. (일괄 동의를 받기 전이라 지금은 몇 명만 있습니다. 시험할 때는 체크를 풀어 보세요)</p>{/if}
 		{#if doc === '세례증명서' && p && !baptism}<p class="warn" style="margin:.4rem 0 0">이 교인은 세례(유아세례·입교) 기록이 없어 세례증명서를 만들 수 없습니다.</p>{/if}
+		{#if req}
+			<p class={req.status === '승인' ? 'ok' : 'warn'} style="margin:.6rem 0 0">
+				홈페이지 신청 · {reqName(req.person_id)} · {req.kind} · {req.purpose} —
+				{req.status === '승인' ? `${req.decided_by} 승인(${req.decided_at}) · 직인이 들어갑니다.` : req.status === '대기' ? '아직 승인 전이라 직인이 들어가지 않습니다.' : '반려된 신청이라 직인이 들어가지 않습니다.'}
+			</p>
+		{/if}
+	</div>
+
+	<!-- 홈페이지에서 들어온 증명서 신청 -->
+	<div class="card">
+		<div class="card-head"><h2>홈페이지 증명서 신청 {#if pendingReqs}<span class="tag new">대기 {pendingReqs}건</span>{/if}</h2><span class="sub">관리자가 승인한 신청만 직인이 들어간 증명서로 발급됩니다</span></div>
+		<div style="overflow-x:auto">
+			<table class="sm">
+				<thead><tr><th>신청 일시</th><th>이름</th><th>증명서</th><th>용도</th><th>상태</th><th></th></tr></thead>
+				<tbody>
+					{#each [...registry.certRequests].sort((a, b) => b.requested_at.localeCompare(a.requested_at)) as r (r.id)}
+						<tr class:on-req={r.id === reqId}>
+							<td class="nw">{r.requested_at}</td>
+							<td class="nw"><a href="/{r.person_id}">{reqName(r.person_id)}</a></td>
+							<td class="nw">{r.kind}</td>
+							<td>{r.purpose}</td>
+							<td class="nw"><span class="badge" class:inactive={r.status === '대기'} class:long={r.status === '반려'}>{r.status}</span>{#if r.decided_by}<small class="muted"> {r.decided_by}</small>{/if}</td>
+							<td class="nw" style="text-align:right">
+								{#if r.status === '대기' && registry.canApproveCert}
+									<button type="button" class="sm" onclick={() => { registry.decideCertRequest(r.id, true); openReq(r); }}>승인</button>
+									<button type="button" class="ghost sm" onclick={() => registry.decideCertRequest(r.id, false)}>반려</button>
+								{/if}
+								{#if r.status !== '반려'}<button type="button" class="ghost sm" onclick={() => openReq(r)}>{r.status === '승인' ? '발급하기' : '미리 보기'}</button>{/if}
+							</td>
+						</tr>
+					{:else}<tr><td colspan="6" class="empty">들어온 신청이 없습니다.</td></tr>{/each}
+				</tbody>
+			</table>
+		</div>
 	</div>
 </div>
 
@@ -228,7 +277,8 @@
 					<p class="cert-body">{doc === '교인증명서' ? '위 사람은 본 교회에 등록된 교인임을 증명합니다.' : `위 사람은 위와 같이 ${baptism?.kind ?? '세례'}를 받았음을 증명합니다.`}</p>
 					<p class="cert-date">{todayKo}</p>
 					<!-- 교회 이름 자리에 교회 로고(대한예수교장로회 부평동부교회) -->
-					<p class="cert-sign"><img class="cert-logo" src="/church-logo.png" alt="대한예수교장로회 {CHURCH}" width="360" height="67" style="width:95mm;height:auto" /><br />담임목사 <b>{pastor}</b> <span class="seal">(인)</span></p>
+					<!-- 직인: 교적 관리에서 바로 뽑을 때는 늘, 홈페이지 신청은 관리자가 승인한 뒤에만 -->
+					<p class="cert-sign"><img class="cert-logo" src="/church-logo.png" alt="대한예수교장로회 {CHURCH}" width="360" height="67" style="width:70mm;height:auto" /><br />담임목사 <b>{pastor}</b> <span class="seal-wrap">(인){#if sealOk}<img class="seal-img" src={sealSrc} onerror={() => (sealSrc = '/seal-sample.svg')} alt="교회 직인" />{/if}</span></p>
 				</div>
 
 			{:else if doc === '교인 요람'}
@@ -300,6 +350,7 @@
 	.cm-th span { float: right; font-weight: 500; font-size: 9pt; }
 	.foot-note { margin-top: 14px; font-size: 8.5pt; color: #666; border-top: 1px solid #ccc; padding-top: 6px; }
 	.cert { padding: 6mm 4mm; }
+	tr.on-req td { background: var(--primary-50); }
 	.cert-no { font-size: 10pt; color: #333; margin: 0 0 18mm; }
 	.cert-title { text-align: center; font-size: 24pt; letter-spacing: 0.25em; margin: 0 0 14mm; padding-bottom: 4mm; border-bottom: 3px double #111; }
 	.cert-table th { width: 22mm; text-align: center; }
@@ -307,8 +358,10 @@
 	.cert-body { text-align: center; font-size: 13pt; margin: 22mm 0 14mm; }
 	.cert-date { text-align: center; font-size: 12pt; margin-bottom: 22mm; }
 	.cert-sign { text-align: center; font-size: 14pt; line-height: 2; }
-	.cert-logo { display: inline-block; width: 95mm; height: auto; margin-bottom: 4mm; vertical-align: middle; }
-	.seal { display: inline-grid; place-items: center; width: 16mm; height: 16mm; margin-left: 4mm; border: 2px solid #c92a2a; border-radius: 50%; color: #c92a2a; font-size: 10pt; }
+	.cert-logo { display: inline-block; width: 70mm; height: auto; margin-bottom: 4mm; vertical-align: middle; }
+	/* 직인: '(인)' 글자 위에 겹쳐 찍힌 모양 */
+	.seal-wrap { position: relative; display: inline-block; margin-left: 4mm; }
+	.seal-img { position: absolute; left: 50%; top: 50%; width: 22mm; height: 22mm; transform: translate(-50%, -50%) rotate(-3deg); object-fit: contain; mix-blend-mode: multiply; opacity: 0.92; }
 	@media print {
 		:global(.site-header), :global(.site-footer), :global(.tabbar), :global(.to-top), .no-print { display: none !important; }
 		:global(.site > main) { padding: 0 !important; max-width: none !important; }

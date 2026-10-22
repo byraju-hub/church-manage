@@ -66,14 +66,26 @@ interface Data {
 	worshipTotals?: Record<string, number>; // 1) 주일 오전예배 전체 출석 인원 (주일 날짜 → 인원). 명단 체크와 따로 입력
 	groupAttendance?: Record<string, Record<string, T.AttendanceMark>>; // 2) 주일 오후 소그룹 모임 출석 (홈페이지 출석부에서 가져옴)
 	smsTemplates?: SmsTemplate[]; // 문자 보내기의 자주 쓰는 문구 (모든 A 등급이 함께 씀)
+	certRequests?: T.CertRequest[]; // 홈페이지에서 들어온 증명서 신청 (관리자 승인 후 직인 발급)
 	users: T.AppUser[];
 	grades: T.GradeDef[];
 }
 
+// 가상 증명서 신청 3건 (홈페이지에서 들어온 것처럼). 시험용 인물(홍길동·성춘향·홍도령)만 씀
+const sampleCertRequests = (): T.CertRequest[] => {
+	const at = (daysBack: number, hm: string) => { const d = new Date(); d.setDate(d.getDate() - daysBack); return `${isoDate(d)} ${hm}`; };
+	return [
+		{ id: 'cr1', person_id: 'p1', kind: '교인증명서', purpose: '회사 제출용', requested_at: at(0, '09:12'), status: '대기', decided_at: null, decided_by: null },
+		{ id: 'cr2', person_id: 'p2', kind: '세례증명서', purpose: '타 교회 직분 임직용', requested_at: at(1, '20:40'), status: '대기', decided_at: null, decided_by: null },
+		{ id: 'cr3', person_id: 'p3', kind: '교인증명서', purpose: '장학금 신청용', requested_at: at(3, '14:05'), status: '승인', decided_at: at(2, '10:30'), decided_by: '정담임' }
+	];
+};
 const initial = (): Data => {
 	const { generated, ...rest } = seed as unknown as Record<string, unknown>;
 	void generated;
-	return structuredClone(rest) as unknown as Data;
+	const d = structuredClone(rest) as unknown as Data;
+	d.certRequests = sampleCertRequests();
+	return d;
 };
 const now = () => new Date().toISOString().slice(0, 16).replace('T', ' ');
 const today = () => isoDate(new Date());
@@ -96,6 +108,7 @@ function migrate(d: Data): Data {
 		d.categories = d.categories.filter((c) => !/^m\.[^a]\.n$/.test(c.id));
 		for (const p of d.people ?? []) p.category_id = fixCat(p.category_id);
 	}
+	if (!d.certRequests) d.certRequests = sampleCertRequests();
 	// 소그룹 '기타 의견'(교인 없이 모임 전체에 대한 의견) 샘플이 없으면 넣어 둠
 	if (d.groupNotes && !d.groupNotes.some((n) => !n.person_id)) {
 		const nm = (id: string) => d.people?.find((p) => p.id === id)?.name ?? '';
@@ -163,6 +176,21 @@ class Registry {
 	}
 	get perms(): T.Perms { return this.permsOf(this.me); }
 	get isSuper(): boolean { return !!this.me?.is_super && this.me.status === '사용'; }
+
+	// ---- 홈페이지 증명서 신청 ----
+	// [실제 시스템] 홈페이지(교인 로그인)에서 신청하면 cert_requests 표에 '대기'로 들어오고,
+	//   관리자가 승인한 신청만 직인이 들어간 PDF를 만들어 홈페이지에서 내려받게 합니다. 직인 이미지는 공개 저장소가 아닌
+	//   로그인한 관리자만 읽을 수 있는 저장소(예: Supabase Storage 비공개 버킷)에 둡니다.
+	get certRequests(): T.CertRequest[] { return this.d.certRequests ?? []; }
+	get canApproveCert(): boolean { return this.isSuper || this.perms.admin; }
+	decideCertRequest(id: string, approve: boolean) {
+		const r = this.d.certRequests?.find((x) => x.id === id);
+		if (!r || !this.canApproveCert) return;
+		r.status = approve ? '승인' : '반려';
+		r.decided_at = now();
+		r.decided_by = this.who;
+		this.log('증명서 신청', `${approve ? '승인' : '반려'} · ${r.kind} · ${this.person(r.person_id)?.name ?? ''} · ${r.purpose}`);
+	}
 	private get who(): string { return this.me?.name ?? '알 수 없음'; }
 	login(id: string) {
 		this.userId = id;

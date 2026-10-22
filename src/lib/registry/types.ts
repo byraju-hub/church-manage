@@ -320,6 +320,19 @@ export interface Affiliation {
 }
 
 // 교적 권한: 승인된 사용자는 기본(열람) + 아래 항목을 최고관리자가 켜고 끔
+// 홈페이지에서 교인이 신청한 증명서. 관리자가 승인해야 직인이 들어간 증명서를 발급할 수 있음
+export type CertKind = '교인증명서' | '세례증명서';
+export interface CertRequest {
+	id: string;
+	person_id: string;
+	kind: CertKind;
+	purpose: string; // 용도 (제출처)
+	requested_at: string; // 신청 일시
+	status: '대기' | '승인' | '반려';
+	decided_at: string | null;
+	decided_by: string | null;
+}
+
 export interface Perms {
 	edit: boolean; // 교적 수정·등록
 	export: boolean; // 내려받기·문서 출력

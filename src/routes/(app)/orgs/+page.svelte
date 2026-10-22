@@ -1,10 +1,11 @@
 <script lang="ts">
-	// 교회 조직: 당회 · 시무집사회 · 시무권사회 · 남/여전도회 · 교회 조직표
+	// 교회 조직표: 당회 · 시무집사회 · 시무권사회 · 남/여전도회 · 교회 조직표
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { MISSION_SOCIETIES } from '#lib/registry/types.ts';
 
-	const tabs = ['당회', '시무집사회', '시무권사회', '남전도회', '여전도회', '교회 조직표'];
-	let tab = $state('당회');
+	// 순서: 교회 조직표가 맨 앞이고, 상단 메뉴 '조직'을 누르면 교회 조직표가 먼저 보임
+	const tabs = ['교회 조직표', '당회', '시무집사회', '시무권사회', '남전도회', '여전도회'];
+	let tab = $state('교회 조직표');
 	let pickedSociety = $state('1남전도회');
 	let pickedOrg = $state('');
 
@@ -34,7 +35,7 @@
 	const nameOf = (id: string) => registry.person(id)?.name ?? '';
 </script>
 
-<h1>교회 조직</h1>
+<h1>교회 조직표</h1>
 <div class="tabs">{#each tabs as t}<button class:on={tab === t} onclick={() => (tab = t)}>{t}</button>{/each}</div>
 
 {#if tab === '당회' || tab === '시무집사회' || tab === '시무권사회'}
@@ -90,18 +91,17 @@
 	</div>
 
 	<div class="org-grid2">
-		{#each committees as c, ci (c.id)}
+		{#each committees as c (c.id)}
 			<section class="card committee">
 				<div class="cm-head">
-					<span class="num">{ci + 1}</span>
 					<div><h3>{c.name}</h3><small>위원장 {#if c.leader_id}<a href="/{c.leader_id}">{nameOf(c.leader_id)}</a> 장로{:else}<span class="muted">미정</span>{/if}</small></div>
 				</div>
 				<table class="sm">
 					<thead><tr><th>부서</th><th>부서장</th><th>담당자</th><th style="text-align:right">봉사</th></tr></thead>
 					<tbody>
-						{#each units.filter((u) => u.parent_id === c.id).sort((a, b) => a.sort_order - b.sort_order) as d, di (d.id)}
+						{#each units.filter((u) => u.parent_id === c.id).sort((a, b) => a.sort_order - b.sort_order) as d (d.id)}
 							<tr class="pick" class:on={pickedOrg === d.name} onclick={() => (pickedOrg = pickedOrg === d.name ? '' : d.name)}>
-								<td><span class="muted">{ci + 1}-{di + 1}</span> <b>{d.name}</b></td>
+								<td><b>{d.name}</b></td>
 								<td>{#if d.leader_id}<a href="/{d.leader_id}" onclick={(e) => e.stopPropagation()}>{nameOf(d.leader_id)}</a>{:else}<span class="muted">-</span>{/if}</td>
 								<td>{#each d.staff_ids as sid, k (sid)}{k ? ', ' : ''}<a href="/{sid}" onclick={(e) => e.stopPropagation()}>{nameOf(sid)}</a>{:else}<span class="muted">-</span>{/each}</td>
 								<td style="text-align:right">{deptMembers(d.name).length}명</td>
@@ -133,6 +133,5 @@
 	.cm-head h3 { margin: 0; font-size: 1.02rem; }
 	.cm-head small { opacity: 0.92; font-size: 0.82rem; }
 	.cm-head a { color: #fff; text-decoration: underline; text-underline-offset: 2px; }
-	.cm-head .num { flex: none; width: 1.8rem; height: 1.8rem; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: rgba(255, 255, 255, 0.22); }
 	.committee td { white-space: nowrap; }
 </style>

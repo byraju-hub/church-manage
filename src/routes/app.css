@@ -83,7 +83,7 @@ ul { padding-left: 1.2rem; }
 .brand:hover .logo { transform: rotate(-6deg) scale(1.06); }
 .brand b { display: block; font-size: var(--hb-title); line-height: 1.2; letter-spacing: -0.02em; transition: font-size var(--hb-ease); }
 /* 상단 교회 이름 · 대시보드 '부평동부교회 현황': 고운바탕 Bold 에 같은 색 테두리를 살짝 덧그려 조금 더 두껍게 */
-.brand b, .hero h1 { font-family: 'Gowun Batang', 'Noto Serif KR', serif; font-weight: 700; -webkit-text-stroke: 0.02em currentColor; letter-spacing: -0.01em; }
+.brand b, .hero h1, .brand-font { font-family: 'Gowun Batang', 'Noto Serif KR', serif; font-weight: 700; -webkit-text-stroke: 0.02em currentColor; letter-spacing: -0.01em; }
 .brand small { display: block; font-size: 0.72rem; color: var(--muted); line-height: 1.2; }
 
 /* 상단 메뉴 */

@@ -35,3 +35,5 @@ vite.config.ts.timestamp-*
 *.csv
 /private-data/
 /자료/
+# 진짜 교회 직인 등 공개하면 안 되는 이미지 (이 컴퓨터에서만 씀, 저장소·공개 사이트에 올리지 않음)
+/static/private/

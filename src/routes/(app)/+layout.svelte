@@ -190,7 +190,7 @@
 			<div class="card lock">
 				<img src="/logo.png" alt="" width="64" height="64" style="display:block;margin:0 auto .8rem;border-radius:18px;box-shadow:0 6px 18px rgba(43,62,149,.25)" />
 				{#if mode === 'login'}
-					<h2>부평동부교회 교적 관리</h2>
+					<h2 class="brand-font">부평동부교회 교적 관리</h2>
 					<p class="muted">홈페이지와 같은 카카오 계정으로 로그인합니다.<br />처음 로그인 시 자동으로 가입 신청이 되고,<br />최고 관리자의 승인 후 사용할 수 있습니다.</p>
 					<button type="button" class="kakao" onclick={() => { loginMsg = ''; mode = 'kakao'; }}>{@render kakaoIcon()} 카카오로 로그인</button>
 					{#if loginMsg}<p style="color:#a83c10;font-size:.88rem;margin-top:.8rem">{loginMsg}</p>{/if}
