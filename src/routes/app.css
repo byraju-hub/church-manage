@@ -54,7 +54,10 @@ p { margin: 0.5rem 0; }
 ul { padding-left: 1.2rem; }
 
 /* ===== 헤더 / 푸터 ===== */
-.site { min-height: 100vh; display: flex; flex-direction: column; }
+/* 상단바는 화면에 고정(fixed)하고, 맨 위 높이(93px · 휴대폰 73px)만큼 자리를 미리 비워 둠.
+   (sticky 로 두면 상단바가 줄어들 때 아래 내용이 함께 당겨져 스크롤 위치가 바뀌고, 그 값으로 다시 크기가 바뀌어 화면이 떨림) */
+.site { min-height: 100vh; display: flex; flex-direction: column; padding-top: 93px; overflow-anchor: none; }
+@media print { .site { padding-top: 0; } }
 .site > main { flex: 1; width: 100%; max-width: 1200px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
 /* 상단바: 스크롤한 정도(--hb-p: 0 맨 위 → 1 다 줄어듦)를 따라 크기가 연속으로 줄어듦.
    맨 위 92px · 로고 50px → 다 줄면 지금 크기 68px · 로고 38px (최소). 짧은 전환으로 마우스 휠 단계도 부드럽게 */
@@ -63,7 +66,7 @@ ul { padding-left: 1.2rem; }
 	--hb-h: calc(92px - 24px * var(--p)); --hb-logo: calc(50px - 12px * var(--p));
 	--hb-title: calc(1.28rem - 0.2rem * var(--p)); --hb-nav: calc(1.02rem - 0.06rem * var(--p));
 	--hb-ease: 0.35s cubic-bezier(0.25, 0.8, 0.3, 1);
-	position: sticky; top: 0; z-index: 30;
+	position: fixed; top: 0; left: 0; right: 0; z-index: 30;
 	background: rgba(255, 255, 255, calc(0.94 + 0.03 * var(--p))); backdrop-filter: saturate(160%) blur(10px);
 	border-bottom: 1px solid var(--line);
 	box-shadow: 0 6px 18px rgba(30, 37, 69, calc(0.08 * var(--p)));
@@ -505,6 +508,7 @@ table.info tbody tr:hover { background: none; }
 	/* 휴대폰·태블릿: 맨 위 72px → 스크롤하면 지금 크기(60px). 펼침 메뉴 글씨는 그대로 */
 	.site-header { --hb-h: calc(72px - 12px * var(--p)); --hb-logo: calc(42px - 4px * var(--p)); --hb-title: calc(1.12rem - 0.04rem * var(--p)); --hb-nav: 0.96rem; }
 	.site-header .bar { gap: 1rem; }
+	.site { padding-top: 73px; }
 	.main-nav {
 	display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch; gap: 0; align-self: auto;
 	padding: 0.5rem 1.25rem 1rem; background: var(--surface); border-bottom: 1px solid var(--line); box-shadow: 0 14px 28px rgba(30, 37, 69, 0.12);
