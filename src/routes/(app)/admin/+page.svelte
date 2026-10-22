@@ -4,7 +4,7 @@
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
 	import { GRADES, type Grade, type Perms } from '#lib/registry/types.ts';
 
-	// 회원 · 권한: 카카오로 가입한 회원을 최고관리자가 승인하고 등급(A 전임 교역자 · B 교적 관리 · C 열람)을 정합니다.
+	// 사용자 설정: 카카오로 가입한 회원을 최고관리자가 승인하고 등급(A 전임 교역자 · B 교적 관리 · C 열람)을 정합니다.
 	// [실제 시스템] app_users 표의 status·grade·is_super 를 바꾸는 일은 서버 함수에서 최고관리자인지 다시 확인한 뒤 처리합니다.
 	const tabs = ['사용자 목록', '가입 신청', '등급 설정', '접속 기록'];
 	let tab = $state('사용자 목록');

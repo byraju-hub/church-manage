@@ -72,7 +72,7 @@
 	// (재적 상태가 아니라 교인구분 3단계를 기준으로 함. 불출석으로 분류된 사람은 이미 아는 경우라 뺌)
 	// [실제 시스템] 출석부의 주일 출석 기록에서 마지막 출석일을 구해 같은 규칙으로 고릅니다.
 	const LONG = recentSundays(26, today); // 최근 반년 주일
-	// 장기 결석 기준(주)과 새가족 기간(일)은 '관리자 › 설정 › 연간 설정'에서 정함
+	// 장기 결석 기준(주)과 새가족 기간(일)은 '관리자 › 교회 설정 › 연간 설정'에서 정함
 	const absentWeeks = $derived(registry.ys.absentWeeks);
 	const newcomerDays = $derived(registry.ys.newcomerDays);
 	const twoMonthsAgo = $derived.by(() => { const d = new Date(t0); d.setDate(d.getDate() - absentWeeks * 7); return d; });

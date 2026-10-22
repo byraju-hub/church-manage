@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 관리자 › 설정 › 기본 설정: 교회 기본 정보 · 로고 · 직인 · 증명서 양식
+	// 관리자 › 교회 설정 › 기본 설정: 교회 기본 정보 · 로고 · 직인 · 증명서 양식
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { UNIT1_OPTIONS, UNIT2_OPTIONS, certNo, shrinkImage, type CertForm, type ChurchInfo } from '#lib/registry/site-settings.ts';
 

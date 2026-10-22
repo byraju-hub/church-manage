@@ -102,7 +102,7 @@ export function categoryPath(cats: Category[], id: string | null): Category[] {
 	return out;
 }
 
-// 나이 계산 방식은 '관리자 › 설정 › 연간 설정'에서 정함 (만 나이 · 한국 나이 · 연 나이). 화면 전체가 이 값을 따름
+// 나이 계산 방식은 '관리자 › 교회 설정 › 연간 설정'에서 정함 (만 나이 · 한국 나이 · 연 나이). 화면 전체가 이 값을 따름
 export function ageOf(birth: string | null, today = new Date()): number | null {
 	if (!birth) return null;
 	const [y, m, d] = birth.split('-').map(Number);

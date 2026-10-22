@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 관리자 › 설정 › 코드표 중 바꿀 수 있는 목록: 전도회 · 심방 구분
+	// 관리자 › 프로그램 설정 › 코드표 중 바꿀 수 있는 목록: 전도회 · 심방 구분
 	// (직분 · 교역자 직책은 교단 헌법과 권한 규칙에 묶여 있어 고정)
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { CLERGY_TITLES, FULL_TIME_CLERGY } from '#lib/registry/types.ts';

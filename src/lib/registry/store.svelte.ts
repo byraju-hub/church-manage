@@ -511,7 +511,6 @@ class Registry {
 		const mark = this.d.groupAttendance?.[sundayIso]?.[personId];
 		return mark ? mark.present : wasPresentGroup(personId, sundayIso, weeksFromEnd);
 	}
-	groupAttendanceMark(personId: string, sundayIso: string) { return this.d.groupAttendance?.[sundayIso]?.[personId]; }
 	// 홈페이지 출석부 기록을 받아 저장하는 자리 (교적 화면에서는 직접 입력하지 않음)
 	setGroupAttendance(sundayIso: string, personId: string, present: boolean, reason: string | null) {
 		const all = { ...(this.d.groupAttendance ?? {}) };
@@ -919,10 +918,6 @@ class Registry {
 		this.d.categories = this.d.categories.filter((c) => !u.ids.has(c.id));
 		this.save();
 		return true;
-	}
-	updateGroup(id: string, patch: Partial<T.SmallGroup>) {
-		const g = this.d.smallGroups.find((x) => x.id === id);
-		if (g) { Object.assign(g, patch); this.save(); }
 	}
 	// 공동체의 소그룹 (설정에서 바꾼 순서·이름 그대로)
 	groupsIn(community: string) {

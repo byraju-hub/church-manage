@@ -8,7 +8,7 @@
 
 	let { children } = $props();
 
-	// 로그인: 카카오로 회원가입·로그인 → 최고관리자가 회원 목록에서 승인하고 등급(A·B·C) 지정 → 사용
+	// 로그인: 카카오로 회원가입·로그인 → 최고관리자가 사용자 목록에서 승인하고 등급(A·B·C) 지정 → 사용
 	// 30분 동안 쓰지 않으면 로그아웃
 	// [실제 시스템] 홈페이지와 같은 카카오 로그인을 씁니다. Supabase Auth 의 Kakao 공급자:
 	//   supabase.auth.signInWithOAuth({ provider: 'kakao', options: { redirectTo: `${location.origin}/auth/callback` } })
@@ -111,7 +111,7 @@
 	const menuOn = (m: Item) => (m.href.startsWith('/settings?') ? isProgram : m.href === '/settings' ? path === '/settings' && !isProgram : path === m.href);
 	const inMenu = (items: Item[]) => items.some((i) => path === i.href || path.startsWith(i.href + '/'));
 	// 교적 카드(/p10 같은 주소)는 '교적'에 속한 화면으로 봄
-	const known = ['/', '/members', '/new', '/newcomers', '/households', '/candidates', '/communities', '/attendance', '/visits', '/orgs', '/stats', '/reports', '/documents', '/admin', '/settings'];
+	const known = ['/', '/members', '/new', '/newcomers', '/households', '/communities', '/attendance', '/visits', '/orgs', '/stats', '/reports', '/documents', '/admin', '/settings'];
 	const isCard = $derived(path !== '/' && !known.some((p) => path === p || path.startsWith(p + '/')));
 	const showAdmin = $derived(registry.perms.admin || registry.isSuper);
 </script>
@@ -158,7 +158,7 @@
 					{#if registry.perms.visit}<a href="/visits" class:active={path.startsWith('/visits')}>심방</a>{/if}
 					<a href="/orgs" class:active={path.startsWith('/orgs')}>조직</a>
 					{@render dd('통계', statMenu, inMenu(statMenu))}
-					{#if showAdmin}{@render dd('관리자', adminMenu, path === '/settings' || path === '/admin' || path === '/candidates')}{/if}
+					{#if showAdmin}{@render dd('관리자', adminMenu, path === '/settings' || path === '/admin')}{/if}
 
 					<div class="nav-tools">
 						<div class="perm">
@@ -231,7 +231,7 @@
 					</div>
 				{:else}
 					<h2>가입 신청이 접수되었습니다</h2>
-					<p class="muted">최고관리자가 회원 목록에서 승인하고 등급을 정하면 카카오로 로그인해 쓸 수 있습니다.</p>
+					<p class="muted">최고관리자가 사용자 목록에서 승인하고 등급을 정하면 카카오로 로그인해 쓸 수 있습니다.</p>
 					<p><button type="button" class="ghost" onclick={() => (mode = 'login')}>처음 화면으로</button></p>
 				{/if}
 			</div>

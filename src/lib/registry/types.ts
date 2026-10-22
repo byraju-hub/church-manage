@@ -349,7 +349,7 @@ export type UserStatus = '승인 대기' | '사용' | '정지';
 // A 전임 교역자(수정·출력·심방) > B 교적 관리(수정·출력) > C 열람
 export type Grade = 'A' | 'B' | 'C';
 export const GRADES: Grade[] = ['A', 'B', 'C'];
-// 등급마다 할 수 있는 일 (최고관리자가 '관리자 › 회원 · 권한 › 등급 설정'에서 바꿈)
+// 등급마다 할 수 있는 일 (최고관리자가 '관리자 › 사용자 설정 › 등급 설정'에서 바꿈)
 export interface GradeDef {
 	grade: Grade;
 	name: string;

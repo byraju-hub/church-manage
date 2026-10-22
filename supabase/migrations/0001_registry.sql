@@ -141,13 +141,20 @@ create table registry.office_terms (
 );
 
 -- ============================================================================
--- 공동체·소그룹: 출석부 자료 (공동체 3개, 소그룹 27개 + 로뎀나무숲)
+-- 공동체·소그룹: 출석부 자료 (2026년: 공동체 3개, 소그룹 27개 + 로뎀나무숲)
 -- 교적에서는 편성표와 소속을 보여 주고, 출석·인도자 특이사항은 출석부에서 가져옵니다.
 -- 출석부가 같은 DB라면 아래 표 대신 출석부 표를 view 로 연결하세요.
+-- 공동체는 관리자 › 교회 설정 › 소그룹 편성에서 추가·삭제·이름 바꾸기 (화면에 부르는 이름 '공동체'·'소그룹'도 site_settings 에서 바꿈)
 -- ============================================================================
+create table registry.communities (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  icon_key text,                                  -- 처음 이름(뿌리·줄기·열매)으로 아이콘을 고름. 새로 만든 공동체는 공통 아이콘
+  sort_order int not null default 0
+);
 create table registry.small_groups (
   id uuid primary key default gen_random_uuid(),
-  community text not null check (community in ('뿌리 공동체','줄기 공동체','열매 공동체')),
+  community_id uuid not null references registry.communities(id),  -- 소그룹·소속 교인이 있으면 공동체를 지우지 못함
   name text not null unique, place text,
   leader_id uuid references registry.people(id), -- 인도자
   care boolean not null default false,            -- 자녀 돌봄 편성(로뎀나무숲)
@@ -159,7 +166,7 @@ create table registry.person_groups (            -- 장년만 소그룹에 속�
 );
 create table registry.group_notes (              -- 인도자 특이사항: 심방 권한자만 열람
   id uuid primary key default gen_random_uuid(),
-  person_id uuid not null references registry.people(id) on delete cascade,
+  person_id uuid references registry.people(id) on delete cascade,  -- 비어 있으면 소그룹 전체에 대한 '기타 의견'
   small_group_id uuid references registry.small_groups(id),
   note_date date not null, body text not null, author text
 );
@@ -229,7 +236,8 @@ create table registry.org_units (
   id uuid primary key default gen_random_uuid(),
   parent_id uuid references registry.org_units(id),
   name text not null, sort_order int not null default 0,
-  leader_id uuid references registry.people(id)   -- 위원회: 위원장(장로) / 부서: 부서장
+  leader_id uuid references registry.people(id),  -- 위원회: 위원장(장로) / 부서: 부서장
+  clergy_id uuid references registry.people(id)   -- 부서 교역자 (한 명, 없을 수 있음)
 );
 create table registry.org_unit_staff (            -- 부서 담당자 (여러 명)
   org_unit_id uuid not null references registry.org_units(id) on delete cascade,
@@ -285,6 +293,38 @@ create table registry.certificates (             -- 증명서 발급 대장 (교
   doc_no text not null unique,                    -- 예: 제 2026-001 호
   kind text not null, person_id uuid references registry.people(id), purpose text,
   issued_at timestamptz not null default now(), issued_by uuid
+);
+
+create table registry.certificate_requests (     -- 홈페이지 증명서 신청: 관리자가 승인해야 직인이 찍힌 증명서가 나감
+  id uuid primary key default gen_random_uuid(),
+  person_id uuid not null references registry.people(id),
+  kind text not null, purpose text, requested_at timestamptz not null default now(),
+  status text not null default '대기' check (status in ('대기','승인','반려')),
+  decided_at timestamptz, decided_by uuid, certificate_id bigint references registry.certificates(id)
+);
+
+-- ============================================================================
+-- 설정: 교회 기본 설정(한 줄) · 연도별 연간 설정
+-- ============================================================================
+create table registry.site_settings (            -- 관리자 › 교회 설정 › 기본 설정, 프로그램 설정 › 코드표·백업
+  id int primary key default 1 check (id = 1),
+  church_info jsonb not null,                     -- 이름·교단·주소·연락처·창립일·서명 직함/이름, 모임 이름 unit1(공동체…)·unit2(소그룹…)
+  logo_path text, seal_path text,                 -- Storage 비공개 버킷 경로 (직인은 승인된 증명서를 만들 때만 서버에서 꺼냄)
+  cert_form jsonb not null,                       -- 발급 번호 모양·용도·본문·안내 문구·직인 크기
+  codes jsonb not null,                           -- 바꿀 수 있는 코드표: 전도회 목록·심방 구분
+  backup jsonb not null,                          -- 자동 백업 주기·보관 개수
+  updated_at timestamptz not null default now(), updated_by uuid
+);
+create table registry.year_settings (            -- 관리자 › 교회 설정 › 연간 설정 (해마다 한 줄, 새해에 지난해 것을 복사해 고침)
+  year int primary key,
+  motto text, verse text,                         -- 표어·말씀 (대시보드 배너)
+  age_mode text not null check (age_mode in ('만 나이','한국 나이','연 나이')),  -- 화면 전체 나이 계산
+  communities jsonb not null,                     -- 공동체별 출생 연도 {이름: {from, to}}
+  societies jsonb not null,                       -- 남·여전도회별 출생 연도
+  edu jsonb not null,                             -- 교육부서 기준 [{dept, from, to}] (학교 나이 = 올해 - 출생 연도, 7 = 초1)
+  promote_date date,                              -- 교육부서 진급(이동) 날짜
+  absent_weeks int not null default 9,            -- 장기 결석 알림 기준(주)
+  newcomer_days int not null default 60           -- 새가족으로 보는 기간(일)
 );
 
 -- ============================================================================
