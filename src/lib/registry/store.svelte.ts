@@ -16,8 +16,9 @@ import { extractCareEvents, type CareEvent } from './care-events.ts';
 import { MAX_CATEGORY_DEPTH, parseRank } from './types.ts';
 import { groupOpinions } from './generate.ts';
 import { defaultSettings, eduDeptFor, inRange, type YearSettings } from './year-settings.ts';
+import { DEFAULT_BACKUP, DEFAULT_CERT, DEFAULT_CHURCH, DEFAULT_CODES, type BackupCfg, type CertForm, type ChurchInfo, type Codes } from './site-settings.ts';
 import { ageCfg } from './age-mode.svelte.ts';
-import { catId, fixCat, type L2Code } from './config.ts';
+import { COMMUNITY_DEFS, catId, fixCat, type L2Code } from './config.ts';
 
 const KEY = 'church-registry-proto-v16';
 
@@ -70,6 +71,11 @@ interface Data {
 	smsTemplates?: SmsTemplate[]; // 문자 보내기의 자주 쓰는 문구 (모든 A 등급이 함께 씀)
 	certRequests?: T.CertRequest[]; // 홈페이지에서 들어온 증명서 신청 (관리자 승인 후 직인 발급)
 	yearSettings?: Record<string, YearSettings>; // 연간 설정 (연도 → 설정)
+	churchInfo?: ChurchInfo; // 기본 설정: 교회 정보 · 로고 · 직인
+	certForm?: CertForm; // 기본 설정: 증명서 양식
+	codes?: Codes; // 기본 설정: 바꿀 수 있는 코드표 (심방 구분 · 전도회)
+	backup?: BackupCfg; // 백업 설정
+	communityNames?: Record<string, string>; // 공동체 이름 바꾼 것 (처음 이름 → 지금 이름)
 	users: T.AppUser[];
 	grades: T.GradeDef[];
 }
@@ -195,6 +201,71 @@ class Registry {
 	}
 	get perms(): T.Perms { return this.permsOf(this.me); }
 	get isSuper(): boolean { return !!this.me?.is_super && this.me.status === '사용'; }
+
+	// ---- 공동체 (1단계) 목록과 이름 바꾸기 ----
+	// 공동체 순서·출생 연도 기준은 COMMUNITY_DEFS, 이름은 관리자가 바꾼 값
+	get communities() { return COMMUNITY_DEFS.map((c) => ({ ...c, key: c.name, name: this.d.communityNames?.[c.name] ?? c.name })); }
+	communityKey(name: string): string { return this.communities.find((c) => c.name === name)?.key ?? name; }
+	renameCommunity(oldName: string, newName: string): string {
+		const nn = newName.trim();
+		if (!this.canSetup) return '권한이 없습니다.';
+		if (!nn || nn === oldName) return '';
+		if (this.communities.some((c) => c.name === nn)) return '같은 이름이 이미 있습니다.';
+		const key = this.communityKey(oldName);
+		this.d.communityNames = { ...(this.d.communityNames ?? {}), [key]: nn };
+		for (const g of this.d.smallGroups) if (g.community === oldName) g.community = nn;
+		for (const pg of this.d.personGroups) if (pg.community === oldName) pg.community = nn;
+		for (const ys of Object.values(this.d.yearSettings ?? {})) if (ys.communities[oldName]) { ys.communities[nn] = ys.communities[oldName]; delete ys.communities[oldName]; }
+		this.log('설정', `${this.t1} 이름 바꿈: ${oldName} → ${nn}`);
+		return '';
+	}
+	// 교회마다 부르는 이름: 1단계(공동체·교구·지역…), 2단계(소그룹·구역·목장·셀…)
+	get t1(): string { return this.churchInfo.unit1 || '공동체'; }
+	get t2(): string { return this.churchInfo.unit2 || '소그룹'; }
+	// 화면 글의 '공동체'·'소그룹'을 고른 이름으로 (탭·칸 이름처럼 값으로도 쓰는 글자를 보여 줄 때)
+	tr(s: string): string { return s.replaceAll('공동체', this.t1).replaceAll('소그룹', this.t2); }
+	// 받침에 맞는 조사: josa('교구', '을') → '를', josa('지역', '을') → '을'
+	josa(word: string, withBatchim: '을' | '이' | '은' | '과' | '으로'): string {
+		const pairs = { 을: '를', 이: '가', 은: '는', 과: '와', 으로: '로' } as const;
+		const c = word.charCodeAt(word.length - 1) - 0xac00;
+		const has = c >= 0 && c <= 11171 && c % 28 !== 0;
+		return has && !(withBatchim === '으로' && c % 28 === 8) ? withBatchim : pairs[withBatchim];
+	}
+	// '뿌리 공동체' → '뿌리' (표처럼 좁은 칸에 쓸 때)
+	short(comm: string): string { return comm.replace(new RegExp(`\\s*(${this.t1}|공동체)$`), ''); }
+
+	// ---- 기본 설정 · 백업 ----
+	get churchInfo(): ChurchInfo { return { ...DEFAULT_CHURCH, ...(this.d.churchInfo ?? {}) }; }
+	get certForm(): CertForm { return { ...DEFAULT_CERT, ...(this.d.certForm ?? {}) }; }
+	get codes(): Codes { return { ...DEFAULT_CODES, ...(this.d.codes ?? {}) }; }
+	get backupCfg(): BackupCfg { return { ...DEFAULT_BACKUP, ...(this.d.backup ?? {}) }; }
+	get canSetup(): boolean { return this.isSuper || this.perms.admin; }
+	saveSite(part: { churchInfo?: ChurchInfo; certForm?: CertForm; codes?: Codes; backup?: BackupCfg }, what: string) {
+		if (!this.canSetup) return;
+		for (const [k, v] of Object.entries(part)) (this.d as unknown as Record<string, unknown>)[k] = structuredClone($state.snapshot(v));
+		this.log('설정', what);
+	}
+	// 지금 담임목사 이름 (기본 설정에 적은 이름이 먼저, 없으면 교적의 담임목사)
+	get pastorName(): string { return this.churchInfo.pastorName || this.d.people.find((p) => p.clergy_title === '담임목사')?.name || ''; }
+	// 백업: 지금 데이터 전체를 파일로 / 파일에서 되살리기 (최고관리자만)
+	backupJson(): string {
+		const b = { ...this.backupCfg, last: now() };
+		this.d.backup = b;
+		this.log('백업', '데이터 전체 내려받기');
+		return JSON.stringify({ app: 'church-registry', version: KEY, at: now(), data: $state.snapshot(this.d) });
+	}
+	restoreJson(text: string): string {
+		if (!this.isSuper) return '최고관리자만 되살릴 수 있습니다.';
+		try {
+			const o = JSON.parse(text);
+			if (o?.app !== 'church-registry' || !o.data?.people) return '이 교적 프로그램의 백업 파일이 아닙니다.';
+			this.d = migrate(o.data as Data);
+			this.log('백업', `백업 파일로 되살림 (${o.at ?? '날짜 모름'})`);
+			return '';
+		} catch {
+			return '파일을 읽지 못했습니다.';
+		}
+	}
 
 	// ---- 연간 설정 ----
 	// 저장된 연도 설정이 없으면 기본값(2026년 기준을 그 해에 맞춘 값)

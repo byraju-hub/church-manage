@@ -9,8 +9,7 @@
 	import CarePreview from '#lib/components/CarePreview.svelte';
 	import Pagination from '#lib/components/Pagination.svelte';
 	import { officeKindTitle } from '#lib/registry/derive.ts';
-	import { FULL_TIME_CLERGY, VISIT_KINDS, type VisitMethod } from '#lib/registry/types.ts';
-	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
+	import { FULL_TIME_CLERGY, type VisitMethod } from '#lib/registry/types.ts';
 
 	const today = new Date().toISOString().slice(0, 10);
 	let tab = $state<'list' | 'cal' | 'notes' | 'new'>('list');
@@ -107,7 +106,7 @@
 	<div class="tabs">
 		<button class:on={tab === 'list'} onclick={() => (tab = 'list')}>심방 목록</button>
 		<button class:on={tab === 'cal'} onclick={() => (tab = 'cal')}>캘린더 보기</button>
-		<button class:on={tab === 'notes'} onclick={() => (tab = 'notes')}>소그룹 특이사항</button>
+		<button class:on={tab === 'notes'} onclick={() => (tab = 'notes')}>{registry.t2} 특이사항</button>
 	</div>
 
 	{#if tab === 'list'}
@@ -115,7 +114,7 @@
 		<div class="card">
 			<div class="toolbar"><input type="search" placeholder="교인 이름 · 내용 · 말씀 · 동행자 검색" bind:value={q} /></div>
 			<div class="toolbar">
-				<select bind:value={kind}><option value="">심방 구분 전체</option>{#each VISIT_KINDS as k}<option>{k}</option>{/each}</select>
+				<select bind:value={kind}><option value="">심방 구분 전체</option>{#each registry.codes.visitKinds as k}<option>{k}</option>{/each}</select>
 				<select bind:value={pastor}><option value="">담당 교역자 전체</option>{#each pastors as k}<option>{k}</option>{/each}</select>
 				<span class="range"><span class="muted">날짜</span><input type="date" bind:value={from} aria-label="시작 날짜" /><span>~</span><input type="date" bind:value={to} aria-label="끝 날짜" /></span>
 			</div>
@@ -147,20 +146,20 @@
 		<div class="card">
 			<div class="toolbar"><input type="search" placeholder="교인 이름 · 내용 · 인도자 검색" bind:value={nq} /></div>
 			<div class="toolbar">
-				<select bind:value={ncomm} aria-label="공동체 선택"><option value="">전체 공동체</option>{#each COMMUNITY_DEFS as c}<option value={c.name}>{c.name}</option>{/each}</select>
-				<select bind:value={ngroup} disabled={!ncomm} aria-label="소그룹 선택"><option value="">{ncomm ? '전체 소그룹' : '공동체를 먼저 고르세요'}</option>{#each ngroupOpts as g}<option value={g}>{g}</option>{/each}</select>
+				<select bind:value={ncomm} aria-label="{registry.t1} 선택"><option value="">전체 {registry.t1}</option>{#each registry.communities as c}<option value={c.name}>{c.name}</option>{/each}</select>
+				<select bind:value={ngroup} disabled={!ncomm} aria-label="{registry.t2} 선택"><option value="">{ncomm ? `전체 ${registry.t2}` : `${registry.t1}을(를) 먼저 고르세요`}</option>{#each ngroupOpts as g}<option value={g}>{g}</option>{/each}</select>
 				<span class="range"><span class="muted">날짜</span><input type="date" bind:value={nfrom} aria-label="시작 날짜" /><span>~</span><input type="date" bind:value={nto} aria-label="끝 날짜" /></span>
 			</div>
 		</div>
-		<p class="muted" style="margin:0 0 .5rem;scroll-margin-top:110px" bind:this={noteTop}>모두 {noteRows.length.toLocaleString()}건{#if npages > 1} · {npage} / {npages}쪽{/if} (홈페이지 출석부에서 소그룹 인도자가 적은 특이사항을 모아 보여 줍니다.)</p>
+		<p class="muted" style="margin:0 0 .5rem;scroll-margin-top:110px" bind:this={noteTop}>모두 {noteRows.length.toLocaleString()}건{#if npages > 1} · {npage} / {npages}쪽{/if} (홈페이지 출석부에서 {registry.t2} 인도자가 적은 특이사항을 모아 보여 줍니다.)</p>
 		<div class="card" style="padding:0;overflow-x:auto">
 			<table class="sm vlist">
-				<thead><tr><th>날짜</th><th>공동체</th><th>소그룹</th><th>작성</th><th>교인</th><th>특이사항</th></tr></thead>
+				<thead><tr><th>날짜</th><th>{registry.t1}</th><th>{registry.t2}</th><th>작성</th><th>교인</th><th>특이사항</th></tr></thead>
 				<tbody>
 					{#each noteRows.slice((npage - 1) * PER, npage * PER) as n (n.id)}
 						<tr class:opinion={!n.person_id}>
 							<td style="white-space:nowrap">{ymd(n.date)}</td>
-							<td style="white-space:nowrap">{commOf(n.small_group).replace(' 공동체', '') || '-'}</td>
+							<td style="white-space:nowrap">{registry.short(commOf(n.small_group)) || '-'}</td>
 							<td style="white-space:nowrap"><a href="/communities/{encodeURIComponent(n.small_group)}">{n.small_group}</a></td>
 							<td style="white-space:nowrap">{n.author}</td>
 							<!-- 교인이 없는 줄은 소그룹 모임 전체에 대한 '기타 의견' (적힌 내용이 있을 때만 줄이 생김) -->
@@ -177,7 +176,7 @@
 			<h2 class="wide">심방 등록</h2>
 			<label class="wide">교인 *<PersonPicker bind:value={f.person} placeholder="심방받을 교인 이름·전화 검색" /></label>
 			<label>날짜 *<input type="date" required bind:value={f.date} /></label>
-						<label>구분<select bind:value={f.kind}>{#each VISIT_KINDS as k}<option>{k}</option>{/each}</select></label>
+						<label>구분<select bind:value={f.kind}>{#each registry.codes.visitKinds as k}<option>{k}</option>{/each}</select></label>
 			<label>방법<select bind:value={f.method}><option>대면</option><option>전화</option></select></label>
 			<label>담당 교역자<select bind:value={f.pastor}><option value="">(선택)</option>{#each clergy as c}<option>{c.name}</option>{/each}</select></label>
 			<label class="wide">동행자 <span class="muted" style="font-weight:400">(이름을 쓰고 쉼표 · 같은 이름이 여러 명이면 목록에서 선택)</span><NameChips bind:chips={companions} allowFree placeholder="예: 김영수, 이순희" /></label>

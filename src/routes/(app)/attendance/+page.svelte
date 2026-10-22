@@ -6,7 +6,6 @@
 	import { tick } from 'svelte';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { recentSundays } from '#lib/registry/attendance.mock.ts';
-	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 
 	// 고를 수 있는 주일: 올해 주일 전체 (최근 주일이 맨 위). 연초라 주일이 적으면 최근 8주
 	const ALL = recentSundays(53);
@@ -32,7 +31,7 @@
 		const members = roster.filter(({ s }) => !s.cat3 || shownCats.includes(s.cat3));
 		const byName = (a: { p: { name: string } }, b: { p: { name: string } }) => a.p.name.localeCompare(b.p.name, 'ko');
 		const out: Row[] = [];
-		for (const c of COMMUNITY_DEFS) {
+		for (const c of registry.communities) {
 			for (const g of registry.groupsIn(c.name)) {
 				const list = members.filter(({ s }) => s.community === c.name && s.smallGroup === g.name).sort(byName);
 				list.forEach((x, i) => out.push({ ...x, group: g.name, community: c.name, first: i === 0 }));
@@ -83,8 +82,8 @@
 {#if !registry.perms.edit}
 	<div class="warn">수정 권한이 꺼져 있어 출석을 등록할 수 없습니다. (최고관리자에게 수정 권한을 받아야 합니다)</div>
 {/if}
-<p class="muted" style="margin-top:-.6rem">주일 오전예배에 참석한 교인을 등록합니다. 명단은 공동체·소그룹 순으로 보여 줄 뿐이고,
-	주일 오후 소그룹 모임 출석은 홈페이지 출석부에서 소그룹 인도자가 따로 등록합니다.</p>
+<p class="muted" style="margin-top:-.6rem">주일 오전예배에 참석한 교인을 등록합니다. 명단은 {registry.t1}·{registry.t2} 순으로 보여 줄 뿐이고,
+	주일 오후 {registry.t2} 모임 출석은 홈페이지 출석부에서 {registry.t2} 인도자가 따로 등록합니다.</p>
 
 <div class="card att-bar">
 	<select bind:value={date} aria-label="주일 선택">{#each [...WEEKS].reverse() as d}<option value={d}>{d} ({md(d)}{dow(d)})</option>{/each}</select>
@@ -94,7 +93,7 @@
 		<input id="att-total" bind:value={totalInput} inputmode="numeric" disabled={!registry.perms.edit} /><span>명</span>
 		{#if registry.perms.edit}<button type="submit" class="sm">저장</button>{/if}
 	</form>
-	<span class="muted split-sum">(공동체 체크 <b>{sumPresent}</b>명 / 그 외 <b>{others}</b>명){saved === undefined ? ' · 전체 인원은 가상 샘플' : ''}</span>
+	<span class="muted split-sum">({registry.t1} 체크 <b>{sumPresent}</b>명 / 그 외 <b>{others}</b>명){saved === undefined ? ' · 전체 인원은 가상 샘플' : ''}</span>
 	{#if total < sumPresent}<span class="warn-sm">전체 인원이 명단 체크 인원보다 적습니다.</span>{/if}
 	<div class="cats">
 		<span class="cats-h">교인구분 <b>장년 · 새가족</b> ›</span>
@@ -108,7 +107,7 @@
 <div class="card" style="padding:0;overflow-x:auto">
 	<table class="sm att">
 		<colgroup><col style="width:4.2rem" /><col style="width:16%" /><col style="width:13%" /><col style="width:14%" /><col style="width:13%" /><col /></colgroup>
-		<thead><tr><th>출석</th><th>이름</th><th>직분</th><th>소그룹</th><th>공동체</th><th>특이사항</th></tr></thead>
+		<thead><tr><th>출석</th><th>이름</th><th>직분</th><th>{registry.t2}</th><th>{registry.t1}</th><th>특이사항</th></tr></thead>
 		<tbody>
 			{#each rows as r (r.p.id)}
 				{@const ok = isPresent(r.p.id)}

@@ -4,7 +4,6 @@
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { categoryPath } from '#lib/registry/derive.ts';
 	import { OFFICE_NAMES, rankChoices, rankLabel, type FaithKind, type OfficeName } from '#lib/registry/types.ts';
-	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 
 	let { ids, onclear, onclose }: { ids: string[]; onclear: () => void; onclose: () => void } = $props();
 
@@ -27,7 +26,7 @@
 		bk === 'category' ? `교인구분을 '${categoryPath(registry.d.categories, bCat || null).map((c) => c.name).join(' › ')}'(으)로`
 		: bk === 'faith' ? `신급 '${bFaith}' 기록(${bDate || '날짜 미상'})을 추가`
 		: bk === 'office' ? `직분을 '${bOffice} · ${bRank}'(${bDate || '날짜 미상'})(으)로${bEndOld ? ' 바꾸고 지금 직분은 마침 처리' : ' 추가'}`
-		: bComm && bGroup ? `소그룹을 '${bComm} › ${bGroup}'(으)로` : '공동체·소그룹 소속을 없앰'
+		: bComm && bGroup ? `${registry.t2}을(를) '${bComm} › ${bGroup}'(으)로` : `${registry.t1}·${registry.t2} 소속을 없앰`
 	);
 	const bReady = $derived(ids.length > 0 && (bk !== 'category' || !!bCat) && (bk !== 'group' || !bComm || !!bGroup));
 	function apply() {
@@ -55,7 +54,7 @@
 			<button type="button" class:on={bk === 'category'} onclick={() => (bk = 'category')}>교인구분</button>
 			<button type="button" class:on={bk === 'faith'} onclick={() => (bk = 'faith')}>신급</button>
 			<button type="button" class:on={bk === 'office'} onclick={() => (bk = 'office')}>직분</button>
-			<button type="button" class:on={bk === 'group'} onclick={() => (bk = 'group')}>공동체·소그룹</button>
+			<button type="button" class:on={bk === 'group'} onclick={() => (bk = 'group')}>{registry.t1}·{registry.t2}</button>
 		</div>
 	</div>
 	<div class="toolbar" style="margin:.6rem 0 0">
@@ -73,8 +72,8 @@
 			<span class="muted">임직(시작)일</span><input type="date" bind:value={bDate} />
 			<label class="row" style="gap:.3rem"><input type="checkbox" bind:checked={bEndOld} />지금 직분은 마침 처리</label>
 		{:else}
-			<select bind:value={bComm} onchange={() => (bGroup = '')} aria-label="공동체"><option value="">소속 없음 (빼기)</option>{#each COMMUNITY_DEFS as c}<option>{c.name}</option>{/each}</select>
-			{#if bComm}<select bind:value={bGroup} aria-label="소그룹"><option value="">소그룹 선택</option>{#each registry.groupsIn(bComm) as g}<option>{g.name}</option>{/each}</select>{/if}
+			<select bind:value={bComm} onchange={() => (bGroup = '')} aria-label="{registry.t1}"><option value="">소속 없음 (빼기)</option>{#each registry.communities as c}<option>{c.name}</option>{/each}</select>
+			{#if bComm}<select bind:value={bGroup} aria-label="{registry.t2}"><option value="">{registry.t2} 선택</option>{#each registry.groupsIn(bComm) as g}<option>{g.name}</option>{/each}</select>{/if}
 		{/if}
 		<span style="flex:1"></span>
 		<button type="button" onclick={apply} disabled={!bReady}>선택한 {ids.length}명에 적용</button>

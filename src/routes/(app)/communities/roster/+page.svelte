@@ -4,7 +4,6 @@
 	// 올해 등록한 사람은 등록일 이후 주일만 셈
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { recentSundays } from '#lib/registry/attendance.mock.ts';
-	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import { ageOf } from '#lib/registry/derive.ts';
 	import { tick } from 'svelte';
 	import { withPdfStyle } from '#lib/pdf-style.ts';
@@ -32,13 +31,13 @@
 			// 인도자를 맨 앞에, 나머지는 가나다순
 			return { name, xs: xs.sort((a, b) => Number(leaders.has(b.p.id)) - Number(leaders.has(a.p.id)) || byName(a, b)), rate: xs.length ? Math.round(xs.reduce((s, x) => s + x.rate, 0) / xs.length) : 0 };
 		};
-		for (const c of COMMUNITY_DEFS) {
+		for (const c of registry.communities) {
 			const groups = registry.groupsIn(c.name).map((g) => grp(g.name, rows.filter((x) => x.s.community === c.name && x.s.smallGroup === g.name))).filter((g) => g.xs.length);
 			if (groups.length) out.push({ community: c.name, groups });
 		}
 		// 미지정: 교인 › 장년 › 예배출석·가끔출석 중 공동체 배정이 안 된 사람만 (교육부서·청년·장기결석자 등은 빼고)
 		const rest = rows.filter((x) => !used.has(x) && !x.s.community && x.s.cat1 === '교인' && x.s.cat2 === '장년' && (x.s.cat3 === '예배출석' || x.s.cat3 === '가끔출석'));
-		if (rest.length) out.push({ community: '미지정', groups: [grp('소그룹 미지정자', rest)] });
+		if (rest.length) out.push({ community: '미지정', groups: [grp(`${registry.t2} 미지정자`, rest)] });
 		return out;
 	});
 
@@ -57,10 +56,10 @@
 	// ---- 출력 · PDF: 지금 고른 공동체·소그룹만, 출석률 색 없이 가나다순 표로 ----
 	const today = new Date().toISOString().slice(0, 10);
 	const leaderOf = (name: string) => { const id = registry.groupDef(name)?.leader_id; return id ? registry.person(id)?.name ?? '' : ''; };
-	const scope = $derived(group ? `${comm} › ${group}` : comm || '전체 공동체');
+	const scope = $derived(group ? `${comm} › ${group}` : comm || `전체 ${registry.t1}`);
 	// 인쇄·PDF 맨 위 제목: 예) '헵시바 소그룹 명단', '줄기 공동체 명단', '전체 공동체 명단'
-	const sheetTitle = $derived(comm === '미지정' ? '소그룹 미지정자 명단' : group ? `${group} 소그룹 명단` : `${comm || '전체 공동체'} 명단`);
-	const fileName = $derived(`소그룹별 명단-${(group || comm || '전체').replace(/\s+/g, '')}-${today}.pdf`);
+	const sheetTitle = $derived(comm === '미지정' ? `${registry.t2} 미지정자 명단` : group ? `${group} ${registry.t2} 명단` : `${comm || `전체 ${registry.t1}`} 명단`);
+	const fileName = $derived(`${registry.t2}별 명단-${(group || comm || '전체').replace(/\s+/g, '')}-${today}.pdf`);
 	let sheet = $state<HTMLElement>();
 	let busy = $state(false);
 
@@ -94,7 +93,7 @@
 		const what = ask;
 		ask = null;
 		await tick();
-		if (what === '인쇄') { registry.log('출력', `소그룹별 명단 인쇄 · ${scope} · ${tableCols.join('·')}`); printNow(); }
+		if (what === '인쇄') { registry.log('출력', `${registry.t2}별 명단 인쇄 · ${scope} · ${tableCols.join('·')}`); printNow(); }
 		else if (what === 'PDF 저장') await pdf();
 		else if (what === '엑셀') await excel();
 	}
@@ -105,7 +104,7 @@
 			const writeXlsxFile = (await import('write-excel-file/browser')).default;
 			// 모든 칸 가운데 정렬 + 얇은 테두리
 			const border = { borderStyle: 'thin' as const, borderColor: '#999999', align: 'center' as const, alignVertical: 'center' as const };
-			const heads = ['공동체', '소그룹', '번호', ...tableCols];
+			const heads = [registry.t1, registry.t2, '번호', ...tableCols];
 			const data = [
 				heads.map((h) => ({ value: h, fontWeight: 'bold' as const, backgroundColor: '#E9ECEF', ...border })),
 				...shown.flatMap((c) => c.groups.flatMap((g) => g.xs.map(({ p, s }, i) => [
@@ -116,8 +115,8 @@
 				])))
 			];
 			const W: Record<string, number> = { 공동체: 12, 소그룹: 12, 번호: 6, 이름: 12, 직분: 11, 생년월일: 15, 나이: 6, 휴대폰: 15, 비고: 10 };
-			await writeXlsxFile(data, { sheet: '소그룹별 명단', columns: heads.map((h) => ({ width: W[h] ?? 12 })), stickyRowsCount: 1 }).toFile(fileName.replace(/\.pdf$/, '.xlsx'));
-			registry.log('내려받기', `소그룹별 명단 엑셀 · ${scope} · ${tableCols.join('·')}`);
+			await writeXlsxFile(data, { sheet: `${registry.t2}별 명단`, columns: heads.map((h) => ({ width: W[h] ?? 12 })), stickyRowsCount: 1 }).toFile(fileName.replace(/\.pdf$/, '.xlsx'));
+			registry.log('내려받기', `${registry.t2}별 명단 엑셀 · ${scope} · ${tableCols.join('·')}`);
 		} finally {
 			busy = false;
 		}
@@ -131,7 +130,7 @@
 			const opts = { margin: [20, 18, 20, 18], filename: fileName, image: { type: 'jpeg', quality: 0.96 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: tableMode ? 'a4' : 'a3', orientation: tableMode ? 'portrait' : 'landscape' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.grp-head', '.keep'] } };
 			const el = sheet;
 			await withPdfStyle(el, () => html2pdf().set(opts as unknown as Record<string, never>).from(el).save());
-			registry.log('출력', `소그룹별 명단 PDF · ${scope} · ${tableCols.join('·')}`);
+			registry.log('출력', `${registry.t2}별 명단 PDF · ${scope} · ${tableCols.join('·')}`);
 		} finally {
 			busy = false;
 		}
@@ -139,10 +138,10 @@
 </script>
 
 <div class="no-print">
-<h1>소그룹별 명단</h1>
+<h1>{registry.t2}별 명단</h1>
 <div class="card pick">
-	<select bind:value={comm} aria-label="공동체 선택"><option value="">전체 공동체</option>{#each byGroup as c}<option value={c.community}>{c.community}</option>{/each}</select>
-	<select bind:value={group} disabled={!comm || comm === '미지정'} aria-label="소그룹 선택"><option value="">{comm ? '전체 소그룹' : '공동체를 먼저 고르세요'}</option>{#each groupOpts as g}<option value={g}>{g}</option>{/each}</select>
+	<select bind:value={comm} aria-label="{registry.t1} 선택"><option value="">전체 {registry.t1}</option>{#each byGroup as c}<option value={c.community}>{c.community}</option>{/each}</select>
+	<select bind:value={group} disabled={!comm || comm === '미지정'} aria-label="{registry.t2} 선택"><option value="">{comm ? `전체 ${registry.t2}` : `${registry.t1}을(를) 먼저 고르세요`}</option>{#each groupOpts as g}<option value={g}>{g}</option>{/each}</select>
 	<span class="muted">{shownCount}명</span>
 	<span class="out">
 		<ExportButtons onprint={() => (ask = '인쇄')} onexcel={() => (ask = '엑셀')} onpdf={() => (ask = 'PDF 저장')} disabled={!registry.perms.export || !shownCount} {busy} title={registry.perms.export ? '' : '내려받기·출력 권한이 필요합니다'} />
@@ -160,7 +159,7 @@
 			{/each}
 		</div>
 		<p class="muted" style="font-size:.8rem;margin:.8rem 0 1rem">
-			{#if ask === '엑셀'}엑셀 파일(.xlsx)로 내보냅니다: 공동체 · 소그룹 · 번호 · {tableCols.join(' · ')}{:else if tableMode}표로 만듭니다: 번호 · {tableCols.join(' · ')}{:else}소그룹마다 상자 안에 이름{cols.직분 ? '·직분' : ''}을 가나다순으로 나열합니다.{/if}
+			{#if ask === '엑셀'}엑셀 파일(.xlsx)로 내보냅니다: {registry.t1} · {registry.t2} · 번호 · {tableCols.join(' · ')}{:else if tableMode}표로 만듭니다: 번호 · {tableCols.join(' · ')}{:else}{registry.t2}마다 상자 안에 이름{cols.직분 ? '·직분' : ''}을 가나다순으로 나열합니다.{/if}
 		</p>
 		<div class="row" style="justify-content:flex-end">
 			<button type="button" class="ghost" onclick={() => (ask = null)}>취소</button>
@@ -168,7 +167,7 @@
 		</div>
 	</div>
 {/if}
-<p class="legend-att muted">{YEAR}년 소그룹 모임 출석률 (1월 1일 ~ {WEEKS.at(-1)?.slice(5).replace('-', '/')}, 주일 {WEEKS.length}회) ·
+<p class="legend-att muted">{YEAR}년 {registry.t2} 모임 출석률 (1월 1일 ~ {WEEKS.at(-1)?.slice(5).replace('-', '/')}, 주일 {WEEKS.length}회) ·
 	<span class="hi">● 80% 이상</span> <span class="mid">● 50~79%</span> <span class="lo">● 50% 미만</span> <span class="lead">● 인도자</span>
 	<span>(이름 옆 숫자는 개인 출석률)</span></p>
 {#each shown as c}
@@ -176,7 +175,7 @@
 	{#each c.groups as g}
 		<div class="card"><h3 style="margin:0 0 .5rem">{g.name} <span class="muted">({g.xs.length}명)</span> <small class="{band(g.rate)}">평균 출석률 {g.rate}%</small></h3>
 			<div class="names">
-				{#each g.xs as { p, s, rate }}{@const lead = leaders.has(p.id)}<a href="/{p.id}" class="nm {lead ? 'lead' : band(rate)}" title="{lead ? '인도자 · ' : ''}올해 소그룹 모임 출석률 {rate}%">{p.name}{s.title ? ` ${s.title}` : ''}<small>{lead ? '인도자 · ' : ''}{rate}%</small></a>{/each}
+				{#each g.xs as { p, s, rate }}{@const lead = leaders.has(p.id)}<a href="/{p.id}" class="nm {lead ? 'lead' : band(rate)}" title="{lead ? '인도자 · ' : ''}올해 {registry.t2} 모임 출석률 {rate}%">{p.name}{s.title ? ` ${s.title}` : ''}<small>{lead ? '인도자 · ' : ''}{rate}%</small></a>{/each}
 			</div>
 		</div>
 	{/each}
@@ -215,7 +214,7 @@
 				{/if}
 			{/each}
 		{/each}
-		<p class="sh-foot">부평동부교회 · 개인정보가 담긴 문서이니 사용 후 파기해 주세요.</p>
+		<p class="sh-foot">{registry.churchInfo.name} · 개인정보가 담긴 문서이니 사용 후 파기해 주세요.</p>
 	</div>
 </div>
 

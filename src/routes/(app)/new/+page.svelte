@@ -6,7 +6,6 @@
 	import HeadRelation from '#lib/components/HeadRelation.svelte';
 	import CardScan from '#lib/components/CardScan.svelte';
 	import { categoryPath, formatMobile } from '#lib/registry/derive.ts';
-	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import {
 		CONSENT_KINDS, FAITH_KINDS, ORDAINED, POSITIONS, parseRank, rankChoices, rankLabel,
 		type ConsentKind, type ConsentMethod, type FaithKind, type Person
@@ -165,14 +164,14 @@
 		</div>
 
 		<div class="sec">
-			<h3>교회 등록일 · 공동체 · 교회봉사</h3>
+			<h3>교회 등록일 · {registry.t1} · 교회봉사</h3>
 			<div class="form">
 				<label>교회 등록일<input type="date" bind:value={regDate} /></label>
 				{#if isAdult}
-					<label>공동체<select bind:value={community} onchange={() => (smallGroup = '')}><option value="">선택</option>{#each COMMUNITY_DEFS as c}<option>{c.name}</option>{/each}</select></label>
-					<label>소그룹<select bind:value={smallGroup} disabled={!community}><option value="">선택</option>{#each registry.groupsIn(community) as g}<option>{g.name}</option>{/each}</select></label>
+					<label>{registry.t1}<select bind:value={community} onchange={() => (smallGroup = '')}><option value="">선택</option>{#each registry.communities as c}<option>{c.name}</option>{/each}</select></label>
+					<label>{registry.t2}<select bind:value={smallGroup} disabled={!community}><option value="">선택</option>{#each registry.groupsIn(community) as g}<option>{g.name}</option>{/each}</select></label>
 				{:else}
-					<p class="wide muted" style="margin:0">공동체·소그룹은 교인구분 2단계가 '장년'일 때 고릅니다.</p>
+					<p class="wide muted" style="margin:0">{registry.t1}·{registry.t2}{registry.josa(registry.t2, '은')} 교인구분 2단계가 '장년'일 때 고릅니다.</p>
 				{/if}
 				{#each [0, 1, 2] as i}
 					<label>봉사 부서 {i + 1}

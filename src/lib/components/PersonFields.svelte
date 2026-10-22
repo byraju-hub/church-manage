@@ -6,7 +6,7 @@
 	import HeadRelation from '#lib/components/HeadRelation.svelte';
 	import PhotoCropper from '#lib/components/PhotoCropper.svelte';
 	import { ageOf, ageText, categoryPath, formatMobile } from '#lib/registry/derive.ts';
-	import { EDU_DEPTS, MARITAL_STATUSES, MISSION_SOCIETIES, NAME_NOTES } from '#lib/registry/types.ts';
+	import { EDU_DEPTS, MARITAL_STATUSES, NAME_NOTES } from '#lib/registry/types.ts';
 
 	// f: 교인 카드의 칸들(빈 칸은 빈 문자열). 등록 화면과 카드 수정 화면이 함께 씀
 	let { f = $bindable(), household, autoNote = false }: { f: Record<string, any>; household?: Snippet; autoNote?: boolean } = $props();
@@ -140,8 +140,8 @@
 		<label>3단계<select bind:value={l3} onchange={sync} disabled={!o3.length}><option value="">{o3.length ? '선택' : '-'}</option>{#each o3 as c}<option value={c.id}>{c.name}</option>{/each}</select></label>
 		<label>전도회<select bind:value={f.mission_society}>
 			<option value="">해당 없음</option>
-			<optgroup label="남전도회">{#each MISSION_SOCIETIES.filter((s) => s.includes('남')) as s}<option>{s}</option>{/each}</optgroup>
-			<optgroup label="여전도회">{#each MISSION_SOCIETIES.filter((s) => s.includes('여')) as s}<option>{s}</option>{/each}</optgroup>
+			<optgroup label="남전도회">{#each registry.codes.missionSocieties.filter((s) => s.includes('남')) as s}<option>{s}</option>{/each}</optgroup>
+			<optgroup label="여전도회">{#each registry.codes.missionSocieties.filter((s) => s.includes('여')) as s}<option>{s}</option>{/each}</optgroup>
 		</select></label>
 	</div>
 </div>

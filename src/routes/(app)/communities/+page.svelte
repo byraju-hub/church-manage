@@ -2,7 +2,6 @@
 	// 공동체 편성표: 공동체별 소그룹 · 인도자 · 모임 장소 · 이번 주 출석
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { recentSundays } from '#lib/registry/attendance.mock.ts';
-	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import CommunityIcon from '#lib/components/CommunityIcon.svelte';
 	import { bornText } from '#lib/registry/year-settings.ts';
 
@@ -34,12 +33,12 @@
 </script>
 
 <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:.6rem;margin-bottom:.6rem">
-	<h1 style="margin:0">공동체 편성표 <small class="muted">3개 공동체 · 소그룹 {groups.filter((g) => !g.care).length}개 + 자녀돌봄</small></h1>
+	<h1 style="margin:0">{registry.t1} 편성표 <small class="muted">3개 {registry.t1} · {registry.t2} {groups.filter((g) => !g.care).length}개 + 자녀돌봄</small></h1>
 </div>
-<p class="muted" style="margin-top:0">공동체와 소그룹 편성표입니다. 출석은 현재 운영 중인 홈페이지의 자료를 그대로 공유합니다.</p>
+<p class="muted" style="margin-top:0">{registry.t1}{registry.josa(registry.t1, '과')} {registry.t2} 편성표입니다. 출석은 현재 운영 중인 홈페이지의 자료를 그대로 공유합니다.</p>
 
 
-{#each COMMUNITY_DEFS as c}
+{#each registry.communities as c}
 	{@const t = sum(c.name)}
 	{@const k = sum(c.name, true)}
 	<div class="card" style="padding:0">
@@ -52,7 +51,7 @@
 			<!-- 휴대폰에서는 글자를 조금 줄이고 이름·숫자가 한 줄에 들어가도록 비율을 살짝 조정 -->
 			<table class="sm comm">
 				<colgroup><col class="c-g" /><col class="c-l" /><col class="c-p" /><col class="c-n" /><col class="c-n" /></colgroup>
-				<thead><tr><th>소그룹</th><th>인도자</th><th>모임 장소</th><th>인원</th><th>출석</th></tr></thead>
+				<thead><tr><th>{registry.t2}</th><th>인도자</th><th>모임 장소</th><th>인원</th><th>출석</th></tr></thead>
 				<tbody>
 					{#each groups.filter((g) => g.community === c.name).sort((a, b) => a.sort_order - b.sort_order) as g (g.id)}
 						{@const s = stat.get(g.name)}

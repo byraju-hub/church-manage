@@ -3,7 +3,6 @@
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { recentSundays } from '#lib/registry/attendance.mock.ts';
-	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import { EDU_DEPTS, FAITH_KINDS, OFFICE_NAMES, OFFICE_STATUSES } from '#lib/registry/types.ts';
 
 	const tabs = ['주일 출석', '소그룹 출석', '임직', '세례'];
@@ -53,7 +52,7 @@
 </script>
 
 <h1>통계</h1>
-<div class="tabs">{#each tabs as t}<button class:on={tab === t} onclick={() => (tab = t)}>{t}</button>{/each}</div>
+<div class="tabs">{#each tabs as t}<button class:on={tab === t} onclick={() => (tab = t)}>{registry.tr(t)}</button>{/each}</div>
 
 {#if tab === '주일 출석'}
 	<div class="dash-grid even">
@@ -82,13 +81,13 @@
 {:else if tab === '소그룹 출석'}
 	<div class="card">
 		<div class="toolbar">
-			<select bind:value={comm}><option>전체</option>{#each COMMUNITY_DEFS as c}<option>{c.name}</option>{/each}</select>
-			<span class="muted">주일 오후 소그룹 모임 출석 (홈페이지 출석부에서 인도자가 등록). 칸의 색이 진할수록 출석률이 높습니다. 소그룹 이름을 누르면 상세 화면으로 갑니다.</span>
+			<select bind:value={comm}><option>전체</option>{#each registry.communities as c}<option>{c.name}</option>{/each}</select>
+			<span class="muted">주일 오후 {registry.t2} 모임 출석 (홈페이지 출석부에서 인도자가 등록). 칸의 색이 진할수록 출석률이 높습니다. {registry.t2} 이름을 누르면 상세 화면으로 갑니다.</span>
 		</div>
 	</div>
 	<div class="card" style="padding:0;overflow-x:auto">
 		<table class="sm">
-			<thead><tr><th>공동체</th><th>소그룹</th><th>인원</th>{#each WEEKS as d}<th style="text-align:center">{md(d)}</th>{/each}<th>4주 평균</th></tr></thead>
+			<thead><tr><th>{registry.t1}</th><th>{registry.t2}</th><th>인원</th>{#each WEEKS as d}<th style="text-align:center">{md(d)}</th>{/each}<th>4주 평균</th></tr></thead>
 			<tbody>
 				{#each groupRows as r (r.g.id)}
 					<tr>

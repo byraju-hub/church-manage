@@ -19,7 +19,7 @@
 <div class="gsearch" role="search" onfocusin={() => (focused = true)} onfocusout={(e) => { if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) focused = false; }}>
 	<div class="gs-box">
 		<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
-		<input type="search" bind:value={q} oninput={logSoon} placeholder="무엇이든 검색하세요! (이름 · 전화 · 소그룹 · 직분 · 메모 · 심방 등)" aria-label="통합 검색" />
+		<input type="search" bind:value={q} oninput={logSoon} placeholder="무엇이든 검색하세요! (이름 · 전화 · {registry.t2} · 직분 · 메모 · 심방 등)" aria-label="통합 검색" />
 	</div>
 	{#if focused && r}
 		<div class="gs-pop">
@@ -33,13 +33,13 @@
 					<a class="gs-row" href="/{p.id}">
 						<span class="avatar">{p.name.slice(0, 1)}</span>
 						<span class="grow"><b>{p.name}{p.name_note ? ` (${p.name_note})` : ''} {s.title}</b>
-							<small>{s.category || s.status} · {s.smallGroup ? `${s.community} ${s.smallGroup}` : '소그룹 없음'} · {p.phone ?? '전화 없음'} · {ageText(p.birth_date)}</small></span>
+							<small>{s.category || s.status} · {s.smallGroup ? `${s.community} ${s.smallGroup}` : `${registry.t2} 없음`} · {p.phone ?? '전화 없음'} · {ageText(p.birth_date)}</small></span>
 					</a>
 				{/each}
 				{#if r.total > r.people.length}<a class="gs-more" href="/members?q={encodeURIComponent(q)}">교인 {r.total}명 모두 보기 →</a>{/if}
 			{/if}
 			{#if r.groups.length}
-				<h4>공동체 · 소그룹</h4>
+				<h4>{registry.t1} · {registry.t2}</h4>
 				{#each r.groups as g (g.id)}
 					<a class="gs-row" href="/communities/{encodeURIComponent(g.name)}"><span class="avatar warm">{g.name.slice(0, 1)}</span>
 						<span class="grow"><b>{g.name}</b><small>{g.community} · {g.place ?? ''}{g.leader_id ? ` · 인도자 ${nameOf(g.leader_id)}` : ''}</small></span></a>

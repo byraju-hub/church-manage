@@ -4,8 +4,8 @@
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
 	import ExportButtons from '#lib/components/ExportButtons.svelte';
 	import { ageOf, ageText, fullAddress, officeTitle } from '#lib/registry/derive.ts';
-	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import { withPdfStyle } from '#lib/pdf-style.ts';
+	import { certNo } from '#lib/registry/site-settings.ts';
 
 	// 문서 출력: 화면에서 미리 보고 → 인쇄 또는 PDF 내려받기. 출력할 때마다 접속기록(출력)과 발급번호를 남김
 	// [실제 시스템] 증명서 발급 대장을 따로 두고(발급번호·용도·발급자), 교회 직인 이미지를 넣습니다.
@@ -26,7 +26,10 @@
 	const req = $derived(reqId ? registry.certRequests.find((r) => r.id === reqId) : undefined);
 	const sealOk = $derived(!req || req.status === '승인');
 	// 진짜 직인은 이 컴퓨터의 static/private 에만 있음 (저장소·공개 사이트에 없음) → 없으면 '견본' 직인
-	let sealSrc = $state('/private/church-seal.png');
+	// 직인: 기본 설정에서 올린 직인 → 이 컴퓨터의 직인 → 견본 순서
+	let sealFail = $state(false);
+	const sealSrc = $derived(registry.churchInfo.seal || (sealFail ? '/seal-sample.svg' : '/private/church-seal.png'));
+	const cf = $derived(registry.certForm);
 	const pendingReqs = $derived(registry.certRequests.filter((r) => r.status === '대기').length);
 	const reqName = (id: string) => registry.person(id)?.name ?? '';
 	function openReq(r: { id: string; kind: '교인증명서' | '세례증명서'; person_id: string; purpose: string }) {
@@ -34,17 +37,17 @@
 	}
 	// 화면에서 다른 문서·교인을 고르면 신청과의 연결을 끊음
 	$effect(() => { if (req && (req.person_id !== personId || req.kind !== doc)) reqId = null; });
-	const purposeOpts = $derived([...new Set(['제출용', '이명용', '학교 제출용', '직장 제출용', '기타', purpose])]);
+	const purposeOpts = $derived([...new Set([...registry.certForm.purposes, purpose])]);
 
-	const CHURCH = '부평동부교회';
+	const CHURCH = $derived(registry.churchInfo.name);
 	const now = new Date();
 	const todayKo = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
-	const pastor = $derived(registry.d.people.find((p) => p.clergy_title === '담임목사')?.name ?? '');
+	const pastor = $derived(registry.pastorName);
 	const p = $derived(personId ? registry.person(personId) : undefined);
 	const s = $derived(p ? registry.summary(p) : null);
 	const needsPerson = $derived(doc === '교적부' || doc === '교인증명서' || doc === '세례증명서');
 	const issued = $derived(registry.d.accessLog.filter((l) => l.action === '출력' && l.at.startsWith(String(now.getFullYear()))).length);
-	const docNo = $derived(`제 ${now.getFullYear()}-${String(issued + 1).padStart(3, '0')} 호`);
+	const docNo = $derived(certNo(registry.certForm, now.getFullYear(), issued + 1));
 	const v = (x: unknown) => (x === null || x === undefined || x === '' ? '' : String(x));
 	const md = (iso: string | null) => (iso ? `${+iso.slice(5, 7)}월 ${+iso.slice(8, 10)}일` : '');
 	const ymd = (iso: string | null) => (iso ? `${iso.slice(0, 4)}. ${+iso.slice(5, 7)}. ${+iso.slice(8, 10)}.` : '');
@@ -155,7 +158,7 @@
 			{:else if doc === '생일 명단'}
 				<label class="row" style="gap:.4rem"><span class="muted">월</span><select bind:value={month} style="width:auto">{#each Array.from({ length: 12 }, (_, i) => i + 1) as m}<option value={m}>{m}월</option>{/each}</select></label>
 			{:else if doc === '교인 요람'}
-				<select bind:value={comm} style="width:auto"><option>전체</option>{#each COMMUNITY_DEFS as c}<option>{c.name}</option>{/each}</select>
+				<select bind:value={comm} style="width:auto"><option>전체</option>{#each registry.communities as c}<option>{c.name}</option>{/each}</select>
 				<label class="row" style="gap:.3rem"><input type="checkbox" bind:checked={consentOnly} />요람 공개에 동의한 사람만</label>
 			{/if}
 			<span style="flex:1"></span>
@@ -217,7 +220,7 @@
 						<tr><th>직업 / 직장</th><td>{[p.occupation, p.workplace].filter(Boolean).join(' / ')}</td><th>결혼</th><td>{v(p.marital_status)}{p.wedding_date ? ` · ${ymd(p.wedding_date)}` : ''}</td></tr>
 						<tr><th colspan="2">교인구분</th><td>{s.category}</td><th>직분</th><td>{s.title || '성도'}</td></tr>
 						<tr><th colspan="2">등록일</th><td>{ymd(s.registered)}</td><th>신급</th><td>{s.faith}</td></tr>
-						<tr><th colspan="2">공동체 · 소그룹</th><td>{s.community ? `${s.community} · ${s.smallGroup}` : ''}</td><th>전도회</th><td>{v(p.mission_society)}</td></tr>
+						<tr><th colspan="2">{registry.t1} · {registry.t2}</th><td>{s.community ? `${s.community} · ${s.smallGroup}` : ''}</td><th>전도회</th><td>{v(p.mission_society)}</td></tr>
 						<tr><th colspan="2">이전 교회</th><td>{v(p.previous_church)}</td><th>인도자</th><td>{p.guide_person_id ? registry.person(p.guide_person_id)?.name : v(p.guide_name)}</td></tr>
 					</tbody>
 				</table>
@@ -274,25 +277,26 @@
 							<tr><th>용 도</th><td colspan="3">{purpose}</td></tr>
 						{/if}
 					</tbody></table>
-					<p class="cert-body">{doc === '교인증명서' ? '위 사람은 본 교회에 등록된 교인임을 증명합니다.' : `위 사람은 위와 같이 ${baptism?.kind ?? '세례'}를 받았음을 증명합니다.`}</p>
+					<p class="cert-body">{doc === '교인증명서' ? cf.memberBody : cf.baptismBody.replace('{구분}', baptism?.kind ?? '세례')}</p>
 					<p class="cert-date">{todayKo}</p>
 					<!-- 교회 이름 자리에 교회 로고(대한예수교장로회 부평동부교회) -->
 					<!-- 직인: 교적 관리에서 바로 뽑을 때는 늘, 홈페이지 신청은 관리자가 승인한 뒤에만 -->
-					<p class="cert-sign"><img class="cert-logo" src="/church-logo.png" alt="대한예수교장로회 {CHURCH}" width="360" height="67" style="width:70mm;height:auto" /><br />담임목사 <b>{pastor}</b> <span class="seal-wrap">(인){#if sealOk}<img class="seal-img" src={sealSrc} onerror={() => (sealSrc = '/seal-sample.svg')} alt="교회 직인" />{/if}</span></p>
+					<p class="cert-sign"><img class="cert-logo" src={registry.churchInfo.logo || '/church-logo.png'} alt="{registry.churchInfo.denomination} {CHURCH}" width="360" height="67" style="width:70mm;height:auto" /><br />{registry.churchInfo.pastorLabel} <b>{pastor}</b> <span class="seal-wrap">(인){#if sealOk}<img class="seal-img" src={sealSrc} onerror={() => (sealFail = true)} alt="교회 직인" style="width:{cf.sealSize}mm;height:{cf.sealSize}mm" />{/if}</span></p>
+					{#if cf.footNote}<p class="foot-note" style="text-align:center;border:0">{cf.footNote}</p>{/if}
 				</div>
 
 			{:else if doc === '교인 요람'}
-				<div class="doc-head"><span>{CHURCH}</span><h2>교인 요람</h2><span>{comm === '전체' ? '전체 공동체' : comm} · {directory.length}명</span></div>
-				<table class="dt list zebra"><thead><tr><th>공동체</th><th>소그룹</th><th>이름</th><th>직분</th><th>휴대폰</th><th>주소</th></tr></thead><tbody>
-					{#each directory as { p: x, s: xs } (x.id)}<tr><td>{xs.community.replace(' 공동체', '')}</td><td>{xs.smallGroup}</td><td><b>{x.name}</b></td><td>{xs.title}</td><td>{v(x.phone)}</td><td>{fullAddress(x, registry.householdOf(x.id))}</td></tr>
+				<div class="doc-head"><span>{CHURCH}</span><h2>교인 요람</h2><span>{comm === '전체' ? `전체 ${registry.t1}` : comm} · {directory.length}명</span></div>
+				<table class="dt list zebra"><thead><tr><th>{registry.t1}</th><th>{registry.t2}</th><th>이름</th><th>직분</th><th>휴대폰</th><th>주소</th></tr></thead><tbody>
+					{#each directory as { p: x, s: xs } (x.id)}<tr><td>{registry.short(xs.community)}</td><td>{xs.smallGroup}</td><td><b>{x.name}</b></td><td>{xs.title}</td><td>{v(x.phone)}</td><td>{fullAddress(x, registry.householdOf(x.id))}</td></tr>
 					{:else}<tr><td colspan="6" class="c">요람에 실을 사람이 없습니다.</td></tr>{/each}
 				</tbody></table>
 				<p class="foot-note">요람 공개에 동의한 교인만 실었습니다. 교회 밖으로 내보내지 마세요.</p>
 
 			{:else if doc === '생일 명단'}
 				<div class="doc-head"><span>{CHURCH}</span><h2>{month}월 생일 명단</h2><span>{birthdays.length}명</span></div>
-				<table class="dt list zebra"><thead><tr><th>날짜</th><th>이름</th><th>직분</th><th>양/음</th><th>나이</th><th>공동체 · 소그룹</th><th>휴대폰</th></tr></thead><tbody>
-					{#each birthdays as { p: x, s: xs } (x.id)}<tr><td class="c">{md(x.birth_date)}</td><td><b>{x.name}</b></td><td>{xs.title}</td><td class="c">{x.birth_lunar ? '음력' : '양력'}</td><td class="c">{(ageOf(x.birth_date) ?? 0) + (+x.birth_date!.slice(5, 7) > now.getMonth() + 1 ? 1 : 0)}</td><td>{xs.smallGroup ? `${xs.community.replace(' 공동체', '')} · ${xs.smallGroup}` : ''}</td><td>{v(x.phone)}</td></tr>
+				<table class="dt list zebra"><thead><tr><th>날짜</th><th>이름</th><th>직분</th><th>양/음</th><th>나이</th><th>{registry.t1} · {registry.t2}</th><th>휴대폰</th></tr></thead><tbody>
+					{#each birthdays as { p: x, s: xs } (x.id)}<tr><td class="c">{md(x.birth_date)}</td><td><b>{x.name}</b></td><td>{xs.title}</td><td class="c">{x.birth_lunar ? '음력' : '양력'}</td><td class="c">{(ageOf(x.birth_date) ?? 0) + (+x.birth_date!.slice(5, 7) > now.getMonth() + 1 ? 1 : 0)}</td><td>{xs.smallGroup ? `${registry.short(xs.community)} · ${xs.smallGroup}` : ''}</td><td>{v(x.phone)}</td></tr>
 					{:else}<tr><td colspan="7" class="c">이 달 생일자가 없습니다.</td></tr>{/each}
 				</tbody></table>
 				<p class="foot-note">음력 생일은 해당 연도의 양력 날짜로 바꿔야 정확합니다. (실제 시스템에서 변환)</p>
@@ -314,7 +318,7 @@
 
 			{:else if doc === '직분자 명단'}
 				<div class="doc-head"><span>{CHURCH}</span><h2>직분자 명단</h2><span>{officers.length}명</span></div>
-				<table class="dt list zebra"><thead><tr><th>직분</th><th>구분</th><th>이름</th><th>표시</th><th>임직일</th><th>임직교회</th><th>소그룹</th></tr></thead><tbody>
+				<table class="dt list zebra"><thead><tr><th>직분</th><th>구분</th><th>이름</th><th>표시</th><th>임직일</th><th>임직교회</th><th>{registry.t2}</th></tr></thead><tbody>
 					{#each officers as { t, p: x } (t.id)}<tr><td>{t.office}</td><td class="c">{t.rank_status}</td><td><b>{x.name}</b></td><td>{officeTitle(t)}</td><td class="c">{ymd(t.start_date)}</td><td>{t.church ?? '본 교회'}</td><td>{registry.summary(x).smallGroup}</td></tr>{/each}
 				</tbody></table>
 			{/if}

@@ -1,7 +1,6 @@
 <script lang="ts">
 	// 교회 조직표: 당회 · 시무집사회 · 시무권사회 · 남/여전도회 · 교회 조직표
 	import { registry } from '#lib/registry/store.svelte.ts';
-	import { MISSION_SOCIETIES } from '#lib/registry/types.ts';
 
 	// 순서: 교회 조직표가 맨 앞이고, 상단 메뉴 '조직'을 누르면 교회 조직표가 먼저 보임
 	const tabs = ['교회 조직표', '당회', '시무집사회', '시무권사회', '남전도회', '여전도회'];
@@ -25,8 +24,8 @@
 	const society = $derived(
 		(name: string) => registry.d.people.filter((p) => p.mission_society === name && registry.summary(p).memberCert)
 	);
-	const males = MISSION_SOCIETIES.filter((s) => s.includes('남'));
-	const females = MISSION_SOCIETIES.filter((s) => s.includes('여'));
+	const males = $derived(registry.codes.missionSocieties.filter((s) => s.includes('남')));
+	const females = $derived(registry.codes.missionSocieties.filter((s) => s.includes('여')));
 	const count = (name: string) => society(name).length;
 
 	const units = $derived(registry.d.orgUnits);
@@ -70,7 +69,7 @@
 	</div>
 	{#if names.includes(pickedSociety)}
 		<div class="card" style="padding:0;overflow-x:auto">
-			<table class="sm"><thead><tr><th>{pickedSociety}</th><th>직분</th><th>나이</th><th>소그룹</th><th>휴대폰</th></tr></thead><tbody>
+			<table class="sm"><thead><tr><th>{pickedSociety}</th><th>직분</th><th>나이</th><th>{registry.t2}</th><th>휴대폰</th></tr></thead><tbody>
 				{#each society(pickedSociety).map((p) => ({ p, s: registry.summary(p) })).sort((a, b) => a.p.name.localeCompare(b.p.name, 'ko')) as { p, s } (p.id)}
 					<tr><td><a href="/{p.id}">{p.name}</a></td><td>{s.title || '-'}</td><td>{p.birth_date ? new Date().getFullYear() - +p.birth_date.slice(0, 4) : '-'}</td><td>{s.smallGroup || '-'}</td><td>{p.phone ?? '-'}</td></tr>
 				{:else}<tr><td colspan="5" class="muted">회원이 없습니다.</td></tr>{/each}

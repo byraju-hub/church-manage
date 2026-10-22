@@ -1,14 +1,16 @@
 <script lang="ts">
-	// 관리자 › 설정: 교인구분 · 소그룹 편성 · 교회 조직표(회의 의장·서기 포함) · 코드표
+	// 관리자 › 설정: 기본 설정(교회 정보·로고·직인·증명서 양식) · 교인구분 · 소그룹 편성 · 교회 조직표 · 연간 설정 · 코드표 · 백업
 	import YearSettingsPanel from '#lib/components/YearSettingsPanel.svelte';
+	import BasicSettingsPanel from '#lib/components/BasicSettingsPanel.svelte';
+	import BackupPanel from '#lib/components/BackupPanel.svelte';
+	import CodesPanel from '#lib/components/CodesPanel.svelte';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import PersonPicker from '#lib/components/PersonPicker.svelte';
 	import NameChips from '#lib/components/NameChips.svelte';
-	import { CLERGY_TITLES, FULL_TIME_CLERGY, MAX_CATEGORY_DEPTH, MISSION_SOCIETIES, OFFICE_STATUS_OPTIONS, VISIT_KINDS, rankChoices, rankLabel, type OfficeName } from '#lib/registry/types.ts';
-	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
+	import { MAX_CATEGORY_DEPTH, OFFICE_STATUS_OPTIONS, rankChoices, rankLabel, type OfficeName } from '#lib/registry/types.ts';
 
-	const tabs = ['교인구분', '소그룹 편성', '교회 조직표', '연간 설정', '코드표'];
-	let tab = $state('교인구분');
+	const tabs = ['기본 설정', '교인구분', '소그룹 편성', '교회 조직표', '연간 설정', '코드표', '백업'];
+	let tab = $state('기본 설정');
 	let msg = $state('');
 	let addFor = $state<string | null>(null);
 	let addName = $state('');
@@ -55,7 +57,7 @@
 {#if !registry.perms.admin}
 	<div class="warn">사이트 관리자 권한이 필요합니다. (최고관리자에게 사이트 관리자 권한을 받아야 합니다)</div>
 {:else}
-	<div class="tabs">{#each tabs as t}<button class:on={tab === t} onclick={() => { tab = t; msg = ''; }}>{t}</button>{/each}</div>
+	<div class="tabs">{#each tabs as t}<button class:on={tab === t} onclick={() => { tab = t; msg = ''; }}>{registry.tr(t)}</button>{/each}</div>
 	{#if msg}<div class="warn">{msg}</div>{/if}
 
 	{#if tab === '교인구분'}
@@ -110,28 +112,38 @@
 	{:else if tab === '소그룹 편성'}
 		<div class="card" style="padding:0;overflow-x:auto">
 			<div class="card-head" style="padding:1.1rem 1.3rem 0">
-				<div><h2>소그룹 편성 <span class="tag">출석부 자료</span></h2><span class="sub">소그룹을 추가·수정·삭제합니다. 이름을 바꾸면 소속 교인과 인도자 특이사항에도 바로 적용됩니다.</span></div>
-				{#if !sgAdd}<button type="button" class="sm" onclick={() => { sgAdd = { community: COMMUNITY_DEFS[0].name, name: '', leader: '', place: '' }; sgEdit = null; sgMsg = ''; }}>+ 소그룹</button>{/if}
+				<div><h2>{registry.t2} 편성 <span class="tag">출석부 자료</span></h2><span class="sub">{registry.t2}{registry.josa(registry.t2, '을')} 추가·수정·삭제합니다. 이름을 바꾸면 소속 교인과 인도자 특이사항에도 바로 적용됩니다.</span></div>
+				{#if !sgAdd}<button type="button" class="sm" onclick={() => { sgAdd = { community: registry.communities[0].name, name: '', leader: '', place: '' }; sgEdit = null; sgMsg = ''; }}>+ {registry.t2}</button>{/if}
 			</div>
 			{#if sgMsg}<div class="warn" style="margin:.8rem 1.3rem 0">{sgMsg}</div>{/if}
+			<!-- 공동체(1단계) 이름 바꾸기: 소속 교인 · 소그룹 · 연간 설정 기준에 함께 반영 -->
+			<div class="comm-names">
+				<span class="muted">{registry.t1} 이름</span>
+				{#each registry.communities as c (c.key)}
+					<form class="row" style="gap:.3rem;flex-wrap:nowrap" onsubmit={(e) => { e.preventDefault(); const inp = (e.currentTarget as HTMLFormElement).querySelector('input')!; sgMsg = registry.renameCommunity(c.name, inp.value); if (sgMsg) inp.value = c.name; }}>
+						<input value={c.name} aria-label="{c.name} 이름" style="width:9.5rem" />
+						<button type="submit" class="ghost sm">바꾸기</button>
+					</form>
+				{/each}
+			</div>
 			{#if sgAdd}
 				<form class="sg-add" onsubmit={(e) => { e.preventDefault(); sgMsg = registry.addSmallGroup(sgAdd!.community, sgAdd!.name, sgAdd!.place, sgAdd!.leader || null) ?? ''; if (!sgMsg) sgAdd = null; }}>
-					<label>공동체<select bind:value={sgAdd.community}>{#each COMMUNITY_DEFS as c}<option>{c.name}</option>{/each}</select></label>
-					<label>소그룹 이름 *<input bind:value={sgAdd.name} required placeholder="예: 새소망" /></label>
+					<label>{registry.t1}<select bind:value={sgAdd.community}>{#each registry.communities as c}<option>{c.name}</option>{/each}</select></label>
+					<label>{registry.t2} 이름 *<input bind:value={sgAdd.name} required placeholder="예: 새소망" /></label>
 					<label>인도자<PersonPicker bind:value={sgAdd.leader} placeholder="인도자 검색" /></label>
 					<label>모임 장소<input bind:value={sgAdd.place} placeholder="예: 다니엘관 101호" /></label>
 					<div class="row"><button type="submit" class="sm">추가</button><button type="button" class="ghost sm" onclick={() => { sgAdd = null; sgMsg = ''; }}>취소</button></div>
 				</form>
 			{/if}
 			<table class="sm">
-				<thead><tr><th>공동체</th><th>소그룹</th><th style="min-width:220px">인도자</th><th>모임 장소</th><th>인원</th><th></th></tr></thead>
+				<thead><tr><th>{registry.t1}</th><th>{registry.t2}</th><th style="min-width:220px">인도자</th><th>모임 장소</th><th>인원</th><th></th></tr></thead>
 				<tbody>
-					{#each COMMUNITY_DEFS as c, ci}
+					{#each registry.communities as c, ci}
 						{#each registry.groupsIn(c.name) as g (g.id)}
 							{#if sgEdit?.id === g.id}
 								<tr class="editing">
-									<td><select bind:value={sgEdit.community} aria-label="공동체">{#each COMMUNITY_DEFS as x}<option>{x.name}</option>{/each}</select></td>
-									<td><input bind:value={sgEdit.name} aria-label="소그룹 이름" /></td>
+									<td><select bind:value={sgEdit.community} aria-label="{registry.t1}">{#each registry.communities as x}<option>{x.name}</option>{/each}</select></td>
+									<td><input bind:value={sgEdit.name} aria-label="{registry.t2} 이름" /></td>
 									<td><PersonPicker bind:value={sgEdit.leader} placeholder="인도자 검색" /></td>
 									<td><input bind:value={sgEdit.place} aria-label="모임 장소" /></td>
 									<td style="white-space:nowrap">{registry.groupMemberCount(g.name)}명</td>
@@ -150,7 +162,7 @@
 									<td style="white-space:nowrap">{registry.groupMemberCount(g.name)}명</td>
 									<td class="row" style="flex-wrap:nowrap">
 										<button type="button" class="ghost sm" onclick={() => { sgEdit = { id: g.id, community: g.community, name: g.name, leader: g.leader_id ?? '', place: g.place ?? '' }; sgAdd = null; sgMsg = ''; }}>수정</button>
-										<button type="button" class="ghost sm" onclick={() => { if (confirm(`'${g.name}' 소그룹을 삭제합니다.`)) sgMsg = registry.deleteSmallGroup(g.id) ?? ''; }}>삭제</button>
+										<button type="button" class="ghost sm" onclick={() => { if (confirm(`'${g.name}' ${registry.t2}을(를) 삭제합니다.`)) sgMsg = registry.deleteSmallGroup(g.id) ?? ''; }}>삭제</button>
 									</td>
 								</tr>
 							{/if}
@@ -159,6 +171,10 @@
 				</tbody>
 			</table>
 		</div>
+	{:else if tab === '기본 설정'}
+		<BasicSettingsPanel />
+	{:else if tab === '백업'}
+		<BackupPanel />
 	{:else if tab === '연간 설정'}
 		<YearSettingsPanel />
 	{:else if tab === '교회 조직표'}
@@ -224,19 +240,12 @@
 				</tbody></table>
 				<p class="muted" style="font-size:.82rem">임직일과 임직교회는 장로·시무집사·권사에게 적습니다. 표시되는 직분 이름은 구분에서 자동으로 만들어집니다 (예: 시무 → 권사, 은퇴 → 은퇴권사).</p>
 			</section>
-			<section class="card">
-				<h2>교역자 직책</h2>
-				<p>{CLERGY_TITLES.join(' · ')}</p>
-				<p class="muted">심방 기록을 볼 수 있는 전임 교역자: <b style="color:var(--text)">{FULL_TIME_CLERGY.join(' · ')}</b></p>
-				<h2 style="margin-top:1.2rem">전도회</h2>
-				<p class="muted" style="margin:0">{MISSION_SOCIETIES.join(' · ')}</p>
-				<h2 style="margin-top:1.2rem">심방 구분 <span class="tag part">디모데 목록 기준</span></h2>
-				<p class="muted" style="margin:0">{VISIT_KINDS.join(' · ')}</p>
-			</section>
+			<CodesPanel />
 		</div>
 	{/if}
 {/if}
 
 <style>
+	.comm-names { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin: 0.8rem 1.3rem 0; padding: 0.7rem 0.9rem; border-radius: 12px; background: var(--primary-50); }
 	.org-edit { padding: 0.8rem 0; border-bottom: 1px dashed var(--line-strong); overflow-x: auto; }
 </style>

@@ -3,7 +3,6 @@
 	import { page } from '$app/state';
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { ageOf, ageText, officeWithKind, officeKindTitle } from '#lib/registry/derive.ts';
-	import { MISSION_SOCIETIES } from '#lib/registry/types.ts';
 	import NameChips, { type Chip } from '#lib/components/NameChips.svelte';
 	import ExportButtons from '#lib/components/ExportButtons.svelte';
 	import SmsDialog from '#lib/components/SmsDialog.svelte';
@@ -116,7 +115,7 @@
 			const cols = Object.keys(COLS).filter((c) => picked.includes(c));
 			const st = { borderStyle: 'thin' as const, borderColor: '#999999', align: 'center' as const, alignVertical: 'center' as const };
 			const data = [
-				cols.map((c) => ({ value: c, fontWeight: 'bold' as const, backgroundColor: '#E9ECEF', ...st })),
+				cols.map((c) => ({ value: registry.tr(c), fontWeight: 'bold' as const, backgroundColor: '#E9ECEF', ...st })),
 				...rows.map(({ p, s }) => cols.map((c) => ({ value: COLS[c](p, s), ...st })))
 			];
 			const W: Record<string, number> = { 이름: 10, 동명이인구분: 8, 성별: 6, 생년월일: 12, 나이: 6, 휴대폰: 15, 주소: 40, 직분: 10, 상태: 8, 교인구분: 24, 전도회: 10, 신급: 8, 공동체: 12, 소그룹: 12, 등록일: 12, 차량번호: 12 };
@@ -179,7 +178,7 @@
 			{#if mode === 'basic'}
 				<div class="gs-box m-search">
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
-					<input type="search" placeholder="무엇이든 검색하세요! (이름 · 전화 · 소그룹 · 직분 · 주소 · 직업 · 차량 번호 · 메모 등)" aria-label="교인 검색" bind:value={q} onchange={runSearch} />
+					<input type="search" placeholder="무엇이든 검색하세요! (이름 · 전화 · {registry.t2} · 직분 · 주소 · 직업 · 차량 번호 · 메모 등)" aria-label="교인 검색" bind:value={q} onchange={runSearch} />
 				</div>
 			{:else}
 				<input type="search" placeholder="아래에서 고른 항목 안에서 찾습니다 (공백으로 여러 단어)" bind:value={q} onchange={runSearch} />
@@ -193,14 +192,14 @@
 		<select bind:value={c1} onchange={() => { c2 = ''; c3 = ''; }}><option value="">교인구분 전체</option>{#each l1opts as o}<option>{o.name}</option>{/each}</select>
 		<select bind:value={c2}><option value="">2단계 전체</option>{#each l2opts as o}<option>{o}</option>{/each}</select>
 		<select bind:value={c3}><option value="">3단계 전체</option>{#each l3opts as o}<option>{o}</option>{/each}</select>
-		<select bind:value={society}><option value="">전도회 전체</option>{#each MISSION_SOCIETIES as o}<option>{o}</option>{/each}</select>
+		<select bind:value={society}><option value="">전도회 전체</option>{#each registry.codes.missionSocieties as o}<option>{o}</option>{/each}</select>
 	</div>
 	<div class="toolbar">
 		<select bind:value={status}><option value="">재적상태 전체</option>{#each ['재적', '보류', '보관', '전출', '별세', '제적', '미등록'] as v}<option>{v}</option>{/each}</select>
 		<select bind:value={faith}><option value="">신급 전체</option>{#each ['세례교인', '유아세례교인', '학습교인', '원입교인', '미확인'] as v}<option>{v}</option>{/each}</select>
 		<select bind:value={office}><option value="">직분 전체</option>{#each titles as v}<option>{v}</option>{/each}</select>
-		<select bind:value={community} onchange={() => (smallGroup = '')}><option value="">공동체 전체</option>{#each communities as v}<option>{v}</option>{/each}</select>
-		<select bind:value={smallGroup}><option value="">소그룹 전체</option>{#each groups as v}<option>{v}</option>{/each}</select>
+		<select bind:value={community} onchange={() => (smallGroup = '')}><option value="">{registry.t1} 전체</option>{#each communities as v}<option>{v}</option>{/each}</select>
+		<select bind:value={smallGroup}><option value="">{registry.t2} 전체</option>{#each groups as v}<option>{v}</option>{/each}</select>
 		<select bind:value={gender}><option value="">성별 전체</option><option value="M">남</option><option value="F">여</option></select>
 		<select bind:value={account}><option value="">앱 가입 전체</option><option value="y">가입</option><option value="n">미가입</option></select>
 	</div>
@@ -218,7 +217,7 @@
 <div class="split">
 	<div class="card list-pane" style="padding:0">
 		<table class="mlist">
-			<thead><tr>{#if bulkOn}<th class="ck"><input type="checkbox" checked={allChecked} indeterminate={checkedRows.length > 0 && !allChecked} onchange={toggleAll} aria-label="검색 결과 전체 선택" title="검색 결과 {rows.length}명 전체 선택" /></th>{/if}<th>이름</th><th>직분</th><th>상태</th><th>교인구분</th><th>소그룹</th></tr></thead>
+			<thead><tr>{#if bulkOn}<th class="ck"><input type="checkbox" checked={allChecked} indeterminate={checkedRows.length > 0 && !allChecked} onchange={toggleAll} aria-label="검색 결과 전체 선택" title="검색 결과 {rows.length}명 전체 선택" /></th>{/if}<th>이름</th><th>직분</th><th>상태</th><th>교인구분</th><th>{registry.t2}</th></tr></thead>
 			<tbody>
 				{#each rows.slice(0, shown) as { p, s } (p.id)}
 					<tr class="pick" class:on={selId === p.id} class:checked={checked.has(p.id)} tabindex="0" onclick={() => (selId = p.id)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selId = p.id; } }}>
@@ -259,7 +258,7 @@
 				<dt>휴대폰</dt><dd>{p.phone ?? '-'}{p.sms_opt_out ? ' (문자 수신 거부)' : ''}</dd>
 				<dt>집전화</dt><dd>{hh?.home_phone ?? '-'}</dd>
 				<dt>주소</dt><dd>{[p.address1, p.address2].filter(Boolean).join(' ') || hh?.address || '-'}</dd>
-				<dt>소그룹</dt><dd>{s.community ? `${s.community} › ${s.smallGroup}` : '-'}</dd>
+				<dt>{registry.t2}</dt><dd>{s.community ? `${s.community} › ${s.smallGroup}` : '-'}</dd>
 				<dt>전도회</dt><dd>{p.mission_society ?? '-'}</dd>
 				<dt>직분</dt><dd>{s.office ? officeWithKind(s.office, p.clergy_title) : '성도'}</dd>
 				<dt>신급</dt><dd>{s.faith}</dd>
@@ -300,7 +299,7 @@
 	<div class="card">
 		<h2>내려받기 <span class="muted" style="font-weight:400">— 필요한 칸만 골라 엑셀로 · 용도를 적어야 함(실제 시스템)</span></h2>
 		<div class="cols">
-			{#each Object.keys(COLS) as c}<label><input type="checkbox" value={c} bind:group={picked} />{c}</label>{/each}
+			{#each Object.keys(COLS) as c}<label><input type="checkbox" value={c} bind:group={picked} />{registry.tr(c)}</label>{/each}
 		</div>
 		<p class="row" style="align-items:center"><ExportButtons onexcel={download} disabled={!picked.length} busy={xlBusy} /><span class="muted">현재 목록 {rows.length}명</span></p>
 	</div>

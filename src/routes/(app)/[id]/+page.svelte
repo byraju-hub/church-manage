@@ -7,9 +7,8 @@
 	import VisitAnalyzer, { type Analysis } from '#lib/components/VisitAnalyzer.svelte';
 	import CarePreview from '#lib/components/CarePreview.svelte';
 	import { ageOf, ageText, officeWithKind } from '#lib/registry/derive.ts';
-	import { COMMUNITY_DEFS } from '#lib/registry/config.ts';
 	import {
-		STATUS_KINDS, FAITH_KINDS, POSITIONS, ORDAINED, parseRank, rankChoices, rankLabel, CONSENT_KINDS, VISIT_KINDS, FULL_TIME_CLERGY,
+		STATUS_KINDS, FAITH_KINDS, POSITIONS, ORDAINED, parseRank, rankChoices, rankLabel, CONSENT_KINDS, FULL_TIME_CLERGY,
 		type StatusKind, type FaithKind, type ConsentKind, type VisitMethod
 	} from '#lib/registry/types.ts';
 
@@ -124,7 +123,7 @@
 		<div class="row">{#if registry.perms.export}<a class="btn ghost" href="/documents?doc=교적부&person={p.id}">교적부 출력</a>{/if}<a class="btn ghost" href="/members">← 목록</a></div>
 	</div>
 	<p class="muted" style="margin-top:.4rem">
-		{s.category || '교인구분 없음'} · 등록일 {s.registered ?? '미상'} · {s.community ? `${s.community} › ${s.smallGroup}` : '소그룹 없음'} · 교번 {p.reg_no ?? '미배정'}
+		{s.category || '교인구분 없음'} · 등록일 {s.registered ?? '미상'} · {s.community ? `${s.community} › ${s.smallGroup}` : `${registry.t2} 없음`} · 교번 {p.reg_no ?? '미배정'}
 		<span class="tag">위 값은 이력에서 자동 계산</span>
 	</p>
 
@@ -145,7 +144,7 @@
 						<tr><th>생년월일</th><td>{v(p.birth_date)} ({p.birth_lunar ? '음력' : '양력'}) · {ageText(p.birth_date)}</td><th>앱 가입</th><td>{p.has_account ? '가입' : '미가입'}</td></tr>
 						<tr><th>휴대폰</th><td>{v(p.phone)}{p.sms_opt_out ? ' (문자 수신 거부)' : ''}</td><th>집전화</th><td>{v(hh?.home_phone)}</td></tr>
 						<tr><th>주소</th><td colspan="3">{[p.address_zip, p.address1, p.address2].filter(Boolean).join(' ') || (hh?.address ? `${hh.address} (세대 주소)` : '-')}</td></tr>
-						<tr><th>소그룹</th><td>{s.community ? `${s.community} › ${s.smallGroup}` : '-'}</td><th>전도회</th><td>{v(p.mission_society)}</td></tr>
+						<tr><th>{registry.t2}</th><td>{s.community ? `${s.community} › ${s.smallGroup}` : '-'}</td><th>전도회</th><td>{v(p.mission_society)}</td></tr>
 						<tr><th>직분</th><td>{s.office ? officeWithKind(s.office, p.clergy_title) : '성도'}</td><th>신급</th><td>{s.faith}</td></tr>
 						<tr><th>등록일</th><td>{s.registered ?? '미상'}</td><th>인도자</th><td>{#if p.guide_person_id}<a href="/{p.guide_person_id}">{registry.person(p.guide_person_id)?.name}</a>{:else}{v(p.guide_name)}{/if}</td></tr>
 						<tr><th>결혼</th><td>{v(p.marital_status)}{p.wedding_date ? ` · 결혼기념일 ${p.wedding_date}` : ''}</td><th>직업 / 직장</th><td>{[p.occupation, p.workplace].filter(Boolean).join(' / ') || '-'}</td></tr>
@@ -246,14 +245,14 @@
 
 	{:else if tab === '소속'}
 		<div class="card">
-			<h2>공동체 · 소그룹 <span class="tag">출석부 자료</span></h2>
+			<h2>{registry.t1} · {registry.t2} <span class="tag">출석부 자료</span></h2>
 			<p>{s.community ? `${s.community} › ${s.smallGroup}` : '소속 없음'}
-				{#if s.smallGroup}<a class="tag" href="/communities/{encodeURIComponent(s.smallGroup)}">소그룹 보기 →</a>{/if}</p>
-			<p class="muted">공동체와 소그룹은 지금 운영 중인 출석부에서 관리합니다. 장년의 소속만 여기서 바로잡을 수 있고, 이동 이력은 따로 남기지 않습니다.</p>
+				{#if s.smallGroup}<a class="tag" href="/communities/{encodeURIComponent(s.smallGroup)}">{registry.t2} 보기 →</a>{/if}</p>
+			<p class="muted">{registry.t1}{registry.josa(registry.t1, '과')} {registry.t2}{registry.josa(registry.t2, '은')} 지금 운영 중인 출석부에서 관리합니다. 장년의 소속만 여기서 바로잡을 수 있고, 이동 이력은 따로 남기지 않습니다.</p>
 			{#if can}
 				<form class="form" onsubmit={(e) => { e.preventDefault(); registry.setGroup(p.id, grp.community, grp.small_group); grp.community = ''; grp.small_group = ''; }}>
-					<label>공동체<select bind:value={grp.community} onchange={() => (grp.small_group = '')}><option value="">(소속 없음)</option>{#each COMMUNITY_DEFS as c}<option>{c.name}</option>{/each}</select></label>
-					<label>소그룹<select bind:value={grp.small_group} disabled={!grp.community}><option value="">선택</option>{#each registry.groupsIn(grp.community) as g}<option>{g.name}</option>{/each}</select></label>
+					<label>{registry.t1}<select bind:value={grp.community} onchange={() => (grp.small_group = '')}><option value="">(소속 없음)</option>{#each registry.communities as c}<option>{c.name}</option>{/each}</select></label>
+					<label>{registry.t2}<select bind:value={grp.small_group} disabled={!grp.community}><option value="">선택</option>{#each registry.groupsIn(grp.community) as g}<option>{g.name}</option>{/each}</select></label>
 					<div class="wide"><button type="submit" class="ghost">소속 바꾸기</button></div>
 				</form>
 			{/if}
@@ -316,7 +315,7 @@
 				{#if can}
 					<form class="form" onsubmit={(e) => { e.preventDefault(); const added = registry.addVisit({ person_id: p.id, visit_date: vs.date, kind: vs.kind, method: vs.method, pastor: vs.pastor || clergy[0]?.name || '담당 교역자', companions: vsCompanions.length ? vsCompanions.map((c) => c.name).join(', ') : null, scripture: nn(vs.scripture), hymn: nn(vs.hymn), content: vs.content, follow_up: nn(vs.follow) }); vsMsg = added.length ? `캘린더 성도 일정에 ${added.map((c) => `${+c.date.slice(5, 7)}/${+c.date.slice(8, 10)} ${c.label}`).join(', ')}을(를) 함께 넣었습니다.` : ''; vs.content = ''; vs.follow = ''; vs.scripture = ''; vs.hymn = ''; vsCompanions = []; }}>
 						<label>날짜<input type="date" bind:value={vs.date} required /></label>
-						<label>구분<select bind:value={vs.kind}>{#each VISIT_KINDS as k}<option>{k}</option>{/each}</select></label>
+						<label>구분<select bind:value={vs.kind}>{#each registry.codes.visitKinds as k}<option>{k}</option>{/each}</select></label>
 						<label>방법<select bind:value={vs.method}><option>대면</option><option>전화</option></select></label>
 						<label>담당 교역자<select bind:value={vs.pastor}><option value="">(선택)</option>{#each clergy as c}<option>{c.name}</option>{/each}</select></label>
 						<label class="wide">동행자 <span class="muted" style="font-weight:400">(이름을 쓰고 쉼표)</span><NameChips bind:chips={vsCompanions} allowFree placeholder="예: 김영수, 이순희" /></label>

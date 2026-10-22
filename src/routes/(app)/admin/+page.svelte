@@ -13,8 +13,8 @@
 	const PERMS: { key: keyof Perms; label: string; hint: string }[] = [
 		{ key: 'edit', label: '수정', hint: '교적 등록·수정, 출석 등록, 새가족 정착 처리' },
 		{ key: 'export', label: '내려받기·출력', hint: '목록 내려받기, 교적부·증명서·요람 출력(PDF)' },
-		{ key: 'visit', label: '심방', hint: 'A 등급만 (바꿀 수 없음): 심방 메뉴(목록·등록·녹음 분석·소그룹 특이사항), 교적 카드의 심방·디모데 메모, 대시보드 최근 심방' },
-		{ key: 'admin', label: '사이트 관리자', hint: '관리자 › 설정 (교인구분·소그룹·조직표)' }
+		{ key: 'visit', label: '심방', hint: `A 등급만 (바꿀 수 없음): 심방 메뉴(목록·등록·녹음 분석·${registry.t2} 특이사항), 교적 카드의 심방·디모데 메모, 대시보드 최근 심방` },
+		{ key: 'admin', label: '사이트 관리자', hint: `관리자 › 설정 (기본 설정·교인구분·${registry.t2}·조직표)` }
 	];
 	const nameOf = (id: string | null) => (id ? registry.person(id)?.name ?? '' : '');
 	let approveGrade = $state<Record<string, Grade>>({});
@@ -113,7 +113,7 @@
 	<div class="card">
 		<h2>권한 설명</h2>
 		<table class="sm"><tbody>
-			<tr><td><b>열람 (모든 등급)</b></td><td>교인 목록·교적 카드·공동체·조직·통계</td></tr>
+			<tr><td><b>열람 (모든 등급)</b></td><td>교인 목록·교적 카드·{registry.t1}·조직·통계</td></tr>
 			{#each PERMS as p}<tr><td><b>{p.label}</b></td><td>{p.hint}</td></tr>{/each}
 			<tr><td><b>최고관리자</b></td><td>모든 권한 + 가입 승인, 등급 지정, 등급 설정, 사용 정지</td></tr>
 		</tbody></table>

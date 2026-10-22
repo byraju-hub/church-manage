@@ -124,7 +124,7 @@
 			const st = { borderStyle: 'thin' as const, borderColor: '#999999', alignVertical: 'center' as const };
 			const xcols = cols.filter((c) => !c.photo); // 사진은 엑셀에 넣지 않음
 			const data = [
-				xcols.map((c) => ({ value: c.label, fontWeight: 'bold' as const, backgroundColor: '#E0E4F4', align: 'center' as const, ...st })),
+				xcols.map((c) => ({ value: registry.tr(c.label), fontWeight: 'bold' as const, backgroundColor: '#E0E4F4', align: 'center' as const, ...st })),
 				...rows.map(({ p, s }) => xcols.map((c) => ({ value: c.get(p, s), ...st })))
 			];
 			await writeXlsxFile(data, { sheet: '교인 목록', columns: xcols.map((c) => ({ width: c.w ?? 12 })), stickyRowsCount: 1 }).toFile(`교인목록-${new Date().toISOString().slice(0, 10)}.xlsx`);
@@ -144,7 +144,7 @@
 	<div class="toolbar">
 		<div class="gs-box m-search">
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
-			<input type="search" placeholder="무엇이든 검색하세요! (이름 · 전화 · 소그룹 · 직분 · 주소 · 직업 · 차량 번호 · 메모 등)" aria-label="교인 검색" bind:value={q} />
+			<input type="search" placeholder="무엇이든 검색하세요! (이름 · 전화 · {registry.t2} · 직분 · 주소 · 직업 · 차량 번호 · 메모 등)" aria-label="교인 검색" bind:value={q} />
 		</div>
 	</div>
 	<div class="toolbar">
@@ -160,7 +160,7 @@
 			<button type="button" class:on={view === 'card'} onclick={() => { view = 'card'; shown = 60; }}>카드 보기</button>
 		</div>
 		<label class="row sortsel" style="gap:.35rem">정렬
-			<select bind:value={sortBy} style="width:auto">{#each cols.filter((c) => !c.photo) as c}<option>{c.label}</option>{/each}</select>
+			<select bind:value={sortBy} style="width:auto">{#each cols.filter((c) => !c.photo) as c}<option value={c.label}>{registry.tr(c.label)}</option>{/each}</select>
 			<button type="button" class="ghost sm" onclick={() => (asc = !asc)} title="순서 바꾸기">{asc ? '▲ 오름차순' : '▼ 내림차순'}</button>
 		</label>
 		<span style="flex:1"></span>
@@ -169,7 +169,7 @@
 	</div>
 	{#if setOpen}
 		<div class="col-set">
-			<div class="cols">{#each COLS as c}<label><input type="checkbox" value={c.label} bind:group={picked} />{c.label}</label>{/each}</div>
+			<div class="cols">{#each COLS as c}<label><input type="checkbox" value={c.label} bind:group={picked} />{registry.tr(c.label)}</label>{/each}</div>
 			<div class="row" style="margin-top:.6rem">
 				<button type="button" class="ghost sm" onclick={() => (picked = COLS.map((c) => c.label))}>모두</button>
 				<button type="button" class="ghost sm" onclick={() => (picked = [...DEFAULT])}>기본 (이름 · 직분 · 생년월일 · 휴대폰 · 집전화 · 주소)</button>
@@ -193,7 +193,7 @@
 						{#if bulkOn}<th class="ck"><input type="checkbox" checked={allChecked} indeterminate={checkedIds.length > 0 && !allChecked} onchange={toggleAll} aria-label="검색 결과 전체 선택" title="검색 결과 {rows.length}명 전체 선택" /></th>{/if}
 						<th class="no">번호</th>
 						{#each cols as c (c.label)}
-							<th>{#if c.photo}{c.label}{:else}<button type="button" class="sort" class:on={sortBy === c.label} onclick={() => sortOn(c.label)} title="{c.label}(으)로 정렬">{c.label}<i>{sortBy === c.label ? (asc ? '▲' : '▼') : '↕'}</i></button>{/if}</th>
+							<th>{#if c.photo}{c.label}{:else}<button type="button" class="sort" class:on={sortBy === c.label} onclick={() => sortOn(c.label)} title="{registry.tr(c.label)}(으)로 정렬">{registry.tr(c.label)}<i>{sortBy === c.label ? (asc ? '▲' : '▼') : '↕'}</i></button>{/if}</th>
 						{/each}
 					</tr>
 				</thead>
@@ -224,7 +224,7 @@
 					<a href="/{p.id}" class="pc-name"><b>{p.name}</b>{#if s.office}<small> {officeKindTitle(s.office, p.clergy_title)}</small>{/if}</a>
 				</div>
 				<dl class="pc-grid">
-					{#each cardCols as c (c.label)}<dt>{c.label}</dt><dd>{c.get(p, s) || '-'}</dd>{/each}
+					{#each cardCols as c (c.label)}<dt>{registry.tr(c.label)}</dt><dd>{c.get(p, s) || '-'}</dd>{/each}
 				</dl>
 				<a class="btn ghost xs pc-open" href="/{p.id}">교적 카드</a>
 			</div>

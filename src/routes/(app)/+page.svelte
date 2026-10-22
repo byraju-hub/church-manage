@@ -181,7 +181,7 @@
 <section class="hero">
 	<div>
 		<small>{dateLabel}</small>
-		<h1>부평동부교회 현황</h1>
+		<h1>{registry.churchInfo.name} 현황</h1>
 		<p>재적 교인 {joined}명 · 이번 주일 출석 {latest.n}명({rate}%)</p>
 		{#if registry.ys.motto}<p class="motto">{registry.ys.year} 표어 · {registry.ys.motto}{registry.ys.verse ? ` (${registry.ys.verse})` : ''}</p>{/if}
 	</div>
@@ -204,9 +204,9 @@
 			<span>{md(latest.date)} 주일 출석 · {rate}%</span>
 		</div>
 	</a>
-	<a class="kpi" href="/stats?tab=소그룹 출석" title="주일 오후 소그룹 모임 출석 (홈페이지 출석부에서 인도자가 등록)">
+	<a class="kpi" href="/stats?tab={registry.t2} 출석" title="주일 오후 {registry.t2} 모임 출석 (홈페이지 출석부에서 인도자가 등록)">
 		<span class="ico blue2">{@render icon('group')}</span>
-		<div><b>{groupAtt.present}<small class="of">/{groupAtt.total}</small></b><span>{md(latest.date)} 소그룹 출석 · {pctOf(groupAtt)}%</span></div>
+		<div><b>{groupAtt.present}<small class="of">/{groupAtt.total}</small></b><span>{md(latest.date)} {registry.t2} 출석 · {pctOf(groupAtt)}%</span></div>
 	</a>
 	<a class="kpi" href="/stats?tab=주일 출석#edu" title="홈페이지 교육부서 출석과 연동할 자리">
 		<span class="ico indigo">{@render icon('book')}</span>
@@ -325,8 +325,8 @@
 
 <div class="dash-grid even">
 	<section class="card">
-		<div class="card-head"><h2>{@render hIcon('group')}공동체 · 소그룹 출석 <small class="muted" style="font-weight:500;font-size:.78rem">주일 오후 소그룹 모임</small></h2>
-			<div class="seg"><button type="button" class:on={unit === 'community'} onclick={() => (unit = 'community')}>공동체</button><button type="button" class:on={unit === 'group'} onclick={() => (unit = 'group')}>소그룹</button></div></div>
+		<div class="card-head"><h2>{@render hIcon('group')}{registry.t1} · {registry.t2} 출석 <small class="muted" style="font-weight:500;font-size:.78rem">주일 오후 {registry.t2} 모임</small></h2>
+			<div class="seg"><button type="button" class:on={unit === 'community'} onclick={() => (unit = 'community')}>{registry.t1}</button><button type="button" class:on={unit === 'group'} onclick={() => (unit = 'group')}>{registry.t2}</button></div></div>
 		<p class="sub" style="margin:-.4rem 0 .6rem;color:var(--muted);font-size:.8rem">{md(latest.date)} 주일 · 홈페이지 출석부(인도자 등록) 기준{unit === 'group' ? ' · 출석률 높은 순' : ''}</p>
 		<div style="max-height:{unit === 'group' ? '420px' : 'none'};overflow:auto">
 		{#each byCommunity as [name, c]}
@@ -348,7 +348,7 @@
 				<span class="avatar rose">{a.p.name.slice(0, 1)}</span>
 				<div class="grow">
 					<b><a href="/{a.p.id}">{a.p.name}</a> <span class="dday today" title={a.lastSeen ? `마지막 출석 ${a.lastSeen}` : '반년 넘게 출석 없음'}>{a.streak >= LONG.length ? '반년 이상' : `${a.streak}주째`}</span></b>
-					<small>{a.s.smallGroup || '소그룹 없음'} · {a.s.title || a.s.faith}</small>
+					<small>{a.s.smallGroup || `${registry.t2} 없음`} · {a.s.title || a.s.faith}</small>
 				</div>
 				<div class="li-acts">
 					{#if registry.perms.edit}<button type="button" class="ghost xs" title="교인구분 3단계를 '장기결석자'로 바꿉니다" onclick={() => markLong(a.p)}>장기결석자로</button>{/if}
@@ -405,8 +405,8 @@
 	<div class="card-head"><h2>{@render hIcon('arrow')}바로 가기</h2></div>
 	<div class="quick">
 		<a href="/members">교인 목록</a>
-		<a href="/communities">공동체 편성표</a>
-		<a href="/communities/roster">공동체 명단</a>
+		<a href="/communities">{registry.t1} 편성표</a>
+		<a href="/communities/roster">{registry.t1} 명단</a>
 		<a href="/attendance">출석</a>
 		{#if registry.perms.visit}<a href="/visits">심방</a>{/if}
 		<a href="/households">세대</a>

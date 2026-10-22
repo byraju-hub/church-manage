@@ -82,26 +82,27 @@
 
 	// 상단 메뉴 ('교적 프로그램 구조' 문서 순서)
 	type Item = { href: string; label: string; hint?: string };
-	const memberMenu: Item[] = [
+	// 메뉴 이름의 '공동체'·'소그룹'은 기본 설정에서 고른 이름(교구·구역 등)을 따름
+	const memberMenu: Item[] = $derived([
 		{ href: '/members', label: '교인 목록', hint: '기본 · 복수 · 항목별 검색' },
 		{ href: '/new', label: '교인 등록', hint: '등록 카드 촬영 후 등록 가능' },
-		{ href: '/newcomers', label: '새가족 정착', hint: '등록 → 교육 → 수료 → 소그룹' },
+		{ href: '/newcomers', label: '새가족 정착', hint: `등록 → 교육 → 수료 → ${registry.t2}` },
 		{ href: '/households', label: '세대 목록', hint: '세대원 · 분가' }
-	];
-	const commMenu: Item[] = [
-		{ href: '/communities', label: '공동체 편성표', hint: '인도자 · 모임 장소 · 출석' },
-		{ href: '/communities/roster', label: '소그룹별 명단', hint: '각 소그룹 명단 · 개인 출석률' }
-	];
-	const statMenu: Item[] = [
-		{ href: '/stats', label: '통계', hint: '출석 · 소그룹 · 임직 · 세례' },
+	]);
+	const commMenu: Item[] = $derived([
+		{ href: '/communities', label: `${registry.t1} 편성표`, hint: '인도자 · 모임 장소 · 출석' },
+		{ href: '/communities/roster', label: `${registry.t2}별 명단`, hint: `각 ${registry.t2} 명단 · 개인 출석률` }
+	]);
+	const statMenu: Item[] = $derived([
+		{ href: '/stats', label: '통계', hint: `출석 · ${registry.t2} · 임직 · 세례` },
 		{ href: '/reports', label: '명단', hint: '생일 · 직분자 · 세례 대상자' },
 		{ href: '/documents', label: '문서 출력', hint: '교적부 · 증명서 · 요람 · PDF' }
-	];
-	const adminMenu: Item[] = [
+	]);
+	const adminMenu: Item[] = $derived([
 		{ href: '/admin', label: '회원 · 권한', hint: '가입 승인 · 등급 · 접속기록' },
 		{ href: '/candidates', label: '확인 목록', hint: '중복 · 미등록 확인' },
-		{ href: '/settings', label: '설정', hint: '교인구분 · 소그룹 · 조직표' }
-	];
+		{ href: '/settings', label: '설정', hint: `기본 설정 · 교인구분 · ${registry.t2} · 조직표` }
+	]);
 	const path = $derived(page.url.pathname);
 	const inMenu = (items: Item[]) => items.some((i) => path === i.href || path.startsWith(i.href + '/'));
 	// 교적 카드(/p10 같은 주소)는 '교적'에 속한 화면으로 봄
@@ -121,7 +122,7 @@
 		<div class="bar">
 			<a class="brand" href="/">
 				<img class="logo" src="/logo.png" alt="" width="38" height="38" />
-				<span><b>부평동부교회 교적 관리</b></span>
+				<span><b>{registry.churchInfo.name} 교적 관리</b></span>
 			</a>
 
 			{#if unlocked}
@@ -147,7 +148,7 @@
 						</div>
 					{/snippet}
 					{@render dd('교적', memberMenu, inMenu(memberMenu) || isCard)}
-					{@render dd('공동체', commMenu, path.startsWith('/communities'))}
+					{@render dd(registry.t1, commMenu, path.startsWith('/communities'))}
 					<a href="/attendance" class:active={path.startsWith('/attendance')}>출석</a>
 					{#if registry.perms.visit}<a href="/visits" class:active={path.startsWith('/visits')}>심방</a>{/if}
 					<a href="/orgs" class:active={path.startsWith('/orgs')}>조직</a>
@@ -190,7 +191,7 @@
 			<div class="card lock">
 				<img src="/logo.png" alt="" width="64" height="64" style="display:block;margin:0 auto .8rem;border-radius:18px;box-shadow:0 6px 18px rgba(43,62,149,.25)" />
 				{#if mode === 'login'}
-					<h2 class="brand-font">부평동부교회 교적 관리</h2>
+					<h2 class="brand-font">{registry.churchInfo.name} 교적 관리</h2>
 					<p class="muted">홈페이지와 같은 카카오 계정으로 로그인합니다.<br />처음 로그인 시 자동으로 가입 신청이 되고,<br />최고 관리자의 승인 후 사용할 수 있습니다.</p>
 					<button type="button" class="kakao" onclick={() => { loginMsg = ''; mode = 'kakao'; }}>{@render kakaoIcon()} 카카오로 로그인</button>
 					{#if loginMsg}<p style="color:#a83c10;font-size:.88rem;margin-top:.8rem">{loginMsg}</p>{/if}
@@ -212,7 +213,7 @@
 				{:else if mode === 'signup'}
 					<div class="kakao-sheet">
 						<div class="kakao-top">{@render kakaoIcon()} <b>kakao</b> <span class="tag part">시연</span></div>
-						<p style="margin:.6rem 0 .2rem;font-weight:700">부평동부교회 교적 관리 서비스에 동의</p>
+						<p style="margin:.6rem 0 .2rem;font-weight:700">{registry.churchInfo.name} 교적 관리 서비스에 동의</p>
 						<p class="muted" style="font-size:.8rem;margin:0 0 .6rem">카카오가 프로필 이름·이메일을 교회에 전달합니다. 실명은 교회가 확인할 수 있게 적어 주세요.</p>
 						<form onsubmit={signUp}>
 							<input bind:value={su.name} placeholder="실명 (필수)" required style="margin:.25rem 0" />
@@ -256,10 +257,10 @@
 	<footer class="site-footer">
 		<div class="foot">
 			<div class="foot-brand">
-				<b>부평동부교회 교적 관리</b>
+				<b>{registry.churchInfo.name} 교적 관리</b>
 				<span>(가상 샘플 데이터로 동작하며 실제 DB에 연결되어 있지 않습니다.)</span>
 			</div>
-			<p class="muted">ⓒ 2026 부평동부교회. All Rights Reserved.</p>
+			<p class="muted">ⓒ {new Date().getFullYear()} {registry.churchInfo.name}. All Rights Reserved.</p>
 		</div>
 	</footer>
 </div>

@@ -5,15 +5,17 @@
 
 	const thisYear = new Date().getFullYear();
 	let year = $state(thisYear);
-	let s = $state<YearSettings>(structuredClone(registry.settingsFor(thisYear)));
+	// 코드표에 새로 넣은 전도회는 출생 연도 칸을 비워 둔 채로 함께 보이게
+	const withSocieties = (x: YearSettings): YearSettings => { for (const k of registry.codes.missionSocieties) x.societies[k] ??= { from: 1900, to: 2100 }; return x; };
+	let s = $state<YearSettings>(withSocieties(structuredClone(registry.settingsFor(thisYear))));
 	let msg = $state('');
 	// 연도를 바꾸면 그 해 설정을 불러옴
-	function load(y: number) { year = y; s = structuredClone($state.snapshot(registry.settingsFor(y))) as YearSettings; msg = ''; }
+	function load(y: number) { year = y; s = withSocieties(structuredClone($state.snapshot(registry.settingsFor(y))) as YearSettings); msg = ''; }
 	function copyPrev() {
 		const prev = structuredClone($state.snapshot(registry.settingsFor(year - 1))) as YearSettings;
 		// 전도회·교육부서는 한 해 지나면 출생 연도를 한 해씩 뒤로 (같은 나이대 유지)
 		for (const r of Object.values(prev.societies)) { if (r.from > 1900) r.from++; if (r.to < 2100) r.to++; }
-		s = { ...prev, year, promoteDate: `${year}${prev.promoteDate.slice(4)}` };
+		s = withSocieties({ ...prev, year, promoteDate: `${year}${prev.promoteDate.slice(4)}` });
 		msg = `${year - 1}년 설정을 가져왔습니다. 전도회 출생 연도는 한 해씩 옮겼습니다. 확인 후 저장해 주세요.`;
 	}
 	const canEdit = $derived(registry.isSuper || registry.perms.admin);
@@ -36,8 +38,8 @@
 	}
 	const sample = '1990-05-01';
 	const exAge = (mode: string) => { const y = 1990, now = new Date(); if (mode === '연 나이') return now.getFullYear() - y; if (mode === '한국 나이') return now.getFullYear() - y + 1; return now.getFullYear() - y - (now < new Date(now.getFullYear(), 4, 1) ? 1 : 0); };
-	const males = $derived(Object.keys(s.societies).filter((k) => k.includes('남')));
-	const females = $derived(Object.keys(s.societies).filter((k) => k.includes('여')));
+	const males = $derived(registry.codes.missionSocieties.filter((k) => k.includes('남') && s.societies[k]));
+	const females = $derived(registry.codes.missionSocieties.filter((k) => k.includes('여') && s.societies[k]));
 </script>
 
 <div class="card ys-top">
@@ -58,7 +60,7 @@
 	<section class="card">
 		<h2>올해 표어 · 말씀</h2>
 		<div class="form">
-			<label class="wide">표어<input bind:value={s.motto} placeholder="예: 소그룹과 함께 마음을 같이하는 교회" /></label>
+			<label class="wide">표어<input bind:value={s.motto} placeholder="예: {registry.t2}{registry.josa(registry.t2, '과')} 함께 마음을 같이하는 교회" /></label>
 			<label class="wide">말씀<input bind:value={s.verse} placeholder="예: 행 2:46" /></label>
 		</div>
 		<p class="muted" style="font-size:.8rem;margin:.5rem 0 0">대시보드 위쪽 배너에 함께 나옵니다.</p>
@@ -76,9 +78,9 @@
 </div>
 
 <section class="card">
-	<div class="card-head"><h2>공동체별 출생 연도</h2><span class="sub">비워 두면 '이전' / '이후'로 끝이 없습니다</span></div>
+	<div class="card-head"><h2>{registry.t1}별 출생 연도</h2><span class="sub">비워 두면 '이전' / '이후'로 끝이 없습니다</span></div>
 	<div class="tw"><table class="sm ys-t">
-		<thead><tr><th>공동체</th><th>출생 연도 (부터)</th><th>(까지)</th><th>표시</th></tr></thead>
+		<thead><tr><th>{registry.t1}</th><th>출생 연도 (부터)</th><th>(까지)</th><th>표시</th></tr></thead>
 		<tbody>
 			{#each Object.keys(s.communities) as k}
 				{@const r = s.communities[k]}
@@ -89,8 +91,8 @@
 			{/each}
 		</tbody>
 	</table></div>
-	<p class="chk-line">{#if commMis.length}<button type="button" class="linkish" onclick={() => (showComm = !showComm)}>기준과 맞지 않는 공동체 소속 {commMis.length}명 {showComm ? '접기' : '보기'}</button>{:else}<span class="muted">모든 공동체 소속이 기준에 맞습니다.</span>{/if}</p>
-	{#if showComm && commMis.length}<p class="mis">{#each commMis as { p, s: x }, i}{i ? ', ' : ''}<a href="/{p.id}">{p.name}</a> <small class="muted">({p.birth_date?.slice(0, 4)} · {x.community.replace(' 공동체', '')})</small>{/each}</p>{/if}
+	<p class="chk-line">{#if commMis.length}<button type="button" class="linkish" onclick={() => (showComm = !showComm)}>기준과 맞지 않는 {registry.t1} 소속 {commMis.length}명 {showComm ? '접기' : '보기'}</button>{:else}<span class="muted">모든 {registry.t1} 소속이 기준에 맞습니다.</span>{/if}</p>
+	{#if showComm && commMis.length}<p class="mis">{#each commMis as { p, s: x }, i}{i ? ', ' : ''}<a href="/{p.id}">{p.name}</a> <small class="muted">({p.birth_date?.slice(0, 4)} · {registry.short(x.community)})</small>{/each}</p>{/if}
 </section>
 
 <section class="card">

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { registry } from '#lib/registry/store.svelte.ts';
 	import { ageOf, ageText } from '#lib/registry/derive.ts';
-	import { COMMUNITY_DEFS, fixCat } from '#lib/registry/config.ts';
+	import { fixCat } from '#lib/registry/config.ts';
 	import type { Person } from '#lib/registry/types.ts';
 
 	// 새가족 정착 흐름: 등록 → 새가족 교육 → 수료 → 소그룹 배정 → 정착 완료
@@ -39,7 +39,7 @@
 	const pick = $state<Record<string, { c: string; g: string }>>({});
 	const commByAge = (p: Person) => {
 		const y = Number(p.birth_date?.slice(0, 4) ?? 1980);
-		return COMMUNITY_DEFS.find((c) => y >= c.from && y <= c.to)?.name ?? '';
+		return registry.communities.find((c) => y >= c.from && y <= c.to)?.name ?? '';
 	};
 	// 수료 단계의 사람에게 공동체(출생 연도 기준) 기본값을 미리 채워 둠
 	$effect(() => {
@@ -72,7 +72,7 @@
 </script>
 
 <h1>새가족 정착</h1>
-<p class="muted" style="margin-top:-.6rem">등록 → 새가족 교육 → 수료 → 소그룹 배정 → 정착 완료. 단계마다 다음으로 넘기는 버튼이 있습니다. (최근 1년 새가족)</p>
+<p class="muted" style="margin-top:-.6rem">등록 → 새가족 교육 → 수료 → {registry.t2} 배정 → 정착 완료. 단계마다 다음으로 넘기는 버튼이 있습니다. (최근 1년 새가족)</p>
 
 <div class="pipe-sum">
 	{#each STAGES as st, i}
@@ -85,7 +85,7 @@
 <div class="pipe">
 	{#each STAGES as st}
 		<section class="pipe-col">
-			<h3>{st === '소그룹 배정' ? '소그룹·부서 배정' : st} <span>{by(st).length}</span></h3>
+			<h3>{st === '소그룹 배정' ? `${registry.t2}·부서 배정` : st} <span>{by(st).length}</span></h3>
 			{#each by(st).slice(0, st === '정착 완료' ? 12 : 60) as x (x.p.id)}
 				{@const s = registry.summary(x.p)}
 				<div class="pcard">
@@ -102,10 +102,10 @@
 							{@const v = pick[x.p.id]}
 							{#if v}
 							<div class="row" style="flex-wrap:nowrap;gap:.3rem">
-								<select bind:value={v.c} style="padding:.3rem .5rem;font-size:.8rem">{#each COMMUNITY_DEFS as c}<option>{c.name}</option>{/each}</select>
-								<select bind:value={v.g} style="padding:.3rem .5rem;font-size:.8rem"><option value="">소그룹</option>{#each registry.groupsIn(v.c).filter((g) => !g.care) as g}<option>{g.name}</option>{/each}</select>
+								<select bind:value={v.c} style="padding:.3rem .5rem;font-size:.8rem">{#each registry.communities as c}<option>{c.name}</option>{/each}</select>
+								<select bind:value={v.g} style="padding:.3rem .5rem;font-size:.8rem"><option value="">{registry.t2}</option>{#each registry.groupsIn(v.c).filter((g) => !g.care) as g}<option>{g.name}</option>{/each}</select>
 							</div>
-							<button class="ghost sm" disabled={!v.g} onclick={() => assign(x.p)}>소그룹 배정</button>
+							<button class="ghost sm" disabled={!v.g} onclick={() => assign(x.p)}>{registry.t2} 배정</button>
 							{/if}
 						{:else if st === '소그룹 배정'}<button class="sm" onclick={() => settle(x.p)}>정착 완료</button>
 						{/if}

@@ -33,12 +33,12 @@
 		<div class="kpi"><div><b>{members.length}</b><span>재적 인원</span></div></div>
 		<div class="kpi"><div><b>{g.leader_id ? nameOf(g.leader_id) : '-'}</b><span>인도자{g.leader_id ? '' : ' (미정)'}</span></div></div>
 		<div class="kpi"><div><b style="font-size:1.2rem">{g.place ?? '-'}</b><span>모임 장소</span></div></div>
-		<div class="kpi"><div><b>{weekly[7].n}<small class="muted" style="font-size:.9rem"> / {members.length}</small></b><span>이번 주일 소그룹 모임 출석</span></div></div>
+		<div class="kpi"><div><b>{weekly[7].n}<small class="muted" style="font-size:.9rem"> / {members.length}</small></b><span>이번 주일 {registry.t2} 모임 출석</span></div></div>
 	</div>
 
 	<div class="dash-grid even" style={registry.perms.visit ? undefined : 'grid-template-columns:1fr'}>
 		<section class="card">
-			<div class="card-head"><h2>소그룹 모임 출석 추이</h2><span class="sub">최근 8주 · 홈페이지 출석부(인도자 등록)</span></div>
+			<div class="card-head"><h2>{registry.t2} 모임 출석 추이</h2><span class="sub">최근 8주 · 홈페이지 출석부(인도자 등록)</span></div>
 			<div class="spark">
 				{#each weekly as w}
 					<div class="col"><span>{w.n}</span><i style="height:{(w.n * 100) / maxN}%"></i><small>{md(w.d)}</small></div>
@@ -92,5 +92,5 @@
 		</table>
 	</div>
 {:else}
-	<p>소그룹을 찾을 수 없습니다. <a href="/communities">편성표로</a></p>
+	<p>{registry.t2}{registry.josa(registry.t2, '을')} 찾을 수 없습니다. <a href="/communities">편성표로</a></p>
 {/if}
