@@ -8,7 +8,8 @@
 	let year = $state(thisYear);
 	// 코드표에 새로 넣은 전도회는 출생 연도 칸을 비워 둔 채로 함께 보이게
 	const withSocieties = (x: YearSettings): YearSettings => { for (const k of registry.codes.missionSocieties) x.societies[k] ??= { from: 1900, to: 2100 }; return x; };
-	let s = $state<YearSettings>(withSocieties(structuredClone(registry.settingsFor(thisYear))));
+	// 저장된 설정은 반응형 값이라 그대로 복사하면 오류가 나므로 snapshot 으로 꺼내서 복사
+	let s = $state<YearSettings>(withSocieties(structuredClone($state.snapshot(registry.settingsFor(thisYear))) as YearSettings));
 	let msg = $state('');
 	// 연간 계획표: 등록하면 안내를 띄우고 올리기 칸을 처음 상태로
 	let planMsg = $state('');
