@@ -300,7 +300,8 @@ export interface OrgUnit {
 	name: string;
 	sort_order: number;
 	leader_id: string | null; // 위원회: 위원장(장로) / 부서: 부서장
-	staff_ids: string[]; // 부서 담당자 (여러 명 가능)
+	staff_ids: string[]; // 부서 담당자 (여러 명 가능) — 설정 화면에서만 관리, 조직 화면에는 보이지 않음
+	clergy_id?: string | null; // 부서 담당 교역자 (한 명)
 }
 
 // 공동의회·당회·제직회 의장과 서기 (이름과 직분을 그대로 적음)

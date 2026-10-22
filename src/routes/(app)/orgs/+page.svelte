@@ -79,7 +79,7 @@
 	{/if}
 {:else}
 	<div class="org-head">
-		<div><h2 style="margin:0">2026년도 교회 조직표</h2><span class="muted" style="font-size:.85rem">위원회 9개 · 부서 {units.filter((u) => u.parent_id).length}개 · 위원장 · 부서장 · 담당자는 '관리자 › 설정'에서 바꿉니다</span></div>
+		<div><h2 style="margin:0">2026년도 교회 조직표</h2><span class="muted" style="font-size:.85rem">위원회 9개 · 부서 {units.filter((u) => u.parent_id).length}개 · 위원장 · 부서장 · 교역자는 '관리자 › 설정'에서 바꿉니다</span></div>
 		{#if registry.perms.export}<a class="btn ghost" href="/documents?doc=교회 조직표">조직표 출력</a>{/if}
 	</div>
 
@@ -97,13 +97,13 @@
 					<div><h3>{c.name}</h3><small>위원장 {#if c.leader_id}<a href="/{c.leader_id}">{nameOf(c.leader_id)}</a> 장로{:else}<span class="muted">미정</span>{/if}</small></div>
 				</div>
 				<table class="sm">
-					<thead><tr><th>부서</th><th>부서장</th><th>담당자</th><th style="text-align:right">봉사</th></tr></thead>
+					<thead><tr><th>부서</th><th>부서장</th><th>교역자</th><th style="text-align:right">봉사</th></tr></thead>
 					<tbody>
 						{#each units.filter((u) => u.parent_id === c.id).sort((a, b) => a.sort_order - b.sort_order) as d (d.id)}
 							<tr class="pick" class:on={pickedOrg === d.name} onclick={() => (pickedOrg = pickedOrg === d.name ? '' : d.name)}>
 								<td><b>{d.name}</b></td>
 								<td>{#if d.leader_id}<a href="/{d.leader_id}" onclick={(e) => e.stopPropagation()}>{nameOf(d.leader_id)}</a>{:else}<span class="muted">-</span>{/if}</td>
-								<td>{#each d.staff_ids as sid, k (sid)}{k ? ', ' : ''}<a href="/{sid}" onclick={(e) => e.stopPropagation()}>{nameOf(sid)}</a>{:else}<span class="muted">-</span>{/each}</td>
+								<td>{#if d.clergy_id}<a href="/{d.clergy_id}" onclick={(e) => e.stopPropagation()}>{nameOf(d.clergy_id)}</a>{:else}<span class="muted">-</span>{/if}</td>
 								<td style="text-align:right">{deptMembers(d.name).length}명</td>
 							</tr>
 						{/each}

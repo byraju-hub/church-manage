@@ -2,7 +2,8 @@
 	// 교인 한 명을 이름·전화로 찾아 고르는 칸
 	import { registry } from '#lib/registry/store.svelte.ts';
 
-	let { value = $bindable(''), placeholder = '이름·전화 검색', onpick }: { value?: string; placeholder?: string; onpick?: (id: string) => void } = $props();
+	// compact: 고른 뒤 이름만 보임(소그룹·교인구분 없이). nameOnly: '바꾸기' 버튼도 없이 이름만 (이름을 누르면 다시 검색). only: 고를 수 있는 사람 거르기
+	let { value = $bindable(''), placeholder = '이름·전화 검색', onpick, compact = false, nameOnly = false, only }: { value?: string; placeholder?: string; onpick?: (id: string) => void; compact?: boolean; nameOnly?: boolean; only?: (p: import('#lib/registry/types.ts').Person) => boolean } = $props();
 	let q = $state('');
 	let open = $state(false);
 	let input = $state<HTMLInputElement | null>(null);
@@ -13,7 +14,7 @@
 		const t = q.trim().toLowerCase();
 		if (!t) return [];
 		const d = t.replace(/\D/g, '');
-		return registry.d.people.filter((p) => p.name.toLowerCase().includes(t) || (d.length >= 3 && (p.phone ?? '').replace(/\D/g, '').includes(d))).slice(0, 8);
+		return registry.d.people.filter((p) => (!only || only(p)) && p.name.toLowerCase().includes(t) || (d.length >= 3 && (p.phone ?? '').replace(/\D/g, '').includes(d))).slice(0, 8);
 	});
 	function place() {
 		if (!input) return;
@@ -41,8 +42,10 @@
 </script>
 
 <div class="picker" role="group" onfocusin={() => (open = true)} onfocusout={(e) => { if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) open = false; }}>
-	{#if picked}
-		<div class="picked"><b>{picked.name}</b>{#if picked.name_note}<span class="muted"> ({picked.name_note})</span>{/if}<span class="muted"> · {registry.summary(picked).smallGroup || registry.summary(picked).category}</span>
+	{#if picked && nameOnly}
+		<button type="button" class="picked name-only" title="눌러서 다른 사람으로 바꾸기" onclick={() => { value = ''; }}><b>{picked.name}</b>{#if picked.name_note}<span class="muted"> ({picked.name_note})</span>{/if}</button>
+	{:else if picked}
+		<div class="picked"><b>{picked.name}</b>{#if picked.name_note}<span class="muted"> ({picked.name_note})</span>{/if}{#if !compact}<span class="muted"> · {registry.summary(picked).smallGroup || registry.summary(picked).category}</span>{/if}
 			<button type="button" class="ghost sm" onclick={() => { value = ''; }}>바꾸기</button></div>
 	{:else}
 		<input bind:this={input} bind:value={q} {placeholder} autocomplete="off" />
@@ -59,6 +62,8 @@
 <style>
 	.picker { position: relative; }
 	.picked { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; padding: 0.35rem 0.6rem; border: 1px solid var(--line-strong); border-radius: 10px; background: #fff; font-weight: 400; color: var(--text); }
+	.name-only { width: 100%; justify-content: flex-start; box-shadow: none; font: inherit; cursor: pointer; }
+	.name-only:hover { border-color: var(--primary); background: var(--primary-50); transform: none; box-shadow: none; filter: none; color: var(--text); }
 	.pop { position: fixed; z-index: 80; max-height: 50vh; overflow: auto; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 30px rgba(30, 37, 69, 0.18); padding: 0.3rem; }
 	.pop.up { transform: translateY(-100%); }
 	.opt { display: block; width: 100%; text-align: left; font-weight: 500; color: var(--text); background: transparent; box-shadow: none; border-radius: 9px; padding: 0.45rem 0.6rem; }

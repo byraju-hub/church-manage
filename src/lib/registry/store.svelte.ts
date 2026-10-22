@@ -80,11 +80,22 @@ const sampleCertRequests = (): T.CertRequest[] => {
 		{ id: 'cr3', person_id: 'p3', kind: '교인증명서', purpose: '장학금 신청용', requested_at: at(3, '14:05'), status: '승인', decided_at: at(2, '10:30'), decided_by: '정담임' }
 	];
 };
+// 가상 부서 담당 교역자: 아직 아무 부서에도 교역자가 없으면, 담임목사를 뺀 교역자를 부서마다 돌아가며 한 명씩
+function sampleOrgClergy(d: Data) {
+	const depts = (d.orgUnits ?? []).filter((o) => o.parent_id);
+	// 예전에 여러 명으로 저장한 값(clergy_ids)은 첫 사람만 남김
+	for (const o of depts) { const old = (o as { clergy_ids?: string[] }).clergy_ids; if (old) { if (o.clergy_id === undefined) o.clergy_id = old[0] ?? null; delete (o as { clergy_ids?: string[] }).clergy_ids; } }
+	if (!depts.length || depts.some((o) => o.clergy_id)) return;
+	const clergy = (d.people ?? []).filter((p) => p.clergy_title && p.clergy_title !== '담임목사').map((p) => p.id);
+	if (!clergy.length) return;
+	depts.forEach((o, i) => { o.clergy_id = clergy[i % clergy.length]; });
+}
 const initial = (): Data => {
 	const { generated, ...rest } = seed as unknown as Record<string, unknown>;
 	void generated;
 	const d = structuredClone(rest) as unknown as Data;
 	d.certRequests = sampleCertRequests();
+	sampleOrgClergy(d);
 	return d;
 };
 const now = () => new Date().toISOString().slice(0, 16).replace('T', ' ');
@@ -109,6 +120,7 @@ function migrate(d: Data): Data {
 		for (const p of d.people ?? []) p.category_id = fixCat(p.category_id);
 	}
 	if (!d.certRequests) d.certRequests = sampleCertRequests();
+	sampleOrgClergy(d);
 	// 소그룹 '기타 의견'(교인 없이 모임 전체에 대한 의견) 샘플이 없으면 넣어 둠
 	if (d.groupNotes && !d.groupNotes.some((n) => !n.person_id)) {
 		const nm = (id: string) => d.people?.find((p) => p.id === id)?.name ?? '';
@@ -813,6 +825,10 @@ class Registry {
 	setOrgStaff(id: string, staff_ids: string[]) {
 		const o = this.d.orgUnits.find((x) => x.id === id);
 		if (o) { o.staff_ids = staff_ids; this.save(); }
+	}
+	setOrgClergy(id: string, clergy_id: string | null) {
+		const o = this.d.orgUnits.find((x) => x.id === id);
+		if (o) { o.clergy_id = clergy_id || null; this.save(); }
 	}
 	moveOrgUnit(id: string, dir: -1 | 1) {
 		const o = this.d.orgUnits.find((x) => x.id === id);
