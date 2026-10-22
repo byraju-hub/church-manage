@@ -9,7 +9,8 @@
 	import NameChips from '#lib/components/NameChips.svelte';
 	import { MAX_CATEGORY_DEPTH, OFFICE_STATUS_OPTIONS, rankChoices, rankLabel, type OfficeName } from '#lib/registry/types.ts';
 
-	const tabs = ['기본 설정', '교인구분', '소그룹 편성', '교회 조직표', '연간 설정', '코드표', '백업'];
+	const tabs = ['기본 설정', '연간 설정', '교회 조직표', '소그룹 편성', '교인구분', '코드표', '백업'];
+	let newComm = $state('');
 	let tab = $state('기본 설정');
 	let msg = $state('');
 	let addFor = $state<string | null>(null);
@@ -116,16 +117,22 @@
 				{#if !sgAdd}<button type="button" class="sm" onclick={() => { sgAdd = { community: registry.communities[0].name, name: '', leader: '', place: '' }; sgEdit = null; sgMsg = ''; }}>+ {registry.t2}</button>{/if}
 			</div>
 			{#if sgMsg}<div class="warn" style="margin:.8rem 1.3rem 0">{sgMsg}</div>{/if}
-			<!-- 공동체(1단계) 이름 바꾸기: 소속 교인 · 소그룹 · 연간 설정 기준에 함께 반영 -->
+			<!-- 공동체(1단계) 추가 · 이름 바꾸기 · 삭제: 소속 교인 · 소그룹 · 연간 설정 기준에 함께 반영 -->
 			<div class="comm-names">
-				<span class="muted">{registry.t1} 이름</span>
+				<span class="muted">{registry.t1}</span>
 				{#each registry.communities as c (c.key)}
 					<form class="row" style="gap:.3rem;flex-wrap:nowrap" onsubmit={(e) => { e.preventDefault(); const inp = (e.currentTarget as HTMLFormElement).querySelector('input')!; sgMsg = registry.renameCommunity(c.name, inp.value); if (sgMsg) inp.value = c.name; }}>
 						<input value={c.name} aria-label="{c.name} 이름" style="width:9.5rem" />
 						<button type="submit" class="ghost sm">바꾸기</button>
+						<button type="button" class="ghost sm" onclick={() => { if (confirm(`'${c.name}' ${registry.t1}${registry.josa(registry.t1, '을')} 삭제합니다.`)) sgMsg = registry.removeCommunity(c.name); }}>삭제</button>
 					</form>
 				{/each}
+				<form class="row" style="gap:.3rem;flex-wrap:nowrap" onsubmit={(e) => { e.preventDefault(); sgMsg = registry.addCommunity(newComm); if (!sgMsg) newComm = ''; }}>
+					<input bind:value={newComm} placeholder="새 {registry.t1} 이름" aria-label="새 {registry.t1} 이름" style="width:9.5rem" />
+					<button type="submit" class="sm">+ {registry.t1}</button>
+				</form>
 			</div>
+			<p class="muted" style="font-size:.8rem;margin:.4rem 1.3rem 0">{registry.t2}{registry.josa(registry.t2, '이')}나 소속 교인이 있는 {registry.t1}{registry.josa(registry.t1, '은')} 지울 수 없습니다. 새 {registry.t1}의 출생 연도 기준은 연간 설정에서 정하세요.</p>
 			{#if sgAdd}
 				<form class="sg-add" onsubmit={(e) => { e.preventDefault(); sgMsg = registry.addSmallGroup(sgAdd!.community, sgAdd!.name, sgAdd!.place, sgAdd!.leader || null) ?? ''; if (!sgMsg) sgAdd = null; }}>
 					<label>{registry.t1}<select bind:value={sgAdd.community}>{#each registry.communities as c}<option>{c.name}</option>{/each}</select></label>

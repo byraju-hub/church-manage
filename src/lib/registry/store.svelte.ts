@@ -22,6 +22,9 @@ import { COMMUNITY_DEFS, catId, fixCat, type L2Code } from './config.ts';
 
 const KEY = 'church-registry-proto-v16';
 
+// 공동체(1단계) 한 줄: key = 처음 이름(아이콘용), from·to = 기본 출생 연도 기준
+export interface CommunityRow { key: string; name: string; from: number; to: number }
+
 // 문자 자주 쓰는 문구. [ ] 안은 보낼 때 고쳐 쓰는 자리, {이름}·{직분} 은 받는 사람마다 바뀜
 export interface SmsTemplate { id: string; title: string; body: string }
 const DEFAULT_SMS_TEMPLATES: SmsTemplate[] = [
@@ -75,7 +78,8 @@ interface Data {
 	certForm?: CertForm; // 기본 설정: 증명서 양식
 	codes?: Codes; // 기본 설정: 바꿀 수 있는 코드표 (심방 구분 · 전도회)
 	backup?: BackupCfg; // 백업 설정
-	communityNames?: Record<string, string>; // 공동체 이름 바꾼 것 (처음 이름 → 지금 이름)
+	communityNames?: Record<string, string>; // (예전 저장분) 공동체 이름 바꾼 것 (처음 이름 → 지금 이름)
+	communityList?: CommunityRow[]; // 공동체 목록 (추가·삭제·이름 바꾸기를 하면 생김. 없으면 기본 3개)
 	users: T.AppUser[];
 	grades: T.GradeDef[];
 }
@@ -202,17 +206,46 @@ class Registry {
 	get perms(): T.Perms { return this.permsOf(this.me); }
 	get isSuper(): boolean { return !!this.me?.is_super && this.me.status === '사용'; }
 
-	// ---- 공동체 (1단계) 목록과 이름 바꾸기 ----
-	// 공동체 순서·출생 연도 기준은 COMMUNITY_DEFS, 이름은 관리자가 바꾼 값
-	get communities() { return COMMUNITY_DEFS.map((c) => ({ ...c, key: c.name, name: this.d.communityNames?.[c.name] ?? c.name })); }
+	// ---- 공동체 (1단계) 목록: 추가 · 삭제 · 이름 바꾸기 ----
+	// key = 처음 이름(아이콘 고를 때 씀), from·to = 연간 설정이 없을 때 쓰는 출생 연도 기준
+	get communities(): CommunityRow[] {
+		return this.d.communityList ?? COMMUNITY_DEFS.map((c) => ({ key: c.name, name: this.d.communityNames?.[c.name] ?? c.name, from: c.from, to: c.to }));
+	}
+	private commList(): CommunityRow[] {
+		if (!this.d.communityList) this.d.communityList = this.communities.map((c) => ({ ...c }));
+		return this.d.communityList;
+	}
 	communityKey(name: string): string { return this.communities.find((c) => c.name === name)?.key ?? name; }
+	addCommunity(name: string): string {
+		const nn = name.trim();
+		if (!this.canSetup) return '권한이 없습니다.';
+		if (!nn) return `${this.t1} 이름을 적어 주세요.`;
+		if (this.communities.some((c) => c.name === nn)) return '같은 이름이 이미 있습니다.';
+		const list = this.commList();
+		const key = list.some((c) => c.key === nn) ? `${nn}#${Date.now()}` : nn;
+		list.push({ key, name: nn, from: 1900, to: 2100 });
+		this.log('설정', `${this.t1} 추가: ${nn}`);
+		return '';
+	}
+	// 소그룹이나 소속 교인이 남아 있으면 지우지 않음 (먼저 다른 공동체로 옮겨야 함)
+	removeCommunity(name: string): string {
+		if (!this.canSetup) return '권한이 없습니다.';
+		if (this.communities.length <= 1) return `${this.t1}${this.josa(this.t1, '은')} 하나 이상 있어야 합니다.`;
+		const groups = this.groupsIn(name).length;
+		const people = this.d.personGroups.filter((pg) => pg.community === name).length;
+		if (groups || people) return `${name}에 ${this.t2} ${groups}개 · 소속 교인 ${people}명이 있어 지울 수 없습니다. 먼저 다른 ${this.t1}${this.josa(this.t1, '으로')} 옮기거나 지워 주세요.`;
+		this.d.communityList = this.commList().filter((c) => c.name !== name);
+		for (const ys of Object.values(this.d.yearSettings ?? {})) delete ys.communities[name];
+		this.log('설정', `${this.t1} 삭제: ${name}`);
+		return '';
+	}
 	renameCommunity(oldName: string, newName: string): string {
 		const nn = newName.trim();
 		if (!this.canSetup) return '권한이 없습니다.';
 		if (!nn || nn === oldName) return '';
 		if (this.communities.some((c) => c.name === nn)) return '같은 이름이 이미 있습니다.';
-		const key = this.communityKey(oldName);
-		this.d.communityNames = { ...(this.d.communityNames ?? {}), [key]: nn };
+		const row = this.commList().find((c) => c.name === oldName);
+		if (row) row.name = nn;
 		for (const g of this.d.smallGroups) if (g.community === oldName) g.community = nn;
 		for (const pg of this.d.personGroups) if (pg.community === oldName) pg.community = nn;
 		for (const ys of Object.values(this.d.yearSettings ?? {})) if (ys.communities[oldName]) { ys.communities[nn] = ys.communities[oldName]; delete ys.communities[oldName]; }
@@ -269,7 +302,12 @@ class Registry {
 
 	// ---- 연간 설정 ----
 	// 저장된 연도 설정이 없으면 기본값(2026년 기준을 그 해에 맞춘 값)
-	settingsFor(year: number): YearSettings { return this.d.yearSettings?.[year] ?? defaultSettings(year); }
+	// 공동체 기준은 지금 공동체 목록에 맞춤 (새로 만든 공동체는 기본 기준, 지운 공동체는 뺌)
+	settingsFor(year: number): YearSettings {
+		const s = this.d.yearSettings?.[year] ?? defaultSettings(year);
+		const communities = Object.fromEntries(this.communities.map((c) => [c.name, s.communities[c.name] ?? { from: c.from, to: c.to }]));
+		return { ...s, communities };
+	}
 	get ys(): YearSettings { return this.settingsFor(new Date().getFullYear()); }
 	saveYearSettings(s: YearSettings) {
 		if (!this.isSuper && !this.perms.admin) return;

@@ -180,10 +180,10 @@
 
 <section class="hero">
 	<div>
+		{#if registry.ys.motto}<p class="motto">{registry.ys.year} 표어 · {registry.ys.motto}{registry.ys.verse ? ` (${registry.ys.verse})` : ''}</p>{/if}
 		<small>{dateLabel}</small>
 		<h1>{registry.churchInfo.name} 현황</h1>
 		<p>재적 교인 {joined}명 · 이번 주일 출석 {latest.n}명({rate}%)</p>
-		{#if registry.ys.motto}<p class="motto">{registry.ys.year} 표어 · {registry.ys.motto}{registry.ys.verse ? ` (${registry.ys.verse})` : ''}</p>{/if}
 	</div>
 	<div class="actions">
 		<a class="btn light" href="/members">교인 목록</a>

@@ -74,6 +74,7 @@ export function defaultSettings(year: number): YearSettings {
 // 출생 연도 범위를 글로: '55년 이전 출생', '56~70년 출생', '71년 이후 출생'
 export function bornText(r: BornRange): string {
 	const yy = (y: number) => String(y % 100).padStart(2, '0');
+	if (r.from <= 1900 && r.to >= 2100) return '출생 연도 기준 없음';
 	if (r.from <= 1900) return `${yy(r.to)}년 이전 출생`;
 	if (r.to >= 2100) return `${yy(r.from)}년 이후 출생`;
 	return `${yy(r.from)}~${yy(r.to)}년 출생`;
