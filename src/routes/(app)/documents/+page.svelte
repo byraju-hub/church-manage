@@ -10,7 +10,7 @@
 	// 문서 출력: 화면에서 미리 보고 → 인쇄 또는 PDF 내려받기. 출력할 때마다 접속기록(출력)과 발급번호를 남김
 	// [실제 시스템] 증명서 발급 대장을 따로 두고(발급번호·용도·발급자), 교회 직인 이미지를 넣습니다.
 	//              PDF는 지금처럼 브라우저에서 만들어도 되고, 서버에서 만들면 글꼴·서식이 더 일정합니다.
-	const DOCS = ['교적부', '교인증명서', '세례증명서', '교인 요람', '생일 명단', '직분자 명단', '교회 조직표'] as const;
+	const DOCS = ['교적부', '교인증명서', '세례증명서', '기부금 영수증', '교인 요람', '생일 명단', '직분자 명단', '교회 조직표'] as const;
 	type Doc = (typeof DOCS)[number];
 	let doc = $state<Doc>((page.url.searchParams.get('doc') as Doc) ?? '교적부');
 	let personId = $state(page.url.searchParams.get('person') ?? '');
@@ -45,7 +45,35 @@
 	const pastor = $derived(registry.pastorName);
 	const p = $derived(personId ? registry.person(personId) : undefined);
 	const s = $derived(p ? registry.summary(p) : null);
-	const needsPerson = $derived(doc === '교적부' || doc === '교인증명서' || doc === '세례증명서');
+	const needsPerson = $derived(doc === '교적부' || doc === '교인증명서' || doc === '세례증명서' || doc === '기부금 영수증');
+
+	// ---- 기부금 영수증 ----
+	// 헌금 자료는 아직 연동하지 않아(스데반정보 덤프 미정) 기간·내용·금액을 직접 적음. 주민등록번호는 교적에 두지 않으므로 영수증에 빈칸으로 두고 발급할 때 손으로 적음
+	// [실제 시스템] 헌금번호 ↔ 교적 ID 가 이어지면 기부 연도만 고르면 금액이 자동으로 채워지게 함
+	type DonRow = { from: string; to: string; kind: string; amount: string };
+	const donYears = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
+	let donYear = $state(now.getFullYear() - 1); // 연말정산용은 지난해 기부금
+	let donRows = $state<DonRow[]>([{ from: `${now.getFullYear() - 1}-01-01`, to: `${now.getFullYear() - 1}-12-31`, kind: '헌금', amount: '' }]);
+	function setDonYear(y: number) {
+		donYear = y;
+		for (const r of donRows) { r.from = `${y}-01-01`; r.to = `${y}-12-31`; }
+	}
+	const commas = (digits: string) => (digits ? Number(digits).toLocaleString() : '');
+	const donLines = $derived(donRows.map((r) => ({ ...r, n: Number(r.amount) || 0 })).filter((r) => r.n > 0));
+	const donTotal = $derived(donLines.reduce((a, r) => a + r.n, 0));
+	// 금액을 한글로: 1234000 → 일백이십삼만사천 (영수증은 숫자를 고쳐 쓰기 어렵게 한글 금액을 함께 적음)
+	function wonKo(n: number): string {
+		const dg = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'], un = ['', '십', '백', '천'], big = ['', '만', '억', '조'];
+		let out = '', g = 0;
+		for (; n > 0; g++, n = Math.floor(n / 10000)) {
+			const part = n % 10000;
+			if (!part) continue;
+			let s = '';
+			for (let i = 0; i < 4; i++) { const x = Math.floor(part / 10 ** i) % 10; if (x) s = dg[x] + un[i] + s; }
+			out = s + big[g] + out;
+		}
+		return out;
+	}
 	const issued = $derived(registry.d.accessLog.filter((l) => l.action === '출력' && l.at.startsWith(String(now.getFullYear()))).length);
 	const docNo = $derived(certNo(registry.certForm, now.getFullYear(), issued + 1));
 	const v = (x: unknown) => (x === null || x === undefined || x === '' ? '' : String(x));
@@ -88,11 +116,12 @@
 		return cols;
 	});
 	const pname = (id: string | null) => (id ? registry.person(id)?.name ?? '' : '');
-	const ready = $derived(!needsPerson || (!!p && (doc !== '세례증명서' || !!baptism)));
+	const ready = $derived(!needsPerson || (!!p && (doc !== '세례증명서' || !!baptism) && (doc !== '기부금 영수증' || donTotal > 0)));
 	const fileName = $derived(`${doc}${p && needsPerson ? `-${p.name}` : doc === '생일 명단' ? `-${month}월` : ''}-${now.toISOString().slice(0, 10)}.pdf`);
 
 	function record() {
-		registry.log('출력', `${doc}${p && needsPerson ? ` · ${p.name}` : ''}${needsPerson && doc !== '교적부' ? ` · ${docNo} · ${purpose}` : ''}`);
+		const tail = doc === '기부금 영수증' ? ` · ${docNo} · ${donYear}년` : needsPerson && doc !== '교적부' ? ` · ${docNo} · ${purpose}` : '';
+		registry.log('출력', `${doc}${p && needsPerson ? ` · ${p.name}` : ''}${tail}`);
 	}
 	// 교회 조직표는 늘 A4 한 장에 나오도록 크기를 줄여서 맞춤
 	const onePage = $derived(doc === '교회 조직표');
@@ -154,7 +183,7 @@
 		<div class="toolbar">
 			{#if needsPerson}
 				<div style="flex:1 1 320px;max-width:420px"><PersonPicker bind:value={personId} placeholder="교인 이름 검색" /></div>
-				{#if doc !== '교적부'}<label class="row" style="gap:.4rem"><span class="muted">용도</span><select bind:value={purpose} style="width:auto">{#each purposeOpts as x}<option>{x}</option>{/each}</select></label>{/if}
+				{#if doc === '교인증명서' || doc === '세례증명서'}<label class="row" style="gap:.4rem"><span class="muted">용도</span><select bind:value={purpose} style="width:auto">{#each purposeOpts as x}<option>{x}</option>{/each}</select></label>{/if}
 			{:else if doc === '생일 명단'}
 				<label class="row" style="gap:.4rem"><span class="muted">월</span><select bind:value={month} style="width:auto">{#each Array.from({ length: 12 }, (_, i) => i + 1) as m}<option value={m}>{m}월</option>{/each}</select></label>
 			{:else if doc === '교인 요람'}
@@ -166,6 +195,35 @@
 		</div>
 		{#if doc === '교인 요람' && consentOnly}<p class="muted" style="margin:0;font-size:.82rem">요람에는 '요람 공개'에 동의한 사람만 나옵니다. (일괄 동의를 받기 전이라 지금은 몇 명만 있습니다. 시험할 때는 체크를 풀어 보세요)</p>{/if}
 		{#if doc === '세례증명서' && p && !baptism}<p class="warn" style="margin:.4rem 0 0">이 교인은 세례(유아세례·입교) 기록이 없어 세례증명서를 만들 수 없습니다.</p>{/if}
+		{#if doc === '기부금 영수증'}
+			<div class="don">
+				<div class="row" style="gap:.6rem">
+					<label class="row" style="gap:.4rem"><span class="muted">기부 연도</span>
+						<select value={donYear} onchange={(e) => setDonYear(+e.currentTarget.value)} style="width:auto">{#each donYears as y}<option value={y}>{y}년</option>{/each}</select></label>
+					<span class="muted" style="font-size:.82rem">연말정산용은 지난해 1월 1일 ~ 12월 31일 기부금입니다. 헌금 자료는 아직 연동 전이라 금액을 직접 적습니다.</span>
+				</div>
+				<div class="tw"><table class="sm don-t">
+					<thead><tr><th>기부 기간</th><th>내용</th><th style="text-align:right">금액 (원)</th><th></th></tr></thead>
+					<tbody>
+						{#each donRows as r, i}
+							<tr>
+								<td><span class="dates"><input type="date" bind:value={r.from} aria-label="시작일" /> ~ <input type="date" bind:value={r.to} min={r.from} aria-label="끝나는 날" /></span></td>
+								<td><input bind:value={r.kind} list="don-kinds" aria-label="내용" /></td>
+								<td><input inputmode="numeric" style="text-align:right" value={commas(r.amount)} oninput={(e) => { r.amount = e.currentTarget.value.replace(/\D/g, '').slice(0, 12); e.currentTarget.value = commas(r.amount); }} placeholder="0" aria-label="금액" /></td>
+								<td>{#if donRows.length > 1}<button type="button" class="ghost sm" onclick={() => (donRows = donRows.filter((_, k) => k !== i))}>삭제</button>{/if}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table></div>
+				<datalist id="don-kinds"><option value="헌금"></option><option value="십일조"></option><option value="감사헌금"></option><option value="선교헌금"></option><option value="건축헌금"></option></datalist>
+				<div class="row" style="margin-top:.5rem;gap:.8rem">
+					<button type="button" class="ghost sm" onclick={() => (donRows = [...donRows, { from: `${donYear}-01-01`, to: `${donYear}-12-31`, kind: '헌금', amount: '' }])}>+ 줄 추가</button>
+					<span>합계 <b>{donTotal.toLocaleString()}원</b>{#if donTotal}<small class="muted"> · 일금 {wonKo(donTotal)}원정</small>{/if}</span>
+				</div>
+				<p class="muted" style="margin:.5rem 0 0;font-size:.8rem">주민등록번호는 교적에 두지 않아 영수증에 빈칸으로 나옵니다. 출력한 뒤 기부자에게 확인해 손으로 적어 주세요. 교회 고유번호는 관리자 › 교회 설정 › 기본 설정에서 입력합니다.</p>
+				{#if p && !donTotal}<p class="warn" style="margin:.5rem 0 0">금액을 적으면 영수증 미리보기가 나옵니다.</p>{/if}
+			</div>
+		{/if}
 		{#if req}
 			<p class={req.status === '승인' ? 'ok' : 'warn'} style="margin:.6rem 0 0">
 				홈페이지 신청 · {reqName(req.person_id)} · {req.kind} · {req.purpose} —
@@ -285,6 +343,34 @@
 					{#if cf.footNote}<p class="foot-note" style="text-align:center;border:0">{cf.footNote}</p>{/if}
 				</div>
 
+			{:else if doc === '기부금 영수증' && p}
+				<div class="cert rcpt">
+					<p class="cert-no">일련번호 : {docNo}</p>
+					<h2 class="cert-title">기 부 금 영 수 증</h2>
+					<table class="dt rcpt-t"><tbody>
+						<tr><th rowspan="3" class="grp">기<br />부<br />자</th><th>성 명</th><td>{p.name}</td></tr>
+						<tr><th>주민등록번호</th><td class="blank"></td></tr>
+						<tr><th>주 소</th><td>{fullAddress(p, hh)}</td></tr>
+						<tr><th rowspan="4" class="grp">기<br />부<br />금<br />단<br />체</th><th>단 체 명</th><td>{registry.churchInfo.denomination} {CHURCH}</td></tr>
+						<tr><th>고유번호</th><td>{registry.churchInfo.bizNo}</td></tr>
+						<tr><th>소 재 지</th><td>{registry.churchInfo.address}</td></tr>
+						<tr><th>대 표 자</th><td>{registry.churchInfo.pastorLabel} {pastor}</td></tr>
+					</tbody></table>
+					<h4>기부금 모금액</h4>
+					<table class="dt list rcpt-m">
+						<thead><tr><th>유형</th><th>코드</th><th>기부 기간</th><th>내용</th><th>금액 (원)</th></tr></thead>
+						<tbody>
+							{#each donLines as r}<tr><td>지정기부금</td><td>41</td><td>{ymd(r.from)} ~ {ymd(r.to)}</td><td>{r.kind}</td><td class="amt">{r.n.toLocaleString()}</td></tr>{/each}
+							<tr class="sum"><th colspan="4">합 계</th><td class="amt"><b>{donTotal.toLocaleString()}</b></td></tr>
+						</tbody>
+					</table>
+					<p class="rcpt-won">일금 <b>{wonKo(donTotal)}</b>원정 (₩{donTotal.toLocaleString()})</p>
+					<p class="rcpt-body">위와 같이 기부금을 기부받았음을 증명합니다.</p>
+					<p class="cert-date">{todayKo}</p>
+					<p class="cert-sign"><img class="cert-logo" src={registry.churchInfo.logo || '/church-logo.png'} alt="{registry.churchInfo.denomination} {CHURCH}" width="360" height="67" style="width:70mm;height:auto" /><br />{registry.churchInfo.pastorLabel} <b>{pastor}</b> <span class="seal-wrap">(인)<img class="seal-img" src={sealSrc} onerror={() => (sealFail = true)} alt="교회 직인" style="width:{cf.sealSize}mm;height:{cf.sealSize}mm" /></span></p>
+					<p class="foot-note" style="text-align:center;border:0">※ 이 영수증은 소득세 및 법인세 신고 시 기부금 영수증으로 사용할 수 있습니다.</p>
+				</div>
+
 			{:else if doc === '교인 요람'}
 				<div class="doc-head"><span>{CHURCH}</span><h2>교인 요람</h2><span>{comm === '전체' ? `전체 ${registry.t1}` : comm} · {directory.length}명</span></div>
 				<table class="dt list zebra"><thead><tr><th>{registry.t1}</th><th>{registry.t2}</th><th>이름</th><th>직분</th><th>휴대폰</th><th>주소</th></tr></thead><tbody>
@@ -356,6 +442,25 @@
 	.cert { padding: 6mm 4mm; }
 	tr.on-req td { background: var(--primary-50); }
 	.cert-no { font-size: 10pt; color: #333; margin: 0 0 18mm; }
+	/* 기부금 영수증: 증명서 틀을 쓰되 위아래 간격을 줄여 한 장에 */
+	.rcpt .cert-no { margin-bottom: 8mm; }
+	.rcpt .cert-title { margin-bottom: 9mm; }
+	.rcpt-t th { text-align: center; width: 30mm; }
+	.rcpt-t th.grp { width: 12mm; line-height: 1.5; background: #e0e4f4; }
+	.rcpt-t td { padding: 8px 10px; font-size: 10.5pt; }
+	.rcpt-t td.blank { height: 9mm; }
+	.rcpt-m td { text-align: center; font-size: 10pt; }
+	.rcpt-m td.amt { text-align: right; }
+	.rcpt-m tr.sum th { text-align: center; }
+	.rcpt-won { text-align: center; font-size: 13pt; margin: 6mm 0 4mm; }
+	.rcpt-body { text-align: center; font-size: 12pt; margin: 3mm 0 6mm; }
+	.rcpt .cert-date { margin-bottom: 6mm; }
+	.rcpt .cert-sign { line-height: 1.8; }
+	.rcpt .foot-note { margin-top: 4mm; }
+	.don { margin-top: 0.8rem; padding: 0.8rem 0.9rem; border-radius: 12px; background: var(--primary-50); }
+	.don-t input { padding: 0.3rem 0.5rem; font-size: 0.88rem; }
+	.don-t .dates { display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
+	.don-t input[type='date'] { width: 9.5rem; min-width: 0; }
 	.cert-title { text-align: center; font-size: 24pt; letter-spacing: 0.25em; margin: 0 0 14mm; padding-bottom: 4mm; border-bottom: 3px double #111; }
 	.cert-table th { width: 22mm; text-align: center; }
 	.cert-table td { padding: 9px 10px; font-size: 11pt; }

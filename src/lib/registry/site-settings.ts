@@ -11,6 +11,7 @@ export interface ChurchInfo {
 	email: string;
 	homepage: string;
 	founded: string; // 창립일
+	bizNo: string; // 고유번호(사업자등록번호) — 기부금 영수증의 기부금 단체 칸에 쓰임
 	pastorLabel: string; // 서명 줄의 직함 (담임목사)
 	pastorName: string; // 비우면 교적의 '담임목사'를 씀
 	logo: string | null; // 올린 로고 (작게 줄인 그림). 없으면 기본 로고
@@ -44,7 +45,7 @@ export interface BackupCfg {
 
 export const DEFAULT_CHURCH: ChurchInfo = {
 	name: '부평동부교회', denomination: '대한예수교장로회', address: '', phone: '', fax: '', email: '', homepage: '',
-	founded: '', pastorLabel: '담임목사', pastorName: '', logo: null, seal: null, unit1: '공동체', unit2: '소그룹'
+	founded: '', bizNo: '', pastorLabel: '담임목사', pastorName: '', logo: null, seal: null, unit1: '공동체', unit2: '소그룹'
 };
 export const DEFAULT_CERT: CertForm = {
 	prefix: '제', format: '{연도}-{번호}', digits: 3, suffix: '호',

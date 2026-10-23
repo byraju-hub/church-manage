@@ -70,6 +70,7 @@
 		<label><span class="lt">교회 이름<span class="req">*</span></span><input bind:value={info.name} placeholder="예: 부평동부교회" /></label>
 		<label>교단<input bind:value={info.denomination} placeholder="예: 대한예수교장로회" /></label>
 		<label>창립일<input type="date" bind:value={info.founded} /></label>
+		<label><span class="lt">고유번호 <small class="hint">(기부금 영수증에 쓰임)</small></span><input bind:value={info.bizNo} placeholder="예: 000-00-00000" /></label>
 		<label class="wide"><span class="lt">주소 <small class="hint">(검색해서 고른 뒤 상세주소를 이어 적으세요)</small></span>
 			<span class="row" style="flex-wrap:nowrap"><input bind:this={addrInput} bind:value={info.address} placeholder="주소 검색 버튼을 누르세요" /><button type="button" class="ghost" onclick={searchAddress} disabled={!can}>주소 검색</button></span>
 		</label>
