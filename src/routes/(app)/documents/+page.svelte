@@ -175,8 +175,8 @@
 	</div>
 
 	<!-- 홈페이지에서 들어온 증명서 신청 -->
-	<div class="card">
-		<div class="card-head"><h2>홈페이지 증명서 신청 {#if pendingReqs}<span class="tag new">대기 {pendingReqs}건</span>{/if}</h2><span class="sub">관리자가 승인한 신청만 직인이 들어간 증명서로 발급됩니다</span></div>
+	<div class="card" id="cert-req">
+		<div class="card-head"><h2>홈페이지 증명서 신청{#if pendingReqs}<span class="tag new">대기 {pendingReqs}건</span>{/if}</h2><span class="sub">관리자가 승인한 신청만 직인이 들어간 증명서로 발급됩니다</span></div>
 		<div style="overflow-x:auto">
 			<table class="sm">
 				<thead><tr><th>신청 일시</th><th>이름</th><th>증명서</th><th>용도</th><th>상태</th><th></th></tr></thead>

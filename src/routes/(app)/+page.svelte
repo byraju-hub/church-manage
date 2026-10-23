@@ -8,6 +8,18 @@
 	const today = new Date();
 	const WEEKS = recentSundays(8, today);
 	const weekday = today.toLocaleDateString('ko-KR', { weekday: 'long' });
+
+	// 처리할 일 알림 (관리자만): 가입 신청 · 홈페이지 증명서 신청. 처리하면 건수가 0이 되어 사라짐
+	const pendingUsers = $derived(registry.d.users.filter((u) => u.status === '승인 대기').length);
+	const pendingCerts = $derived(registry.certRequests.filter((r) => r.status === '대기').length);
+	const alerts = $derived(
+		registry.perms.admin || registry.isSuper
+			? [
+					...(pendingUsers ? [{ href: `/admin?tab=${encodeURIComponent('가입 신청')}`, text: `가입 신청 ${pendingUsers}건`, hint: '사용자 설정에서 승인해 주세요' }] : []),
+					...(pendingCerts ? [{ href: '/documents#cert-req', text: `증명서 발급 신청 ${pendingCerts}건`, hint: '문서 출력에서 승인해 주세요' }] : [])
+				]
+			: []
+	);
 	const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
 	const rows = $derived(registry.d.people.map((p) => ({ p, s: registry.summary(p) })));
@@ -176,6 +188,14 @@
 <!-- 카드 제목 앞 작은 선 아이콘 -->
 {#snippet hIcon(name: string)}<span class="h-ico">{@render icon(name)}</span>{/snippet}
 
+{#if alerts.length}
+	<div class="todo-alert" role="status">
+		<span class="bell" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 003.4 0" /></svg></span>
+		<b>처리할 일</b>
+		{#each alerts as a}<a href={a.href}>{a.text}<small>{a.hint} →</small></a>{/each}
+	</div>
+{/if}
+
 <GlobalSearch />
 
 <section class="hero">
@@ -190,6 +210,11 @@
 		{#if registry.perms.edit}<a class="btn glass" href="/new">+ 교인 등록</a>{/if}
 		<a class="btn glass" href="/stats">통계</a>
 	</div>
+</section>
+
+<section class="card">
+	<div class="card-head"><h2>{@render hIcon('calendar')}캘린더</h2><span class="sub">(색상별로 항목을 구분하고, 항목을 누르면 해당 내용만 표시됩니다.)</span></div>
+	<Calendar />
 </section>
 
 <div class="kpis kpis-8">
@@ -231,11 +256,6 @@
 		<div><b>{weekBirthdays}</b><span>이번 주 생일자</span></div>
 	</a>
 </div>
-
-<section class="card">
-	<div class="card-head"><h2>{@render hIcon('calendar')}캘린더</h2><span class="sub">(색상별로 항목을 구분하고, 항목을 누르면 해당 내용만 표시됩니다.)</span></div>
-	<Calendar />
-</section>
 
 <div class="dash-grid">
 	<section class="card">
@@ -413,3 +433,17 @@
 		<a href="/stats">통계</a>
 	</div>
 </section>
+
+<style>
+	/* 처리할 일 알림: 주황·노랑으로 천천히 깜빡임 (움직임을 줄이도록 설정한 기기에서는 깜빡이지 않음) */
+	.todo-alert { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin-bottom: 0.9rem; padding: 0.7rem 1rem; border-radius: 14px; border: 1.5px solid #f0642a; background: #fff4e0; color: #7a3410; animation: todo-blink 1.6s ease-in-out infinite; }
+	.todo-alert .bell { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #f0642a; color: #fff; }
+	.todo-alert .bell svg { width: 17px; height: 17px; animation: todo-ring 1.6s ease-in-out infinite; transform-origin: 50% 10%; }
+	.todo-alert b { font-size: 0.95rem; }
+	.todo-alert a { display: inline-flex; align-items: baseline; gap: 0.4rem; padding: 0.3rem 0.75rem; border-radius: 999px; background: #fff; border: 1px solid #f7b267; color: #b5420f; font-weight: 700; text-decoration: none; }
+	.todo-alert a small { font-weight: 500; color: #9a5a2c; }
+	.todo-alert a:hover { background: #ffe8c2; }
+	@keyframes todo-blink { 0%, 100% { background: #fff4e0; border-color: #f0642a; } 50% { background: #ffe066; border-color: #ffb400; } }
+	@keyframes todo-ring { 0%, 60%, 100% { transform: rotate(0); } 10%, 30% { transform: rotate(14deg); } 20%, 40% { transform: rotate(-14deg); } }
+	@media (prefers-reduced-motion: reduce) { .todo-alert, .todo-alert .bell svg { animation: none; } }
+</style>
