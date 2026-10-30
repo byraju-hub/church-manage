@@ -5,6 +5,7 @@ SvelteKit + Cloudflare Pages로 만든 **교회 교적 관리 시스템의 시�
 
 - 사이트: https://church-manage.pages.dev (`main` 브랜치에 올리면 자동 배포)
 - 최신 버전 내려받기: [Releases](https://github.com/byraju-hub/church-manage/releases/latest) · 설치 방법: [설치 가이드 (PDF)](static/install-guide.pdf)
+- 라이선스: [GNU AGPL-3.0](LICENSE)
 - 데이터: **가상 데이터만** 씁니다 (재적 약 720명, 주일 출석 약 430명 규모). 입력한 내용은 각자 브라우저(localStorage)에만 저장됩니다.
 - 실제 DB(Supabase)·카카오 로그인·출석부 연동은 아직 연결하지 않았습니다.
 
@@ -82,6 +83,11 @@ npm run build    # 배포용 빌드 → .svelte-kit/cloudflare
 저장소가 Cloudflare Pages에 연결되어 있어 `main`에 올리면 자동으로 빌드·배포됩니다.
 
 - Build command `npm run build` · Output `.svelte-kit/cloudflare` · 환경 변수 `NODE_VERSION=22`
+
+## 라이선스
+
+이 프로그램은 **[GNU AGPL-3.0](LICENSE)** 라이선스로 공개합니다. 누구나 자유롭게 설치해서 쓰고 고칠 수 있습니다.
+고친 프로그램을 인터넷으로 서비스하면, 그 사용자에게 고친 소스도 같은 라이선스로 제공해야 합니다. 전문은 [`LICENSE`](LICENSE)를 보세요.
 
 ---
 

@@ -94,7 +94,8 @@
 		</ul>
 	</section>
 
-	<p class="credit">제작: <a href="https://github.com/byraju-hub" target="_blank" rel="noopener">byraju</a> · 문의: <a href="mailto:byraju@naver.com">byraju@naver.com</a></p>
+	<p class="credit">제작: <a href="https://github.com/byraju-hub" target="_blank" rel="noopener">byraju</a> · 문의: <a href="mailto:byraju@naver.com">byraju@naver.com</a><br />
+		<a href="{REPO}/blob/main/LICENSE" target="_blank" rel="noopener">GNU AGPL-3.0 라이선스</a> · 누구나 자유롭게 설치해서 쓰고 고칠 수 있어요</p>
 </div>
 
 <style>
