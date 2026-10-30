@@ -202,7 +202,7 @@
 
 	<main>
 		{#if !unlocked && path === '/' && mode === 'login' && !loginMsg}
-			<Intro ondemo={demoLogin} onkakao={() => (mode = 'kakao')} />
+			<Intro ondemo={demoLogin} />
 		{:else if !unlocked}
 			<div class="card lock">
 				<img src="/logo.png" alt="" width="64" height="64" style="display:block;margin:0 auto .8rem;border-radius:18px;box-shadow:0 6px 18px rgba(43,62,149,.25)" />

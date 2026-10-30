@@ -4,6 +4,7 @@ SvelteKit + Cloudflare Pages로 만든 **교회 교적 관리 시스템의 시�
 교회가 직접 써 보며 **구조·기능·화면·입력 항목·권한**을 확정하고, 실제 개발자가 이것을 기준으로 정식 시스템을 만드는 것이 목적입니다.
 
 - 사이트: https://church-manage.pages.dev (`main` 브랜치에 올리면 자동 배포)
+- 최신 버전 내려받기: [Releases](https://github.com/byraju-hub/church-manage/releases/latest) · 설치 방법: [설치 가이드 (PDF)](static/install-guide.pdf)
 - 데이터: **가상 데이터만** 씁니다 (재적 약 720명, 주일 출석 약 430명 규모). 입력한 내용은 각자 브라우저(localStorage)에만 저장됩니다.
 - 실제 DB(Supabase)·카카오 로그인·출석부 연동은 아직 연결하지 않았습니다.
 

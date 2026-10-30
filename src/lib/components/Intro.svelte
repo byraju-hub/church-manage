@@ -3,7 +3,10 @@
 	// [시험판 전용] 실제 서비스에서는 소개 화면을 홈페이지에 두고, 이 앱은 로그인 화면부터 시작해도 됩니다.
 	import { registry } from '#lib/registry/store.svelte.ts';
 
-	let { ondemo, onkakao }: { ondemo: () => void; onkakao: () => void } = $props();
+	let { ondemo }: { ondemo: () => void } = $props();
+
+	// 최신 버전: GitHub Releases 의 가장 새 릴리즈 (새 릴리즈를 만들면 이 주소는 저절로 새 것을 가리킴)
+	const REPO = 'https://github.com/byraju-hub/church-manage';
 
 	const features = $derived([
 		{ t: '교인 목록 · 교적 카드', d: '이름·전화·소그룹·직분 무엇이든 한 번에 검색합니다. 여러 명을 한꺼번에 찾고, 엑셀로 내려받고, 일괄 수정도 합니다.' },
@@ -14,7 +17,7 @@
 		{ t: '캘린더', d: '교회 절기·성례·사역·심방·성도·생일·공휴일을 색으로 구분합니다. 연간 계획 엑셀을 올려 한꺼번에 등록합니다.' },
 		{ t: '교회 조직', d: '교회 조직표, 당회·시무집사회·시무권사회·서리집사·전도회 명단을 인쇄·엑셀·PDF로 뽑습니다.' },
 		{ t: '통계 · 문서 출력', d: '주일 출석 그래프, 임직·세례 통계. 교적부·증명서·기부금 영수증·교인 요람을 인쇄하거나 PDF로 만듭니다.' },
-		{ t: '회원 · 권한 · 설정', d: '카카오로 가입하면 관리자가 승인하고 등급(A·B·C)을 정합니다. 등급에 따라 볼 수 있는 화면이 달라집니다. 교회 정보·로고·직인, 나이 계산 방식, 백업도 관리자가 직접 바꿉니다.' }
+		{ t: '회원 · 권한 · 설정', d: '프로그램에 가입하면 관리자가 승인하고 등급(A·B·C)을 정합니다. 등급에 따라 볼 수 있는 화면이 달라집니다. 교회 정보·로고·직인, 나이 계산 방식, 백업도 관리자가 직접 바꿉니다.' }
 	]);
 
 	const shots = [
@@ -35,7 +38,9 @@
 		<p class="sub">교인 명단 · 출석 · 심방 · 조직 · 문서 출력을 한곳에서.</p>
 		<div class="cta">
 			<button type="button" class="big" onclick={ondemo}>데모 사이트 구경하기</button>
-			<button type="button" class="ghost big" onclick={onkakao}>카카오 로그인 화면 보기</button>
+			<a class="btn ghost big" href="{REPO}/releases/latest" target="_blank" rel="noopener">최신 버전 내려받기</a>
+			<a class="btn ghost big" href="/install-guide.pdf" download="교회교적관리-설치가이드.pdf">설치 가이드 (PDF)</a>
+			<a class="btn ghost big" href={REPO} target="_blank" rel="noopener">GitHub</a>
 		</div>
 		<p class="hint">가입이나 비밀번호 없이, 버튼 하나로 바로 들어갑니다.</p>
 	</section>
@@ -43,8 +48,8 @@
 	<section>
 		<h2>이런 프로그램이에요</h2>
 		<p class="lead">
-			교역자와 교적 담당자를 위한 <b>교회 교적 관리 웹 프로그램</b>입니다. 지금은 <b>시험판</b>으로, 가상 데이터를 넣어 두고 화면·기능·권한을 직접 써 보며 다듬고 있습니다.
-			이 시험판을 기준으로 실제 서비스를 만듭니다.
+			교회 교역자와 담당자를 위한 교적 관리 웹 프로그램입니다.<br />
+			데모 사이트를 구경 보고 구현하길 원하는 교회는 문의(<a href="mailto:byraju@naver.com">byraju@naver.com</a>)해 주세요.
 		</p>
 	</section>
 
@@ -80,22 +85,12 @@
 		<button type="button" class="big" onclick={ondemo}>데모 사이트 구경하기</button>
 	</section>
 
-	<section>
-		<h2>내려받기 · 설치</h2>
-		<p class="lead">내 컴퓨터에서 실행해 보거나, Cloudflare Pages에 무료로 올려 볼 수 있습니다. 순서는 설치 가이드(PDF)에 적어 두었습니다.</p>
-		<div class="dl">
-			<a class="btn" href="/install-guide.pdf" download="교회교적관리-설치가이드.pdf">설치 가이드 (PDF)</a>
-			<a class="btn ghost" href="https://github.com/byraju-hub/church-manage" target="_blank" rel="noopener">소스 코드 (GitHub)</a>
-		</div>
-		<p class="small">설치해서 쓰는 것도 가상 데이터 시험판입니다. 실제 교인 정보를 넣어 운영하지 마세요.</p>
-	</section>
-
 	<section class="note">
 		<h2>알아 두세요</h2>
 		<ul>
 			<li>모든 이름·전화번호·주소는 만들어 낸 값입니다. 실제 교인 정보는 들어 있지 않습니다.</li>
-			<li>카카오 로그인은 실제로 연결하지 않은 흉내입니다. 계정을 고르는 화면으로 로그인 흐름만 보여 드립니다.</li>
-			<li>소스 코드는 <a href="https://github.com/byraju-hub/church-manage" target="_blank" rel="noopener">GitHub</a>에 공개되어 있습니다.</li>
+			<li>카카오 로그인은 실제로 연결하지 않았습니다. 데모는 가상 계정으로 바로 들어갑니다.</li>
+			<li>소스 코드는 <a href={REPO} target="_blank" rel="noopener">GitHub</a>에 공개되어 있습니다.</li>
 		</ul>
 	</section>
 
@@ -133,8 +128,6 @@
 	.shot img { display: block; width: 100%; height: auto; }
 	.shot figcaption { padding: 0.6rem 1rem; font-size: 0.86rem; color: var(--muted); border-top: 1px solid var(--line); }
 
-	.dl { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1rem 0 0.6rem; }
-	.small { margin: 0; font-size: 0.85rem; color: var(--muted); }
 	.credit { margin: 0; text-align: center; font-size: 0.9rem; color: var(--muted); }
 	.credit a { font-weight: 600; }
 	.demo, .note { padding: 1.3rem 1.4rem; border-radius: 18px; }
