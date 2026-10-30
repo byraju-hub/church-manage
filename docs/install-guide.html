@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>교회 교적 관리 시험판 설치 가이드</title>
+<!--
+  이 파일이 설치 가이드 PDF(static/install-guide.pdf)의 원본입니다. 고친 뒤 PDF를 다시 만들려면:
+  "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --headless=new --disable-gpu --no-pdf-header-footer --print-to-pdf="static\install-guide.pdf" "file:///<이 폴더>/docs/install-guide.html"
+-->
+<style>
+  @page { size: A4; margin: 16mm 16mm 18mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Malgun Gothic', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif; font-size: 10.5pt; line-height: 1.65; color: #1e2545; }
+  h1 { margin: 0; font-size: 22pt; letter-spacing: -0.02em; }
+  .sub { margin: 4px 0 0; color: #5a6290; font-size: 11pt; }
+  .head { padding: 14px 18px 16px; border-radius: 12px; background: linear-gradient(135deg, #34489e, #5bb7b2); color: #fff; margin-bottom: 14px; }
+  .head h1 { color: #fff; }
+  .head .sub { color: rgba(255, 255, 255, 0.92); }
+  .head .by { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.35); font-size: 10.5pt; color: #fff; }
+  .head .by a { color: #fff; font-weight: 700; text-decoration: underline; }
+  h2 { margin: 15px 0 6px; padding-left: 9px; border-left: 5px solid #2b3e95; font-size: 13.5pt; break-after: avoid; }
+  h3 { margin: 14px 0 4px; font-size: 11.5pt; color: #2b3e95; break-after: avoid; }
+  p { margin: 5px 0; }
+  .box { margin: 10px 0; padding: 10px 14px; border-radius: 10px; break-inside: avoid; }
+  .warn { background: #fff4e0; border: 1.5px solid #f0642a; }
+  .note { background: #eef0fa; border: 1px solid #c9cfec; }
+  .box b.t { display: block; margin-bottom: 2px; }
+  ol, ul { margin: 6px 0; padding-left: 22px; }
+  li { margin: 3px 0; }
+  code { font-family: Consolas, 'D2Coding', monospace; background: #f0f2fa; border: 1px solid #dfe3f2; border-radius: 4px; padding: 0 4px; font-size: 9.5pt; }
+  pre { margin: 6px 0; padding: 8px 12px; border-radius: 8px; background: #1e2545; color: #fff; font-family: Consolas, 'D2Coding', monospace; font-size: 9.5pt; line-height: 1.5; break-inside: avoid; white-space: pre-wrap; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; break-inside: avoid; }
+  th, td { border: 1px solid #b9c0e0; padding: 4px 8px; text-align: left; vertical-align: top; font-size: 9.8pt; }
+  th { background: #e0e4f4; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .foot { margin-top: 8px; padding: 6px 10px; border: 1px solid #c9cfec; border-radius: 8px; background: #eef0fa; color: #1e2545; font-size: 10.5pt; text-align: center; }
+  .foot a { font-weight: 700; }
+  a { color: #2b3e95; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <h1>교회 교적 관리 시험판</h1>
+  <p class="sub">설치 가이드 · 2026년 10월 기준</p>
+  <p class="by">제작: <a href="https://github.com/byraju-hub">byraju</a> (github.com/byraju-hub) &nbsp;·&nbsp; 문의: <a href="mailto:byraju@naver.com">byraju@naver.com</a></p>
+</div>
+
+<div class="box warn">
+  <b class="t">먼저 알아 두세요</b>
+  이 프로그램은 화면과 기능을 시험해 보는 <b>시험판</b>입니다. 데이터베이스가 없고, 가상 데이터가 들어 있으며, 입력한 내용은 쓰는 사람의 <b>브라우저에만</b> 저장됩니다.
+  <b>실제 교인 정보를 넣어 운영하면 안 됩니다.</b> (브라우저 자료가 지워지면 사라지고, 개인정보를 지킬 장치도 없습니다.) 실제로 쓰려면 개발자가 데이터베이스와 로그인·권한을 붙여 정식 시스템으로 만들어야 하고, 그때 필요한 내용은 저장소의 <code>docs/handover.md</code>에 정리되어 있습니다.
+</div>
+
+<h2>1. 준비물</h2>
+<table>
+  <tr><th style="width:26%">준비물</th><th>설명</th></tr>
+  <tr><td>컴퓨터</td><td>Windows 또는 Mac. 인터넷 연결</td></tr>
+  <tr><td>Node.js 22.17 이상</td><td><a href="https://nodejs.org">nodejs.org</a>에서 LTS 버전을 받아 설치합니다. (설치 뒤 터미널의 <code>node -v</code>로 확인)</td></tr>
+  <tr><td>GitHub 계정 (선택)</td><td>인터넷에 올릴 때만 필요합니다.</td></tr>
+  <tr><td>Cloudflare 계정 (선택)</td><td>인터넷에 올릴 때만 필요합니다. 무료 계정이면 됩니다.</td></tr>
+</table>
+
+<h2>2. 방법 A — 내 컴퓨터에서 실행해 보기</h2>
+<ol>
+  <li><b>소스 받기.</b> <a href="https://github.com/byraju-hub/church-manage">github.com/byraju-hub/church-manage</a> 페이지에서 초록색 <code>Code</code> 버튼 → <code>Download ZIP</code>을 받아 압축을 풉니다. (Git을 쓴다면 <code>git clone https://github.com/byraju-hub/church-manage.git</code>)</li>
+  <li><b>터미널 열기.</b> 압축을 푼 폴더에서 터미널을 엽니다. Windows는 폴더 빈 곳을 <code>Shift + 오른쪽 클릭</code> → "터미널에서 열기"(또는 PowerShell).</li>
+  <li><b>필요한 부품 내려받기 (처음 한 번, 몇 분 걸립니다).</b>
+<pre>npm ci</pre></li>
+  <li><b>실행.</b>
+<pre>npm run dev</pre></li>
+  <li><b>브라우저에서 열기.</b> 터미널에 나온 주소(보통 <code>http://localhost:5173</code>)를 엽니다. 소개 화면에서 <b>데모 사이트 구경하기</b>를 누르면 정담임 목사(최고관리자)로 바로 들어갑니다.</li>
+</ol>
+<p>끝낼 때는 터미널에서 <code>Ctrl + C</code>를 누릅니다. 입력한 내용을 처음 상태로 되돌리려면 로그인 뒤 위쪽 이름을 눌러 <b>교적 데이터 초기화</b>를 고르세요.</p>
+
+<h2 style="break-before: page">3. 방법 B — 인터넷에 올리기 (Cloudflare Pages, 무료)</h2>
+<p>이 시험판은 Cloudflare Pages에서 돌아가도록 만들어져 있습니다. 한 번 연결해 두면 GitHub 저장소가 바뀔 때마다 자동으로 다시 올라갑니다.</p>
+<ol>
+  <li><b>저장소 복사.</b> GitHub에서 위 저장소 페이지의 <code>Fork</code> 버튼으로 내 계정에 복사합니다.</li>
+  <li><b>Cloudflare 연결.</b> <a href="https://dash.cloudflare.com">dash.cloudflare.com</a>에 로그인 → <code>Workers &amp; Pages</code> → <code>Create</code> → <code>Pages</code> → <code>Connect to Git</code>에서 GitHub를 연결하고 내 저장소를 고릅니다.</li>
+  <li><b>빌드 설정.</b> 아래처럼 넣습니다.
+    <table>
+      <tr><th style="width:38%">항목</th><th>값</th></tr>
+      <tr><td>Production branch</td><td><code>main</code></td></tr>
+      <tr><td>Build command</td><td><code>npm run build</code></td></tr>
+      <tr><td>Build output directory</td><td><code>.svelte-kit/cloudflare</code></td></tr>
+      <tr><td>Environment variable</td><td><code>NODE_VERSION</code> = <code>22</code></td></tr>
+    </table></li>
+  <li><b>Save and Deploy.</b> 몇 분 뒤 <code>프로젝트이름.pages.dev</code> 주소가 생깁니다.</li>
+</ol>
+<div class="box note">Cloudflare 화면의 메뉴 이름은 바뀔 수 있습니다. 이름이 다르면 "Pages", "Git 연결", "빌드 설정"에 해당하는 곳을 찾으세요.</div>
+
+<h2>4. 우리 교회에 맞게 바꿔 보기</h2>
+<p>로그인한 뒤 위 메뉴의 <b>관리자</b>를 누르면 아래 항목을 직접 바꿀 수 있습니다. 모두 쓰는 브라우저에만 저장됩니다.</p>
+<ul>
+  <li><b>교회 설정 › 기본 설정</b> — 교회 이름(화면 위쪽 제목과 문서에 쓰임), 주소, 로고, 직인, 증명서 양식, 모임 이름(공동체/교구/지역, 소그룹/구역/목장 등)</li>
+  <li><b>교회 설정 › 연간 설정</b> — 올해 표어, 나이 계산 방식, 연간 계획표 엑셀 등록, 공동체·전도회 출생 연도, 교육부서 기준</li>
+  <li><b>교회 설정 › 교회 조직표 · 소그룹 편성</b> — 위원장·부서장·교역자, 공동체와 소그룹 추가·삭제·이름 바꾸기</li>
+  <li><b>프로그램 설정</b> — 교인구분, 코드표, 백업(전체 내려받기·되살리기)</li>
+</ul>
+<p>처음 들어 있는 가상 인물과 교인은 소스(<code>src/lib/registry/seed.ts</code>, <code>generate.ts</code>)에서 만들어집니다.</p>
+
+<h2 style="break-before: page">5. 선택 기능 — 키가 있어야 동작합니다</h2>
+<p>아래 기능은 외부 서비스의 키를 넣어야 실제로 동작하고, <b>키가 없으면 예시 화면</b>이 나옵니다. 시험해 보는 데는 키가 필요 없습니다.</p>
+<table>
+  <tr><th style="width:34%">기능</th><th>필요한 키 이름</th></tr>
+  <tr><td>교인 등록카드 사진 읽기, 심방 내용 분석</td><td><code>ANTHROPIC_API_KEY</code> (모델을 바꾸려면 <code>ANTHROPIC_MODEL</code>)</td></tr>
+  <tr><td>심방 녹음 받아쓰기</td><td><code>OPENAI_API_KEY</code></td></tr>
+  <tr><td>문자 보내기 (솔라피)</td><td><code>SOLAPI_API_KEY</code>, <code>SOLAPI_API_SECRET</code>, <code>SOLAPI_SENDER</code> (시험용 <code>SOLAPI_TEST_TO</code>)</td></tr>
+</table>
+<ul>
+  <li><b>내 컴퓨터:</b> 폴더의 <code>.env.example</code>을 복사해 <code>.env</code>로 이름을 바꾸고 값을 적습니다.</li>
+  <li><b>Cloudflare:</b> 프로젝트의 <code>Settings</code> → <code>Variables and Secrets</code>에 같은 이름으로 넣습니다.</li>
+</ul>
+<div class="box warn">
+  <b class="t">키는 비밀번호와 같습니다</b>
+  키를 GitHub 같은 공개된 곳이나 메신저에 올리지 마세요. 심방 내용·등록카드 사진·문자 번호는 외부 서비스로 전송되므로 가상 자료로만 시험하세요.
+</div>
+
+<h2>6. 자주 묻는 질문</h2>
+<table>
+  <tr><th style="width:36%">증상</th><th>해결</th></tr>
+  <tr><td><code>npm</code>을 찾을 수 없다고 나옵니다</td><td>Node.js를 설치한 뒤 터미널을 닫았다가 다시 열어 보세요.</td></tr>
+  <tr><td><code>npm ci</code>에서 Node 버전 오류가 납니다</td><td>Node.js를 22.17 이상으로 올려 설치하세요. (<code>node -v</code>로 확인)</td></tr>
+  <tr><td>주소가 5173이 아닙니다</td><td>이미 쓰는 번호는 건너뜁니다. 터미널에 나온 주소로 들어가세요.</td></tr>
+  <tr><td>화면이 이상하거나 예전 모습입니다</td><td>브라우저에서 <code>Ctrl + F5</code>(강력 새로 고침)를 눌러 보세요.</td></tr>
+  <tr><td>다른 컴퓨터·휴대폰에서 입력한 내용이 안 보입니다</td><td>브라우저마다 따로 저장되기 때문입니다. 시험판의 정상 동작입니다.</td></tr>
+  <tr><td>입력한 내용이 사라졌습니다</td><td>브라우저 사이트 데이터를 지우면 사라집니다. 중요한 설정은 <b>프로그램 설정 › 백업</b>에서 내려받아 두세요.</td></tr>
+  <tr><td>우리 교인 명단을 넣어서 써도 되나요?</td><td>안 됩니다. 위의 "먼저 알아 두세요"를 보세요.</td></tr>
+</table>
+
+<h2>7. 더 알아보기</h2>
+<ul>
+  <li>소스 코드와 문서: <a href="https://github.com/byraju-hub/church-manage">github.com/byraju-hub/church-manage</a></li>
+  <li>정식 시스템을 만드는 개발자용 안내: 저장소의 <code>docs/handover.md</code>, <code>docs/decisions.md</code></li>
+</ul>
+
+<p class="foot">제작: <a href="https://github.com/byraju-hub">byraju</a> (github.com/byraju-hub) &nbsp;·&nbsp; 문의: <a href="mailto:byraju@naver.com">byraju@naver.com</a></p>
+
+</body>
+</html>

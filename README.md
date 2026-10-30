@@ -33,6 +33,8 @@ SvelteKit + Cloudflare Pages로 만든 **교회 교적 관리 시스템의 시�
 
 ## 실행
 
+내 컴퓨터에서 실행하거나 Cloudflare Pages에 올리는 순서는 **[설치 가이드 (PDF)](static/install-guide.pdf)** 에 있습니다. (원본: [`docs/install-guide.html`](docs/install-guide.html), 소개 화면에서도 내려받을 수 있습니다)
+
 ```sh
 npm ci
 npm run dev      # http://localhost:5173
@@ -79,3 +81,7 @@ npm run build    # 배포용 빌드 → .svelte-kit/cloudflare
 저장소가 Cloudflare Pages에 연결되어 있어 `main`에 올리면 자동으로 빌드·배포됩니다.
 
 - Build command `npm run build` · Output `.svelte-kit/cloudflare` · 환경 변수 `NODE_VERSION=22`
+
+---
+
+제작: [byraju](https://github.com/byraju-hub) · 문의: [byraju@naver.com](mailto:byraju@naver.com)

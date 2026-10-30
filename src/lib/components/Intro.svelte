@@ -80,6 +80,16 @@
 		<button type="button" class="big" onclick={ondemo}>데모 사이트 구경하기</button>
 	</section>
 
+	<section>
+		<h2>내려받기 · 설치</h2>
+		<p class="lead">내 컴퓨터에서 실행해 보거나, Cloudflare Pages에 무료로 올려 볼 수 있습니다. 순서는 설치 가이드(PDF)에 적어 두었습니다.</p>
+		<div class="dl">
+			<a class="btn" href="/install-guide.pdf" download="교회교적관리-설치가이드.pdf">설치 가이드 (PDF)</a>
+			<a class="btn ghost" href="https://github.com/byraju-hub/church-manage" target="_blank" rel="noopener">소스 코드 (GitHub)</a>
+		</div>
+		<p class="small">설치해서 쓰는 것도 가상 데이터 시험판입니다. 실제 교인 정보를 넣어 운영하지 마세요.</p>
+	</section>
+
 	<section class="note">
 		<h2>알아 두세요</h2>
 		<ul>
@@ -88,6 +98,8 @@
 			<li>소스 코드는 <a href="https://github.com/byraju-hub/church-manage" target="_blank" rel="noopener">GitHub</a>에 공개되어 있습니다.</li>
 		</ul>
 	</section>
+
+	<p class="credit">제작: <a href="https://github.com/byraju-hub" target="_blank" rel="noopener">byraju</a> · 문의: <a href="mailto:byraju@naver.com">byraju@naver.com</a></p>
 </div>
 
 <style>
@@ -121,6 +133,10 @@
 	.shot img { display: block; width: 100%; height: auto; }
 	.shot figcaption { padding: 0.6rem 1rem; font-size: 0.86rem; color: var(--muted); border-top: 1px solid var(--line); }
 
+	.dl { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1rem 0 0.6rem; }
+	.small { margin: 0; font-size: 0.85rem; color: var(--muted); }
+	.credit { margin: 0; text-align: center; font-size: 0.9rem; color: var(--muted); }
+	.credit a { font-weight: 600; }
 	.demo, .note { padding: 1.3rem 1.4rem; border-radius: 18px; }
 	.demo { background: var(--primary-50); }
 	.note { border: 1px dashed var(--line-strong); background: #fff; }
