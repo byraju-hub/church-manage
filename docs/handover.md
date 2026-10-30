@@ -244,6 +244,7 @@ src/
 ## 11. 프로토타입 전용이라 정리할 것
 
 - 가상 데이터: `seed.ts`, `generate.ts`, `attendance.mock.ts`, 로그인 화면의 '카카오 계정 고르기' 흉내
+- 소개 화면(`Intro.svelte`)과 그 화면 사진(`static/intro/`), 소개 화면의 **데모 사이트 구경하기**(정담임으로 바로 로그인)
 - 상단 회원 메뉴의 **다른 회원으로 보기**, **교적 데이터 초기화**
 - 하단 바닥글의 "프로토타입 · 가상 샘플 데이터" 문구
 - `store.svelte.ts` 의 localStorage 저장·`migrate()` 정리 코드, `KEY = 'church-registry-proto-v16'`

@@ -2,7 +2,9 @@
 	// 교적 화면 공통 틀: 카카오 로그인, 상단 메뉴, 휴대폰 아래 메뉴, 회원 바꿔 보기
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { registry } from '#lib/registry/store.svelte.ts';
+	import Intro from '#lib/components/Intro.svelte';
 	import type { AppUser } from '#lib/registry/types.ts';
 	import { formatMobile } from '#lib/registry/derive.ts';
 
@@ -59,6 +61,13 @@
 		userOpen = false;
 		registry.logout();
 		mode = 'login';
+		loginMsg = '';
+		goto('/'); // 로그아웃하면 소개 화면으로
+	}
+	// 소개 화면의 '데모 사이트 구경하기': 가상 데이터의 최고관리자(정담임 목사)로 바로 로그인
+	function demoLogin() {
+		const u = registry.d.users.find((x) => x.is_super && x.status === '사용');
+		if (u) { last = Date.now(); registry.login(u.id); }
 	}
 	// (시연) 카카오 계정으로 로그인
 	function kakaoLogin(u: AppUser) {
@@ -192,7 +201,9 @@
 	</header>
 
 	<main>
-		{#if !unlocked}
+		{#if !unlocked && path === '/' && mode === 'login' && !loginMsg}
+			<Intro ondemo={demoLogin} onkakao={() => (mode = 'kakao')} />
+		{:else if !unlocked}
 			<div class="card lock">
 				<img src="/logo.png" alt="" width="64" height="64" style="display:block;margin:0 auto .8rem;border-radius:18px;box-shadow:0 6px 18px rgba(43,62,149,.25)" />
 				{#if mode === 'login'}
@@ -201,6 +212,7 @@
 					<button type="button" class="kakao" onclick={() => { loginMsg = ''; mode = 'kakao'; }}>{@render kakaoIcon()} 카카오로 로그인</button>
 					{#if loginMsg}<p style="color:#a83c10;font-size:.88rem;margin-top:.8rem">{loginMsg}</p>{/if}
 					<p class="muted" style="font-size:.78rem;margin-top:1rem">로그인하면 교적 열람 기록이 남습니다.</p>
+					<p><button type="button" class="ghost sm" onclick={() => { loginMsg = ''; goto('/'); }}>소개 화면으로</button></p>
 				{:else if mode === 'kakao'}
 					<div class="kakao-sheet">
 						<div class="kakao-top">{@render kakaoIcon()} <b>kakao</b> <span class="tag part">시연</span></div>
