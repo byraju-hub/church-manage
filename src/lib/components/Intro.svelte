@@ -49,7 +49,7 @@
 		<h2>이런 프로그램이에요</h2>
 		<p class="lead">
 			교회 교역자와 담당자를 위한 교적 관리 웹 프로그램입니다.<br />
-			데모 사이트를 구경 보고 구현하길 원하는 교회는 문의(<a href="mailto:byraju@naver.com">byraju@naver.com</a>)해 주세요.
+			데모 사이트를 구경하고 구현하길 원하는 교회는 문의(<a href="mailto:byraju@naver.com">byraju@naver.com</a>)해 주세요.
 		</p>
 	</section>
 
