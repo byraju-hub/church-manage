@@ -1,6 +1,6 @@
 # 교회 교적 관리 프로그램
 
-SvelteKit + Cloudflare Pages로 만든 **교회 교적 관리 시스템의 시험판**입니다.
+SvelteKit + Cloudflare Pages로 만든 **교회 교적 관리 프로그램의 시험판**입니다.
 교회가 직접 써 보며 **구조·기능·화면·입력 항목·권한**을 확정하고, 실제 개발자가 이것을 기준으로 정식 시스템을 만드는 것이 목적입니다.
 
 - 사이트: https://church-manage.pages.dev (`main` 브랜치에 올리면 자동 배포)
@@ -86,8 +86,14 @@ npm run build    # 배포용 빌드 → .svelte-kit/cloudflare
 
 ## 라이선스
 
+Copyright (C) 2026 byraju
+
 이 프로그램은 **[GNU AGPL-3.0](LICENSE)** 라이선스로 공개합니다. 누구나 자유롭게 설치해서 쓰고 고칠 수 있습니다.
 고친 프로그램을 인터넷으로 서비스하면, 그 사용자에게 고친 소스도 같은 라이선스로 제공해야 합니다. 전문은 [`LICENSE`](LICENSE)를 보세요.
+
+**라이선스에 포함되지 않는 것:** 부평동부교회의 **이름과 로고**는 AGPL-3.0 대상이 아닙니다. 아래 그림 파일과 화면 사진(`static/intro/`) 속 로고는 교회의 허락 없이 쓸 수 없습니다. 고쳐서 쓰실 때는 자신의 교회 이름과 로고로 바꿔 주세요.
+
+- `static/logo.png` · `static/church-logo.png` · `static/apple-touch-icon.png` · `static/favicon-32.png`
 
 ---
 
